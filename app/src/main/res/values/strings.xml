@@ -1,5 +1,5 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="app_name">Simple Battery Notifier</string>
+    <string name="app_name">BattWatch</string>
     <string name="action_settings">Settings</string>
     <string name="title_activity_settings">Settings</string>
     <string name="charging">Charging</string>
@@ -327,7 +327,7 @@
     <string name="feedback_option_github">Report on GitHub</string>
     <string name="feedback_option_email">Email the developer</string>
     <!-- %1$s is the app version, e.g. 2.0.71 -->
-    <string name="feedback_email_subject">Simple Battery Notifier feedback (v%1$s)</string>
+    <string name="feedback_email_subject">BattWatch feedback (v%1$s)</string>
     <string name="no_email_app">No email app found</string>
 
     <!-- About the app -->
