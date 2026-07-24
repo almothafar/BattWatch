@@ -1,6 +1,6 @@
 # Code Review Guidelines
 
-These are the coding standards and best practices for the SimpleBatteryNotifier Android project.
+These are the coding standards and best practices for the BattWatch Android project (formerly Simple Battery Notifier).
 
 > **Audience:** this is the human-facing standard for contributors and reviewers. The AI code-review agent has a machine-facing companion at [`.claude/guidelines.md`](.claude/guidelines.md); keep the two in sync when a standard changes.
 

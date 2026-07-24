@@ -1,17 +1,19 @@
-# 📱 SimpleBatteryNotifier
+# 📱 BattWatch
 
-[![Android CI](https://github.com/almothafar/SimpleBatteryNotifier/workflows/Android%20CI/badge.svg)](https://github.com/almothafar/SimpleBatteryNotifier/actions)
+*Formerly Simple Battery Notifier.*
+
+[![Android CI](https://github.com/almothafar/BattWatch/workflows/Android%20CI/badge.svg)](https://github.com/almothafar/BattWatch/actions)
 [![Android](https://img.shields.io/badge/Android-8.0%2B%20(API%2026%2B)-green?logo=android)](https://developer.android.com/about/versions/oreo)
 [![Java](https://img.shields.io/badge/Java-25-orange?logo=openjdk)](https://openjdk.org/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE.md)
 
 A lightweight Android app to keep you informed about your battery status — without heavy resource usage or unnecessary "power saver" bloat.
 
-## 💡 Why SimpleBatteryNotifier?
+## 💡 Why BattWatch?
 Ever been busy at work or home and suddenly realized your phone is almost out of battery?  
 Or worse — your phone dies while you’re traveling and you can’t recharge it.
 
-Unlike heavy battery saver apps (which Android doesn’t actually need), SimpleBatteryNotifier is designed to:
+Unlike heavy battery saver apps (which Android doesn’t actually need), BattWatch is designed to:
 - Monitor your battery efficiently
 - Send you timely notifications
 - Avoid slowing down your phone or draining your resources
@@ -66,8 +68,8 @@ A packaged release (Google Play / F-Droid / APK) is not published yet. For now, 
 
 ```bash
 # Clone the repository
-git clone https://github.com/almothafar/SimpleBatteryNotifier.git
-cd SimpleBatteryNotifier
+git clone https://github.com/almothafar/BattWatch.git
+cd BattWatch
 
 # Build debug APK
 ./gradlew assembleDebug
@@ -108,7 +110,7 @@ Every pull request and push to master automatically:
 - ✅ Generates test reports
 - ✅ Uploads build artifacts
 
-Check the [Actions tab](https://github.com/almothafar/SimpleBatteryNotifier/actions) for build status.
+Check the [Actions tab](https://github.com/almothafar/BattWatch/actions) for build status.
 
 ---
 

@@ -340,7 +340,7 @@
     <string name="about_open_source">Free and open-source software, licensed under the GNU General Public License v3.0.</string>
     <string name="about_disclaimer">Battery readings, health and charging figures come from your device and are estimates — treat them as guidance, not exact measurements. This app is provided “as is”, without warranty of any kind.</string>
     <string name="about_view_github">View on GitHub</string>
-    <string name="about_github_url" translatable="false">https://github.com/almothafar/SimpleBatteryNotifier</string>
+    <string name="about_github_url" translatable="false">https://github.com/almothafar/BattWatch</string>
     <!-- Summary of the version footer at the bottom of the Settings root screen (#113) -->
     <string name="about_footer_hint">Tap for more about this app</string>
 
@@ -416,7 +416,7 @@
     <string name="_default_notification_sound_uri" translatable="false">content://settings/system/notification_sound</string>
 
     <!-- External endpoints — single source of truth for the links/emails used in code -->
-    <string name="feedback_github_url" translatable="false">https://github.com/almothafar/SimpleBatteryNotifier/issues/new/choose</string>
+    <string name="feedback_github_url" translatable="false">https://github.com/almothafar/BattWatch/issues/new/choose</string>
     <string name="feedback_support_email" translatable="false">support@almothafar.com</string>
 
     <!-- Accessibility -->
