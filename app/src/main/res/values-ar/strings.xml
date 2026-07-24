@@ -1,5 +1,5 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="app_name">منبه البطارية البسيط</string>
+    <string name="app_name">BattWatch</string>
     <string name="action_settings">الإعدادات</string>
     <string name="title_activity_settings">الإعدادات</string>
     <string name="charging">تشحن</string>
@@ -308,7 +308,7 @@
     <string name="feedback_option_github">الإبلاغ عبر GitHub</string>
     <string name="feedback_option_email">مراسلة المطوّر</string>
     <!-- %1$s is the app version, e.g. 2.0.71 -->
-    <string name="feedback_email_subject">ملاحظات حول تطبيق منبّه البطارية البسيط (v%1$s)</string>
+    <string name="feedback_email_subject">ملاحظات حول تطبيق BattWatch (v%1$s)</string>
     <string name="no_email_app">لا يوجد تطبيق بريد</string>
 
     <!-- About the app -->
