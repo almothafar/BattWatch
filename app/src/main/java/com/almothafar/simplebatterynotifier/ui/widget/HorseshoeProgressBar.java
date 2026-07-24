@@ -1,6 +1,6 @@
 /*
  * HorseshoeProgressBar - an animated horseshoe-shaped progress gauge for Android.
- * Part of Simple Battery Notifier <https://github.com/almothafar/SimpleBatteryNotifier>.
+ * Part of BattWatch (formerly Simple Battery Notifier) <https://github.com/almothafar/BattWatch>.
  *
  * Copyright (C) 2016-2026 Al-Mothafar Al-Hasan <https://github.com/almothafar>
  *
