@@ -50,6 +50,21 @@ No surprises. No clutter. Just simple battery notifications.
 
 ---
 
+## 📸 Screenshots
+
+<p align="center">
+  <img src="play/screenshots/2_discharging.jpg" width="200" alt="Live battery status with drain rate">
+  <img src="play/screenshots/1_charging.jpg" width="200" alt="Charging speed and time to full">
+  <img src="play/screenshots/3_insights.jpg" width="200" alt="Battery Insights — health, cycles, capacity">
+</p>
+<p align="center">
+  <img src="play/screenshots/6_notification.jpg" width="200" alt="Ongoing status notification">
+  <img src="play/screenshots/4_settings_alerts.jpg" width="200" alt="Alert settings">
+  <img src="play/screenshots/5_settings_behaviour.jpg" width="200" alt="Behaviour settings">
+</p>
+
+---
+
 ## 🚀 Lightweight & Simple
 - No unnecessary background services
 - No bloated “power saver” features
@@ -58,7 +73,14 @@ No surprises. No clutter. Just simple battery notifications.
 ---
 
 ## 📥 Installation
-A packaged release (Google Play / F-Droid / APK) is not published yet. For now, build it yourself — see [Building from Source](#building-from-source) below.
+
+<a href="https://play.google.com/store/apps/details?id=com.almothafar.simplebatterynotifier">
+  <img alt="Get it on Google Play" src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" height="64">
+</a>
+
+- **Google Play** — the button above (primary channel).
+- **F-Droid** — planned; tracked in [#4](https://github.com/almothafar/BattWatch/issues/4).
+- **Build it yourself** — see [Building from Source](#building-from-source) below.
 
 ---
 
