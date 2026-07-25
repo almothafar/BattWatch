@@ -160,13 +160,17 @@ final class OngoingStatusContent {
 	 * Granularity earns its keep here and only here — the persistent notification sits in the shade long
 	 * enough to read as a live gauge. The transient alerts stay <em>semantic</em> (alert / low / full /
 	 * error), because a level gauge says nothing about why they fired.
+	 * <p>
+	 * With no snapshot at all the icon says so ({@code battery_unknown}, a "?" badge) rather than picking
+	 * a level it cannot know — the old fallback drew a <em>full</em> battery, which read as a confident
+	 * 100% at the one moment the app has nothing to report.
 	 *
 	 * @param batteryDO Current battery snapshot, or null if unavailable
 	 * @return Drawable resource id
 	 */
 	static int ongoingIconRes(BatteryDO batteryDO) {
 		if (isNull(batteryDO)) {
-			return R.drawable.ic_stat_battery_full;
+			return R.drawable.ic_stat_battery_unknown;
 		}
 		final List<IconBand> ladder = batteryDO.getStatus() == BatteryManager.BATTERY_STATUS_CHARGING
 		                              ? CHARGING_LADDER

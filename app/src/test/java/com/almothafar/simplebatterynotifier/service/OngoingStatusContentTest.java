@@ -233,8 +233,9 @@ public class OngoingStatusContentTest {
 	}
 
 	@Test
-	public void icon_fallsBackToFull_whenSnapshotUnavailable() {
-		assertEquals(R.drawable.ic_stat_battery_full, OngoingStatusContent.ongoingIconRes(null));
+	public void icon_saysUnknown_whenSnapshotUnavailable() {
+		// No reading at all must not render as a confident full battery.
+		assertEquals(R.drawable.ic_stat_battery_unknown, OngoingStatusContent.ongoingIconRes(null));
 	}
 
 	@Test
