@@ -35,6 +35,47 @@ final class OngoingStatusContent {
 	/** Joins the ongoing notification's detail segments (rate/power · current · time). */
 	private static final String DETAIL_SEPARATOR = " · ";
 
+	/**
+	 * One rung of a level→icon ladder: the lowest battery level that {@code iconRes} covers. The two
+	 * ladders below are the single source of truth for the band boundaries (#235) — nothing else, in code
+	 * or in the drawables' own comments, restates them.
+	 *
+	 * @param minLevel the lowest level, in percent, that this icon covers
+	 * @param iconRes  the small-icon drawable for that band
+	 */
+	private record IconBand(int minLevel, int iconRes) {
+	}
+
+	/**
+	 * Discharging: Material's {@code battery_0_bar}…{@code battery_6_bar} plus {@code battery_full}, in
+	 * even ~14-point bands so each bar covers a comparable slice. Only a true 100% reaches the solid full
+	 * battery, so "nearly full" never reads as "done".
+	 */
+	private static final List<IconBand> DISCHARGING_LADDER = List.of(
+			new IconBand(100, R.drawable.ic_stat_battery_full),
+			new IconBand(85, R.drawable.ic_stat_battery_6_bar),
+			new IconBand(70, R.drawable.ic_stat_battery_5_bar),
+			new IconBand(55, R.drawable.ic_stat_battery_4_bar),
+			new IconBand(40, R.drawable.ic_stat_battery_3_bar),
+			new IconBand(25, R.drawable.ic_stat_battery_2_bar),
+			new IconBand(10, R.drawable.ic_stat_battery_1_bar),
+			new IconBand(0, R.drawable.ic_stat_battery_0_bar));
+
+	/**
+	 * Charging: Material's {@code battery_charging_20/30/50/60/80/90} plus {@code battery_charging_full}.
+	 * The numbers in those names are Material's own labels for how full the <em>artwork</em> looks, not
+	 * thresholds — the floors here are chosen for how each icon reads, so e.g. {@code charging_60} starts
+	 * at 55% and {@code charging_90} at 88% (#235).
+	 */
+	private static final List<IconBand> CHARGING_LADDER = List.of(
+			new IconBand(98, R.drawable.ic_stat_battery_charging_full),
+			new IconBand(88, R.drawable.ic_stat_battery_charging_90),
+			new IconBand(73, R.drawable.ic_stat_battery_charging_80),
+			new IconBand(55, R.drawable.ic_stat_battery_charging_60),
+			new IconBand(40, R.drawable.ic_stat_battery_charging_50),
+			new IconBand(25, R.drawable.ic_stat_battery_charging_30),
+			new IconBand(0, R.drawable.ic_stat_battery_charging_20));
+
 	private OngoingStatusContent() {
 		// Utility class - prevent instantiation
 	}
@@ -112,23 +153,47 @@ final class OngoingStatusContent {
 	}
 
 	/**
-	 * Choose a small icon for the ongoing notification that reflects the actual battery state: a
-	 * charging bolt only while actively charging, otherwise a plain battery whose fill matches the
-	 * level. (A charged-but-still-plugged battery reads as full, without a bolt.)
+	 * Choose a small icon for the ongoing notification that mirrors the charge level, like the system
+	 * battery icon (#235): a bolt-bearing battery while actively charging, a plain filling battery
+	 * otherwise. (A charged-but-still-plugged battery reads as full, without a bolt.)
+	 * <p>
+	 * Granularity earns its keep here and only here — the persistent notification sits in the shade long
+	 * enough to read as a live gauge. The transient alerts stay <em>semantic</em> (alert / low / full /
+	 * error), because a level gauge says nothing about why they fired.
+	 * <p>
+	 * With no snapshot at all the icon says so ({@code battery_unknown}, a "?" badge) rather than picking
+	 * a level it cannot know — the old fallback drew a <em>full</em> battery, which read as a confident
+	 * 100% at the one moment the app has nothing to report.
 	 *
 	 * @param batteryDO Current battery snapshot, or null if unavailable
 	 * @return Drawable resource id
 	 */
 	static int ongoingIconRes(BatteryDO batteryDO) {
 		if (isNull(batteryDO)) {
-			return R.drawable.ic_stat_battery_full;
+			return R.drawable.ic_stat_battery_unknown;
 		}
-		if (batteryDO.getStatus() == BatteryManager.BATTERY_STATUS_CHARGING) {
-			return R.drawable.ic_stat_battery_charging;
+		final List<IconBand> ladder = batteryDO.getStatus() == BatteryManager.BATTERY_STATUS_CHARGING
+		                              ? CHARGING_LADDER
+		                              : DISCHARGING_LADDER;
+		return iconForLevel(ladder, batteryDO.getBatteryPercentageInt());
+	}
+
+	/**
+	 * The icon for the first band the level reaches. Ladders run highest floor first and end at a zero
+	 * floor, so any real level (0–100) matches inside the loop; the trailing return is the floor icon,
+	 * reached only by a nonsensical negative level.
+	 *
+	 * @param ladder the level→icon bands, highest floor first
+	 * @param level  the battery level in percent
+	 * @return Drawable resource id
+	 */
+	private static int iconForLevel(List<IconBand> ladder, int level) {
+		for (IconBand band : ladder) {
+			if (level >= band.minLevel()) {
+				return band.iconRes();
+			}
 		}
-		return batteryDO.getBatteryPercentageInt() <= 50
-		       ? R.drawable.ic_stat_battery_low
-		       : R.drawable.ic_stat_battery_full;
+		return ladder.get(ladder.size() - 1).iconRes();
 	}
 
 	private static void addIfPresent(List<String> parts, String value) {

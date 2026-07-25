@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Top of the discharging ladder (a true 100%), and the full-battery alert.
-     Material Symbols (Outlined) "battery_full", Apache-2.0. White-on-transparent:
+<!-- Ongoing status notification, discharging ladder. The level bands live in OngoingStatusContent.
+     Material Symbols (Outlined) "battery_6_bar", Apache-2.0. White-on-transparent:
      notification small icons are rendered as an alpha mask, so only the silhouette survives. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
@@ -10,6 +10,6 @@
     <group android:translateY="960">
         <path
             android:fillColor="#FFFFFFFF"
-            android:pathData="M320-80q-17 0-28.5-11.5T280-120v-640q0-17 11.5-28.5T320-800h80v-80h160v80h80q17 0 28.5 11.5T680-760v640q0 17-11.5 28.5T640-80H320Z" />
+            android:pathData="M320-80q-17 0-28.5-11.5T280-120v-640q0-17 11.5-28.5T320-800h80v-80h160v80h80q17 0 28.5 11.5T680-760v640q0 17-11.5 28.5T640-80H320Zm40-560h240v-80H360v80Z" />
     </group>
 </vector>

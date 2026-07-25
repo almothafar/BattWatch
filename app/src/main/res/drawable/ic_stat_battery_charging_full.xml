@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Top of the discharging ladder (a true 100%), and the full-battery alert.
-     Material Symbols (Outlined) "battery_full", Apache-2.0. White-on-transparent:
+<!-- Top of the charging ladder, and the charge-started alert.
+     Material Symbols (Outlined) "battery_charging_full", Apache-2.0. White-on-transparent:
      notification small icons are rendered as an alpha mask, so only the silhouette survives. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
@@ -10,6 +10,6 @@
     <group android:translateY="960">
         <path
             android:fillColor="#FFFFFFFF"
-            android:pathData="M320-80q-17 0-28.5-11.5T280-120v-640q0-17 11.5-28.5T320-800h80v-80h160v80h80q17 0 28.5 11.5T680-760v640q0 17-11.5 28.5T640-80H320Z" />
+            android:pathData="M660-80v-120H560l140-200v120h100L660-80Zm-300-80Zm-40 80q-17 0-28.5-11.5T280-120v-640q0-17 11.5-28.5T320-800h80v-80h160v80h80q17 0 28.5 11.5T680-760v280q-21 0-41 3.5T600-466v-254H360v560h94q8 23 19.5 43T501-80H320Z" />
     </group>
 </vector>

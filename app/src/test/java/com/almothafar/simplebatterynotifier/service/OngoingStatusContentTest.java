@@ -182,4 +182,72 @@ public class OngoingStatusContentTest {
 		assertEquals("", OngoingStatusContent.statusDetail(context, null, null));
 		assertEquals("", OngoingStatusContent.statusDetailExpanded(context, null, null));
 	}
+
+	// --- Level-mirroring small icon (#235) -------------------------------------------------------
+
+	/** The ongoing small icon at a given level and {@code BatteryManager.BATTERY_STATUS_*} state. */
+	private static int iconAt(int level, int status) {
+		return OngoingStatusContent.ongoingIconRes(new BatteryDO().setLevel(level).setScale(100).setStatus(status));
+	}
+
+	/** Asserts the icon at both ends of a band, so a shifted boundary can't slip through. */
+	private static void assertBand(
+			int lowLevel,
+			int highLevel,
+			int status,
+			int expectedIcon) {
+		assertEquals("level " + lowLevel, expectedIcon, iconAt(lowLevel, status));
+		assertEquals("level " + highLevel, expectedIcon, iconAt(highLevel, status));
+	}
+
+	@Test
+	public void dischargingIcon_mirrorsLevel_atEveryBandBoundary() {
+		final int discharging = BatteryManager.BATTERY_STATUS_DISCHARGING;
+		assertBand(0, 9, discharging, R.drawable.ic_stat_battery_0_bar);
+		assertBand(10, 24, discharging, R.drawable.ic_stat_battery_1_bar);
+		assertBand(25, 39, discharging, R.drawable.ic_stat_battery_2_bar);
+		assertBand(40, 54, discharging, R.drawable.ic_stat_battery_3_bar);
+		assertBand(55, 69, discharging, R.drawable.ic_stat_battery_4_bar);
+		assertBand(70, 84, discharging, R.drawable.ic_stat_battery_5_bar);
+		assertBand(85, 99, discharging, R.drawable.ic_stat_battery_6_bar);
+		assertBand(100, 100, discharging, R.drawable.ic_stat_battery_full);
+	}
+
+	@Test
+	public void chargingIcon_mirrorsLevel_atEveryBandBoundary() {
+		final int charging = BatteryManager.BATTERY_STATUS_CHARGING;
+		assertBand(0, 24, charging, R.drawable.ic_stat_battery_charging_20);
+		assertBand(25, 39, charging, R.drawable.ic_stat_battery_charging_30);
+		assertBand(40, 54, charging, R.drawable.ic_stat_battery_charging_50);
+		assertBand(55, 72, charging, R.drawable.ic_stat_battery_charging_60);
+		assertBand(73, 87, charging, R.drawable.ic_stat_battery_charging_80);
+		assertBand(88, 97, charging, R.drawable.ic_stat_battery_charging_90);
+		assertBand(98, 100, charging, R.drawable.ic_stat_battery_charging_full);
+	}
+
+	@Test
+	public void icon_distinguishesChargingFromDischarging_atTheSameLevel() {
+		// Same level, different state → different artwork; the bolt is the only cue for "actively charging".
+		assertEquals(R.drawable.ic_stat_battery_6_bar, iconAt(90, BatteryManager.BATTERY_STATUS_DISCHARGING));
+		assertEquals(R.drawable.ic_stat_battery_charging_90, iconAt(90, BatteryManager.BATTERY_STATUS_CHARGING));
+	}
+
+	@Test
+	public void icon_saysUnknown_whenSnapshotUnavailable() {
+		// No reading at all must not render as a confident full battery.
+		assertEquals(R.drawable.ic_stat_battery_unknown, OngoingStatusContent.ongoingIconRes(null));
+	}
+
+	@Test
+	public void icon_readsAsFull_whenChargedButStillPlugged() {
+		// BATTERY_STATUS_FULL is not CHARGING, so it takes the discharging ladder: a solid battery, no bolt.
+		assertEquals(R.drawable.ic_stat_battery_full, iconAt(100, BatteryManager.BATTERY_STATUS_FULL));
+	}
+
+	@Test
+	public void icon_holdsTheFloor_whenLevelIsNonsensical() {
+		// The ladders end at a zero floor, so a negative level can't fall out of the loop untranslated.
+		assertEquals(R.drawable.ic_stat_battery_0_bar, iconAt(-1, BatteryManager.BATTERY_STATUS_DISCHARGING));
+		assertEquals(R.drawable.ic_stat_battery_charging_20, iconAt(-1, BatteryManager.BATTERY_STATUS_CHARGING));
+	}
 }

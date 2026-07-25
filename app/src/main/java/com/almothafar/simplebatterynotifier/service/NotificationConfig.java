@@ -57,7 +57,7 @@ final class NotificationConfig {
 		final AlertStyle style = switch (type) {
 			case CRITICAL -> new AlertStyle(
 					NotificationChannels.CHANNEL_ID_CRITICAL,
-					R.drawable.ic_stat_device_battery_charging_20,
+					R.drawable.ic_stat_battery_alert,
 					prefs.getString(context.getString(R.string._pref_key_notifications_alert_sound_ringtone), defaultSound),
 					context.getString(R.string.notification_critical_ticker, criticalLevel),
 					context.getString(R.string.notification_critical_title),
@@ -65,7 +65,7 @@ final class NotificationConfig {
 					context.getString(R.string.notification_critical_content_big, criticalLevel));
 			case WARNING -> new AlertStyle(
 					NotificationChannels.CHANNEL_ID_WARNING,
-					R.drawable.ic_stat_device_battery_charging_50,
+					R.drawable.ic_stat_battery_low,
 					prefs.getString(context.getString(R.string._pref_key_notifications_warning_sound_ringtone), defaultSound),
 					context.getString(R.string.notification_warning_ticker, warningLevel),
 					context.getString(R.string.notification_warning_title),
@@ -73,7 +73,7 @@ final class NotificationConfig {
 					context.getString(R.string.notification_warning_content_big, warningLevel));
 			case FULL -> new AlertStyle(
 					NotificationChannels.CHANNEL_ID_FULL,
-					R.drawable.ic_stat_device_battery_charging_full,
+					R.drawable.ic_stat_battery_full,
 					prefs.getString(context.getString(R.string._pref_key_notifications_full_sound_ringtone), defaultSound),
 					context.getString(R.string.notification_full_level_ticker),
 					context.getString(R.string.notification_full_level_title),
