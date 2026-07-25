@@ -7,6 +7,7 @@ import android.view.View;
 import android.widget.TimePicker;
 import androidx.annotation.NonNull;
 import androidx.preference.PreferenceDialogFragmentCompat;
+import com.almothafar.simplebatterynotifier.util.GeneralHelper;
 
 /**
  * Dialog fragment for TimePickerPreference
@@ -67,16 +68,28 @@ public class TimePickerPreferenceDialogFragmentCompat extends PreferenceDialogFr
 	public void onDialogClosed(final boolean positiveResult) {
 		if (positiveResult) {
 			// Get the current values from the TimePicker
-			final int hour = timePicker.getHour();
-			final int minute = timePicker.getMinute();
+			savePickedTime((TimePickerPreference) getPreference(), timePicker.getHour(), timePicker.getMinute());
+		}
+	}
 
-			final TimePickerPreference preference = (TimePickerPreference) getPreference();
+	/**
+	 * Write a picked time to the preference in the canonical persisted form.
+	 * <p>
+	 * Formatting goes through {@link GeneralHelper#formatTime(int, int)} rather than a local
+	 * {@code String.format}: the default locale under Arabic renders Eastern Arabic numerals, so a
+	 * hand-rolled format hands {@code ٠٨:٣٠} to the change listeners and to {@code setTime} (issue
+	 * #241 — the same defect as #154, which fixed the helper but not this call site). Split out from
+	 * {@link #onDialogClosed(boolean)} so the writing path is unit-testable without a live dialog.
+	 *
+	 * @param preference the preference being edited
+	 * @param hour       picked hour of day (0-23)
+	 * @param minute     picked minute of hour (0-59)
+	 */
+	static void savePickedTime(final TimePickerPreference preference, final int hour, final int minute) {
+		final String time = GeneralHelper.formatTime(hour, minute);
 
-			final String time = String.format("%02d:%02d", hour, minute);
-
-			if (preference.callChangeListener(time)) {
-				preference.setTime(time);
-			}
+		if (preference.callChangeListener(time)) {
+			preference.setTime(time);
 		}
 	}
 }
