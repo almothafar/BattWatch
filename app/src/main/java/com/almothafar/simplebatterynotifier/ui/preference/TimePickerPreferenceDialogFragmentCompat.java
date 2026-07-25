@@ -65,7 +65,7 @@ public class TimePickerPreferenceDialogFragmentCompat extends PreferenceDialogFr
 	 * @param positiveResult True if the positive button was clicked
 	 */
 	@Override
-	public void onDialogClosed(final boolean positiveResult) {
+	public void onDialogClosed(boolean positiveResult) {
 		if (positiveResult) {
 			// Get the current values from the TimePicker
 			savePickedTime((TimePickerPreference) getPreference(), timePicker.getHour(), timePicker.getMinute());
@@ -85,7 +85,7 @@ public class TimePickerPreferenceDialogFragmentCompat extends PreferenceDialogFr
 	 * @param hour       picked hour of day (0-23)
 	 * @param minute     picked minute of hour (0-59)
 	 */
-	static void savePickedTime(final TimePickerPreference preference, final int hour, final int minute) {
+	static void savePickedTime(TimePickerPreference preference, int hour, int minute) {
 		final String time = GeneralHelper.formatTime(hour, minute);
 
 		if (preference.callChangeListener(time)) {
