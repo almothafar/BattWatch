@@ -72,6 +72,14 @@ public class GeneralHelperTest {
 	 */
 	public static class FormatTime {
 
+		/**
+		 * The Arabic locale that actually reproduces the bug. CLDR selects the {@code arab} numbering
+		 * system only for region-bearing Arabic locales: under bare {@code "ar"} the zero digit is
+		 * Western {@code '0'}, so a test written against {@code Locale.forLanguageTag("ar")} passes
+		 * even with the defect present — which is how issue #241 survived the #154 fix.
+		 */
+		private static final Locale ARABIC_EASTERN_DIGITS = Locale.forLanguageTag("ar-EG");
+
 		@Test
 		public void writesZeroPaddedHhMm() {
 			assertEquals("06:30", GeneralHelper.formatTime(6, 30));
@@ -83,7 +91,10 @@ public class GeneralHelperTest {
 		public void keepsWesternDigitsUnderArabicDefaultLocale() {
 			final Locale original = Locale.getDefault();
 			try {
-				Locale.setDefault(Locale.forLanguageTag("ar"));
+				Locale.setDefault(ARABIC_EASTERN_DIGITS);
+				// Premise first: without it this test passes against the defect it exists to catch.
+				assertEquals("guard locale no longer emits Eastern Arabic digits — pick one that does",
+						"٠٦:٣٠", String.format("%02d:%02d", 6, 30));
 				assertEquals("06:30", GeneralHelper.formatTime(6, 30));
 			} finally {
 				Locale.setDefault(original);
