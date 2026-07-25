@@ -8,10 +8,13 @@ import android.content.pm.ServiceInfo;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.IBinder;
+import android.util.Log;
 import androidx.core.app.ServiceCompat;
 import com.almothafar.simplebatterynotifier.model.BatteryDO;
 import com.almothafar.simplebatterynotifier.receiver.BatteryLevelReceiver;
 import com.almothafar.simplebatterynotifier.receiver.PowerConnectionReceiver;
+
+import java.util.Locale;
 
 import static java.util.Objects.nonNull;
 
@@ -20,6 +23,7 @@ import static java.util.Objects.nonNull;
  * Registers PowerConnectionReceiver and BatteryLevelReceiver on service creation.
  */
 public class PowerConnectionService extends Service {
+	private static final String TAG = "PowerConnectionService";
 
 	private PowerConnectionReceiver powerConnectionReceiver;
 	private BatteryLevelReceiver batteryLevelReceiver;
@@ -32,6 +36,12 @@ public class PowerConnectionService extends Service {
 	@Override
 	public void onCreate() {
 		super.onCreate();
+		// The active language, stated once where a log is guaranteed to start: this service is the
+		// long-lived component and it starts on boot. Worth having explicitly because locale changes
+		// behaviour that is otherwise invisible in a log — most of all the digit shapes CLDR picks for
+		// region-bearing Arabic locales, which is what corrupted a stored value in #154/#241. Reading
+		// it off a formatted number instead would be guesswork: bare "ar" formats Western digits too.
+		Log.i(TAG, "Starting with locale: " + Locale.getDefault().toLanguageTag());
 		// Promote to foreground first so the OS keeps the process (and our receivers) alive on Android 8+.
 		startForegroundWithStatus();
 		registerPowerConnectionReceiver();

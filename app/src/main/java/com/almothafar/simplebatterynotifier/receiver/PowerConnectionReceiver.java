@@ -145,7 +145,7 @@ public class PowerConnectionReceiver extends BroadcastReceiver {
 		// the best speed seen rather than freezing on the first low reading (#227). No best reading yet.
 		scheduleChargeSample(appContext, wireless, 1, ChargeSpeed.unknown());
 
-		Log.i(TAG, String.format("Charger connected (Battery: %d%%, Wireless: %s)", percentage, wireless));
+		Log.i(TAG, "Charger connected (Battery: " + percentage + "%, Wireless: " + wireless + ")");
 	}
 
 	/**
