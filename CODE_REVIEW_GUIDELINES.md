@@ -468,6 +468,46 @@ Identifiers are **not** copy — leave them out of `values-ar/`:
 - Use positional format args for dynamic content: `<string name="notification_status_content">%1$d%% · %2$s · %3$s</string>`.
 - Use `start`/`end` (not `left`/`right`) in layouts and test with an RTL language.
 
+### 5. Always Pass a `Locale` to `String.format`
+
+**Never call `String.format` without a locale.** Which locale depends on *who reads the result*:
+
+| The text is… | Use | Because |
+|---|---|---|
+| saved to prefs, or parsed back by our code | `Locale.ROOT` | the parser needs plain Western digits |
+| read by a person (UI, content descriptions) | `Locale.getDefault()` | it should follow the user's language |
+
+```java
+// ❌ BAD - no locale: under a region-bearing Arabic locale this yields "٠٨:٣٠"
+String.format("%02d:%02d", hour, minute);
+
+// ✅ GOOD - persisted value, so Western digits regardless of language
+String.format(Locale.ROOT, "%02d:%02d", hour, minute);
+
+// ✅ GOOD - screen-reader text, so it follows the user's language
+String.format(Locale.getDefault(), levelDescriptionFormat, level);
+```
+
+**Why?** CLDR selects the Eastern Arabic numbering system for region-bearing Arabic locales (`ar-SA`, `ar-EG`, `ar-JO`), so `%d` prints `٨` rather than `8` and a persisted value stops parsing. This shipped twice — issues #154 and #241.
+
+> **Testing note:** a locale test *must* use a region tag. Bare `Locale.forLanguageTag("ar")` formats with Western digits, so a test written against it passes even when the bug is present — that is precisely how #241 survived the #154 fix. Use `ar-EG` and assert that plain `String.format` really does produce Eastern digits before asserting your code doesn't.
+
+### 6. Don't Use `String.format` in Logs
+
+**Build log messages with `+` concatenation.**
+
+```java
+// ❌ BAD - runtime crash if the format and the argument types ever disagree
+Log.i(TAG, String.format("Charger connected (Battery: %d%%)", percentage));
+
+// ✅ GOOD - cannot fail, and no locale to get wrong
+Log.i(TAG, "Charger connected (Battery: " + percentage + "%)");
+```
+
+**Why?** `android.util.Log` has no placeholder/varargs API — `Log.i(tag, msg)` and `Log.i(tag, msg, throwable)` are the whole surface, so concatenation is the official Android idiom. It also cannot throw on an argument-type mismatch the way `String.format` can, which matters inside a `BroadcastReceiver` where a throw becomes a crash loop. Concatenating a number always produces Western digits, so no locale is involved.
+
+Log messages are not user-facing, so they are **not** translated and need no string resource.
+
 ---
 
 ## ⚡ Performance
@@ -668,6 +708,8 @@ When reviewing code, check:
 - [ ] All null checks in place
 - [ ] No silent/broad `catch`; expected failures validated, not caught
 - [ ] No hardcoded user-facing strings; `values-ar/` kept in parity
+- [ ] Every `String.format` passes a `Locale` — `ROOT` if persisted/parsed, `getDefault()` if a person reads it
+- [ ] Log messages use `+` concatenation, not `String.format`
 - [ ] Permissions checked (Android 13+)
 - [ ] Modern APIs used (no deprecated)
 - [ ] Thread-safe for static fields
@@ -698,4 +740,4 @@ When reviewing code, check:
 
 ---
 
-*Last updated: 2026-07-02*
+*Last updated: 2026-07-25*

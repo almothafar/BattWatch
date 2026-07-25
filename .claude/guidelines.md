@@ -236,6 +236,15 @@ The project uses **JUnit 4** for pure logic, with **Robolectric** and **Mockito*
 - Prefix internal keys with underscore: `_pref_key_*`. Internal identifiers (`_pref_key_*`, `_pref_value_*`, `pref_category_*`, `extra_category`, URIs) are **not** translated — leave them out of `values-ar/`.
 - Use descriptive names: `battery_health_good`, not `bh_g`
 
+### Locale in `String.format`
+- **Never call `String.format` without a locale.** `Locale.ROOT` for anything persisted or parsed back by our code; `Locale.getDefault()` only for text a person reads (UI, content descriptions).
+- CLDR selects Eastern Arabic digits for region-bearing Arabic locales (`ar-SA`, `ar-EG`, `ar-JO`), so a locale-less `%d` prints `٨` and a persisted value stops parsing. Shipped twice — #154 and #241.
+- **Locale tests must use a region tag.** Bare `Locale.forLanguageTag("ar")` formats Western digits, so a test using it passes against the defect; that is how #241 survived the #154 fix. Use `ar-EG` and assert the premise (plain `String.format` really does emit `٠٨:٣٠`) before asserting the behaviour.
+
+### Logging
+- Build log messages with `+` concatenation — **never `String.format`**. `android.util.Log` has no placeholder/varargs API, so concatenation is the official Android idiom; it also cannot throw on an argument-type mismatch, which matters inside a `BroadcastReceiver` where a throw becomes a crash loop.
+- Log messages are internal, not user-facing: no string resource, no `values-ar/` entry.
+
 ## Common Patterns in This Codebase
 
 ### Null Safety Pattern
