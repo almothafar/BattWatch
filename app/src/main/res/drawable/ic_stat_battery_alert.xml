@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Critical-level and fast-drain alerts.
-     Material Symbols (Outlined) "battery_alert", Apache-2.0. White-on-transparent: notification
-     small icons are rendered as an alpha mask, so only the silhouette survives. -->
+     Material Symbols (Outlined) "battery_alert", Apache-2.0. White-on-transparent:
+     notification small icons are rendered as an alpha mask, so only the silhouette survives. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"

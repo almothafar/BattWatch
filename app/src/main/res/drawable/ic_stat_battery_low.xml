@@ -1,13 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Low-battery (warning) alert.
-     Material Symbols (Outlined) "battery_low", Apache-2.0. White-on-transparent: notification
-     small icons are rendered as an alpha mask, so only the silhouette survives. -->
+     Material Symbols (Outlined) "battery_low", Apache-2.0. Upstream this one is a LANDSCAPE battery
+     (800x400) while the rest of the set is portrait (400x800); both are centred on (480,-480), so the
+     90° rotation below lands it exactly on the portrait geometry — terminal nub at the top, fill at the
+     bottom. White-on-transparent: notification small icons are rendered as an alpha mask, so only the
+     silhouette survives. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="960"
     android:viewportHeight="960">
-    <group android:translateY="960">
+    <group android:translateY="960"
+        android:rotation="90"
+        android:pivotX="480"
+        android:pivotY="-480">
         <path
             android:fillColor="#FFFFFFFF"
             android:pathData="M200-280q-17 0-28.5-11.5T160-320v-80H80v-160h80v-80q0-17 11.5-28.5T200-680h640q17 0 28.5 11.5T880-640v320q0 17-11.5 28.5T840-280H200Zm40-80h440v-240H240v240Z" />

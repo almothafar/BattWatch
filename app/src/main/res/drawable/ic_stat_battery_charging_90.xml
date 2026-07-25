@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Ongoing status: charging, 88-97%.
-     Material Symbols (Outlined) "battery_charging_90", Apache-2.0. White-on-transparent: notification
-     small icons are rendered as an alpha mask, so only the silhouette survives. -->
+<!-- Ongoing status notification, charging ladder. The level bands live in OngoingStatusContent.
+     Material Symbols (Outlined) "battery_charging_90", Apache-2.0. White-on-transparent:
+     notification small icons are rendered as an alpha mask, so only the silhouette survives. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
