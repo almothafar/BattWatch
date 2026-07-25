@@ -1,17 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Battery outline with a low fill, for <=50% while discharging (white-on-transparent). -->
+<!-- Low-battery (warning) alert.
+     Material Symbols (Outlined) "battery_low", Apache-2.0. White-on-transparent: notification
+     small icons are rendered as an alpha mask, so only the silhouette survives. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
-    android:viewportWidth="24"
-    android:viewportHeight="24">
-    <!-- Outline: outer silhouette with the body hollowed out (even-odd) -->
-    <path
-        android:fillColor="#FFFFFFFF"
-        android:fillType="evenOdd"
-        android:pathData="M10,4 L14,4 L14,6 L17,6 L17,22 L7,22 L7,6 L10,6 Z M8.5,7.5 L15.5,7.5 L15.5,20.5 L8.5,20.5 Z" />
-    <!-- Low charge: bottom quarter filled -->
-    <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M8.5,16 L15.5,16 L15.5,20.5 L8.5,20.5 Z" />
+    android:viewportWidth="960"
+    android:viewportHeight="960">
+    <group android:translateY="960">
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M200-280q-17 0-28.5-11.5T160-320v-80H80v-160h80v-80q0-17 11.5-28.5T200-680h640q17 0 28.5 11.5T880-640v320q0 17-11.5 28.5T840-280H200Zm40-80h440v-240H240v240Z" />
+    </group>
 </vector>

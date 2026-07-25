@@ -112,9 +112,13 @@ final class OngoingStatusContent {
 	}
 
 	/**
-	 * Choose a small icon for the ongoing notification that reflects the actual battery state: a
-	 * charging bolt only while actively charging, otherwise a plain battery whose fill matches the
-	 * level. (A charged-but-still-plugged battery reads as full, without a bolt.)
+	 * Choose a small icon for the ongoing notification that mirrors the charge level, like the system
+	 * battery icon (#235): a bolt-bearing battery while actively charging, a plain filling battery
+	 * otherwise. (A charged-but-still-plugged battery reads as full, without a bolt.)
+	 * <p>
+	 * Granularity earns its keep here and only here — the persistent notification sits in the shade long
+	 * enough to read as a live gauge. The transient alerts stay <em>semantic</em> (alert / low / full /
+	 * error), because a level gauge says nothing about why they fired.
 	 *
 	 * @param batteryDO Current battery snapshot, or null if unavailable
 	 * @return Drawable resource id
@@ -123,12 +127,74 @@ final class OngoingStatusContent {
 		if (isNull(batteryDO)) {
 			return R.drawable.ic_stat_battery_full;
 		}
-		if (batteryDO.getStatus() == BatteryManager.BATTERY_STATUS_CHARGING) {
-			return R.drawable.ic_stat_battery_charging;
+		final int level = batteryDO.getBatteryPercentageInt();
+		return batteryDO.getStatus() == BatteryManager.BATTERY_STATUS_CHARGING
+		       ? chargingIconRes(level)
+		       : dischargingIconRes(level);
+	}
+
+	/**
+	 * The discharging ladder: Material's {@code battery_0_bar}…{@code battery_6_bar} plus
+	 * {@code battery_full}, in even ~14-point bands so each bar covers a comparable slice. Only a true
+	 * 100% shows the solid full battery, so "nearly full" never reads as "done".
+	 *
+	 * @param level the battery level in percent
+	 * @return Drawable resource id
+	 */
+	private static int dischargingIconRes(int level) {
+		if (level >= 100) {
+			return R.drawable.ic_stat_battery_full;
 		}
-		return batteryDO.getBatteryPercentageInt() <= 50
-		       ? R.drawable.ic_stat_battery_low
-		       : R.drawable.ic_stat_battery_full;
+		if (level >= 85) {
+			return R.drawable.ic_stat_battery_6_bar;
+		}
+		if (level >= 70) {
+			return R.drawable.ic_stat_battery_5_bar;
+		}
+		if (level >= 55) {
+			return R.drawable.ic_stat_battery_4_bar;
+		}
+		if (level >= 40) {
+			return R.drawable.ic_stat_battery_3_bar;
+		}
+		if (level >= 25) {
+			return R.drawable.ic_stat_battery_2_bar;
+		}
+		if (level >= 10) {
+			return R.drawable.ic_stat_battery_1_bar;
+		}
+		return R.drawable.ic_stat_battery_0_bar;
+	}
+
+	/**
+	 * The charging ladder: Material's {@code battery_charging_20/30/50/60/80/90} plus
+	 * {@code battery_charging_full}. The numbers in those names are Material's own labels for how full the
+	 * artwork looks, <em>not</em> thresholds — the bands below are chosen for how each icon reads, so e.g.
+	 * {@code charging_60} covers 55–72% and {@code charging_90} covers 88–97% (#235).
+	 *
+	 * @param level the battery level in percent
+	 * @return Drawable resource id
+	 */
+	private static int chargingIconRes(int level) {
+		if (level >= 98) {
+			return R.drawable.ic_stat_battery_charging_full;
+		}
+		if (level >= 88) {
+			return R.drawable.ic_stat_battery_charging_90;
+		}
+		if (level >= 73) {
+			return R.drawable.ic_stat_battery_charging_80;
+		}
+		if (level >= 55) {
+			return R.drawable.ic_stat_battery_charging_60;
+		}
+		if (level >= 40) {
+			return R.drawable.ic_stat_battery_charging_50;
+		}
+		if (level >= 25) {
+			return R.drawable.ic_stat_battery_charging_30;
+		}
+		return R.drawable.ic_stat_battery_charging_20;
 	}
 
 	private static void addIfPresent(List<String> parts, String value) {
