@@ -260,6 +260,11 @@
     <string name="battery_insights_menu">Battery Insights</string>
     <string name="view_battery_insights">View Battery Insights</string>
     <string name="battery_health">Battery Health</string>
+    <!-- The big health figure. %1$s is a Western-digit number (passed via String.valueOf) so it stays
+         0-9 in every locale, matching the other Insights numbers (#96). Deliberately not the existing
+         battery_level_percent, which uses %1$d and so renders Eastern Arabic digits under ar-* — right
+         for the preference slider it serves, wrong for this screen. -->
+    <string name="health_percentage_value" translatable="false">%1$s%%</string>
     <string name="charge_cycles">Charge Cycles</string>
     <string name="days_in_use">Days in Use</string>
     <string name="about_battery_health">About Your Battery</string>

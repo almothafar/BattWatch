@@ -160,8 +160,9 @@ public class BatteryInsightsActivity extends BaseActivity {
 		                                 ? BatteryHealthTracker.gradeForPercentage(measuredHealth)
 		                                 : BatteryHealthTracker.gradeForCycles(cycles);
 
-		// Update health percentage and color it based on grade
-		healthPercentageText.setText(healthPercentage + "%");
+		// Update health percentage and color it based on grade.
+		// Pass the number as a String so it renders in Western digits (0-9) in every locale (#96).
+		healthPercentageText.setText(getString(R.string.health_percentage_value, String.valueOf(healthPercentage)));
 		healthPercentageText.setTextColor(getHealthColor(grade));
 
 		// Update health status text
