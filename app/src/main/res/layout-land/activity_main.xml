@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Landscape main screen (#231). Two panes below a full-width toolbar: gauge + threshold + actions on
+  one side, the battery details table on the other.
+
+  Every id the portrait layout carries also exists here, because MainActivity looks all of them up
+  unconditionally — a missing one is what crashed the old stale layout-land (#230). The ids are:
+  containerLayout, toolbar, percentageLayout, batteryPercentage, gaugeInfoButton, thresholdSection,
+  thresholdSlider, thresholdCriticalCaption, thresholdWarningCaption, detailsFragmentLayout,
+  homeBottomSection, batteryInsightsButton, signatureFragmentLayout.
+
+  The gauge keeps its portrait 160dp height: the style fixes the title text at 48dp, so a shorter
+  gauge would crowd the text rather than scale it. A short landscape screen therefore scrolls the
+  left column instead of clipping it, while homeBottomSection stays pinned outside the scroller so
+  the Insights button is always reachable and still receives the navigation-bar inset (#102).
+
+  RelativeLayout is used for the two fill-the-rest splits rather than layout_weight, so the only
+  weights in the file are the one pane split — nesting them would cost a second measure pass
+  (NestedWeights) and #245 is aiming at zero warnings.
+-->
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/containerLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.almothafar.simplebatterynotifier.ui.MainActivity">
+
+    <!-- Full width so Settings / Feedback / About stay reachable in landscape — the old layout-land
+         dropped the toolbar entirely, which is how they became unreachable (#231). -->
+    <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:minHeight="?attr/actionBarSize"
+            android:paddingTop="@dimen/toolbar_status_bar_padding"
+            android:background="@color/title_bar_background_color"
+            android:elevation="4dp"
+            android:theme="@style/ToolBarStyle"
+            app:popupTheme="@style/ThemeOverlay.Material3.Light"
+            app:title="@string/app_name"
+            app:titleTextAppearance="@style/ToolBarStyle.Title"
+            app:titleTextColor="@android:color/white"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/toolbar"
+        android:baselineAligned="false"
+        android:orientation="horizontal">
+
+        <!-- Left pane: the gauge and the controls that act on it -->
+        <RelativeLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1">
+
+            <!-- Pinned so the Insights button is always reachable, and so it still receives the
+                 navigation-bar inset MainActivity applies to it (#102). -->
+            <LinearLayout
+                android:id="@+id/homeBottomSection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_alignParentBottom="true"
+                android:orientation="vertical"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:paddingTop="8dp"
+                android:paddingBottom="@dimen/content_navigation_bar_padding"
+                android:background="@android:color/white">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/batteryInsightsButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/view_battery_insights"
+                    android:textColor="@android:color/white"
+                    app:backgroundTint="@color/top_background_color"
+                    android:layout_marginBottom="8dp"
+                    style="@style/Widget.Material3.Button" />
+
+                <androidx.fragment.app.FragmentContainerView
+                    android:id="@+id/signatureFragmentLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:name="com.almothafar.simplebatterynotifier.ui.fragment.SignatureFragment"
+                    tools:layout="@layout/fragment_signature" />
+
+            </LinearLayout>
+
+            <ScrollView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_above="@id/homeBottomSection"
+                android:layout_alignParentTop="true"
+                android:fillViewport="true">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <FrameLayout
+                        android:id="@+id/percentageLayout"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@color/top_background_color">
+
+                        <com.almothafar.simplebatterynotifier.ui.widget.HorseshoeProgressBar
+                            android:id="@+id/batteryPercentage"
+                            style="@style/Widget.App.BatteryGauge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="160dp"
+                            android:layout_gravity="center"
+                            tools:gaugeTitle="100%"
+                            tools:gaugeStatusText="Charging"
+                            android:layout_marginTop="-2dp"
+                            android:layout_marginBottom="-10dp" />
+
+                        <!-- Honest info affordance for the smoothed/estimated live percentage (#217). -->
+                        <ImageButton
+                            android:id="@+id/gaugeInfoButton"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:layout_gravity="top|end"
+                            android:layout_marginTop="6dp"
+                            android:layout_marginEnd="6dp"
+                            android:padding="8dp"
+                            android:src="@drawable/ic_info"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:contentDescription="@string/gauge_info_content_description"
+                            app:tint="@android:color/white" />
+                    </FrameLayout>
+
+                    <!-- In-fly critical/warning threshold adjuster, directly under the gauge it controls. -->
+                    <LinearLayout
+                        android:id="@+id/thresholdSection"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:background="@android:color/white"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
+                        android:paddingTop="4dp"
+                        android:paddingBottom="4dp">
+
+                        <com.google.android.material.slider.RangeSlider
+                            android:id="@+id/thresholdSlider"
+                            style="@style/Widget.App.RangeSlider"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:stepSize="1"
+                            android:valueFrom="10"
+                            android:valueTo="50" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="-6dp"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:id="@+id/thresholdCriticalCaption"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:gravity="start"
+                                android:textColor="@color/circular_progress_default_progress_alert"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/thresholdWarningCaption"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:gravity="end"
+                                android:textColor="@color/circular_progress_default_progress_warning"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
+
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </ScrollView>
+
+        </RelativeLayout>
+
+        <!-- Right pane: the details table. It brings its own ScrollView with the fading edge (#75). -->
+        <androidx.fragment.app.FragmentContainerView
+            android:id="@+id/detailsFragmentLayout"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:name="com.almothafar.simplebatterynotifier.ui.fragment.BatteryDetailsFragment"
+            tools:layout="@layout/fragment_battery_details" />
+
+    </LinearLayout>
+
+</RelativeLayout>
