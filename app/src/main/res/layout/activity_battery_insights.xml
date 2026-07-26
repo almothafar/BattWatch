@@ -4,8 +4,7 @@
               xmlns:tools="http://schemas.android.com/tools"
               android:layout_width="match_parent"
               android:layout_height="match_parent"
-              android:orientation="vertical"
-              android:background="@android:color/white">
+              android:orientation="vertical">
 
     <!-- Toolbar matching main activity -->
     <androidx.appcompat.widget.Toolbar
@@ -181,6 +180,7 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:orientation="horizontal"
+                                android:baselineAligned="false"
                                 android:weightSum="2"
                                 android:layout_marginTop="8dp"
                                 android:visibility="gone"
