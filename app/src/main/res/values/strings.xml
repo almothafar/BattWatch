@@ -6,7 +6,6 @@
     <string name="discharging">Discharging</string>
     <string name="not_charging">Not Charging</string>
     <string name="unknown">Unknown</string>
-    <string name="full">Full</string>
     <string name="charged">Charged</string>
 
     <string name="temperature">Temperature</string>
@@ -75,17 +74,12 @@
     <string name="pref_header_summary_alerts">What to be notified about — battery levels, full charge, temperature, fast drain, charging</string>
     <string name="pref_header_summary_behaviour">How alerts sound and appear, and when they are allowed — silent mode, vibration, quiet hours</string>
 
-    <string name="pref_title_ringtone">Ringtone</string>
     <string name="pref_ringtone_silent">Silent</string>
     <string name="pref_title_vibrate">Vibrate</string>
-
-    <string name="warn_start_level">Warning Level Start From</string>
-    <string name="alert_start_level">Critical Level Start From</string>
 
     <!-- Combined critical/warning battery range slider -->
     <string name="battery_range_caption_critical">Critical %1$d%%</string>
     <string name="battery_range_caption_warning">Warning %1$d%%</string>
-    <string name="battery_range_summary">Critical %1$d%% • Warning %2$d%%</string>
     <string name="battery_level_percent" translatable="false">%1$d%%</string>
     <string name="temperature_unit">Temperature Unit</string>
     <string name="off">OFF</string>
@@ -109,9 +103,6 @@
     <string name="notifications_alert_sound_ringtone">Critical Level Sound</string>
     <string name="notifications_warning_sound_ringtone">Warning Level Sound</string>
     <string name="notifications_full_sound_ringtone">Full Level Sound</string>
-    <string name="notifications_sound">Notifications with Sound</string>
-    <string name="notifications_sound_summary_on">Notifications Sound Enabled</string>
-    <string name="notifications_sound_summary_off">Notifications Sound Disabled</string>
     <string name="notify_for_warning_level">Notify for Warning level</string>
     <string name="notify_for_warning_level_summary_on">Warning Sound Enabled</string>
     <string name="notify_for_warning_level_summary_off">Warning Sound Disabled</string>
@@ -257,7 +248,6 @@
 
     <!-- Battery Insights Screen -->
     <string name="battery_insights_title">Battery Insights</string>
-    <string name="battery_insights_menu">Battery Insights</string>
     <string name="view_battery_insights">View Battery Insights</string>
     <string name="battery_health">Battery Health</string>
     <!-- The big health figure. %1$s is a Western-digit number (passed via String.valueOf) so it stays
@@ -289,7 +279,6 @@
     <string name="look_up_my_model">Look up my model</string>
     <string name="no_browser_found">No browser available to open the search</string>
     <string name="save">Save</string>
-    <string name="clear">Clear</string>
     <string name="error_design_capacity_range">Enter a capacity between %1$d and %2$d mAh</string>
     <string name="health_basis_measured">Averaged measured capacity vs design</string>
     <!-- #114: the cycle-based estimate is labelled by its source. OS-reported cycles cover the
@@ -373,7 +362,6 @@
     <!-- Below this line to the end of file is for coding not for labeling.
          These are internal identifiers/defaults, not user copy: marked translatable="false"
          so the MissingTranslation lint gate does not expect them in values-ar. -->
-    <string name="extra_category" translatable="false">category</string>
     <string name="pref_category_general" translatable="false">pref_category_general</string>
     <string name="pref_category_alerts" translatable="false">pref_category_alerts</string>
     <string name="pref_category_behaviour" translatable="false">pref_category_behaviour</string>
