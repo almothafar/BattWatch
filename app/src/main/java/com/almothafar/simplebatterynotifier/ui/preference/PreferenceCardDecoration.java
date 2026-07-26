@@ -1,5 +1,6 @@
 package com.almothafar.simplebatterynotifier.ui.preference;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Canvas;
@@ -93,12 +94,8 @@ public class PreferenceCardDecoration extends RecyclerView.ItemDecoration {
 	@Override
 	public void getItemOffsets(@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent,
 	                           @NonNull RecyclerView.State state) {
-		final PreferenceGroupAdapter adapter = adapterOf(parent);
-		if (isNull(adapter)) {
-			return;
-		}
 		final int position = parent.getChildAdapterPosition(view);
-		if (position == RecyclerView.NO_POSITION) {
+		if (position == RecyclerView.NO_POSITION || isNull(rowAt(parent, position))) {
 			return;
 		}
 		outRect.left = horizontalMargin;
@@ -107,14 +104,14 @@ public class PreferenceCardDecoration extends RecyclerView.ItemDecoration {
 		// a gap when its first row is a card (e.g. the root screen's nav card); a leading category
 		// header carries its own top padding, so it needs none.
 		if (position == 0) {
-			if (isCardRow(adapter, 0)) {
+			if (isCardRow(parent, 0)) {
 				outRect.top = groupGap;
 			}
-		} else if (startsNewGroup(adapter, position)) {
+		} else if (startsNewGroup(parent, position)) {
 			outRect.top = groupGap;
 		}
 		// Matching breathing room below the last row so the final card floats off the bottom edge.
-		if (position == adapter.getItemCount() - 1) {
+		if (isLastRow(parent, position)) {
 			outRect.bottom = groupGap;
 		}
 	}
@@ -127,10 +124,6 @@ public class PreferenceCardDecoration extends RecyclerView.ItemDecoration {
 	 */
 	@Override
 	public void onDraw(@NonNull Canvas canvas, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
-		final PreferenceGroupAdapter adapter = adapterOf(parent);
-		if (isNull(adapter)) {
-			return;
-		}
 		final float left = parent.getPaddingLeft() + horizontalMargin;
 		final float right = parent.getWidth() - parent.getPaddingRight() - horizontalMargin;
 
@@ -139,16 +132,16 @@ public class PreferenceCardDecoration extends RecyclerView.ItemDecoration {
 		while (i < childCount) {
 			final View firstChild = parent.getChildAt(i);
 			final int startPosition = parent.getChildAdapterPosition(firstChild);
-			if (startPosition == RecyclerView.NO_POSITION || !isCardRow(adapter, startPosition)) {
+			if (startPosition == RecyclerView.NO_POSITION || !isCardRow(parent, startPosition)) {
 				i++;
 				continue;
 			}
-			final int endIndex = lastVisibleIndexOfCard(parent, adapter, i);
+			final int endIndex = lastVisibleIndexOfCard(parent, i);
 			final View lastChild = parent.getChildAt(endIndex);
 			final int endPosition = parent.getChildAdapterPosition(lastChild);
 			// Extend a corner off-screen (it clips to a straight edge) whenever the card runs past an edge.
-			final boolean openTop = sameCard(adapter, startPosition - 1, startPosition);
-			final boolean openBottom = sameCard(adapter, endPosition, endPosition + 1);
+			final boolean openTop = sameCard(parent, startPosition - 1, startPosition);
+			final boolean openBottom = sameCard(parent, endPosition, endPosition + 1);
 			final float top = openTop ? -cornerRadius : firstChild.getTop() + firstChild.getTranslationY();
 			final float bottom = openBottom ? parent.getHeight() + cornerRadius : lastChild.getBottom() + lastChild.getTranslationY();
 			cardRect.set(left, top, right, bottom);
@@ -162,17 +155,16 @@ public class PreferenceCardDecoration extends RecyclerView.ItemDecoration {
 	 * the card can be painted as a single rectangle across its visible rows.
 	 *
 	 * @param parent     the preference RecyclerView
-	 * @param adapter    the preference adapter
 	 * @param startIndex the index, among the visible children, of the card's first visible row
 	 * @return the index of the card's last visible row
 	 */
-	private int lastVisibleIndexOfCard(RecyclerView parent, PreferenceGroupAdapter adapter, int startIndex) {
+	private int lastVisibleIndexOfCard(RecyclerView parent, int startIndex) {
 		final int childCount = parent.getChildCount();
 		int endIndex = startIndex;
 		int endPosition = parent.getChildAdapterPosition(parent.getChildAt(startIndex));
 		for (int j = startIndex + 1; j < childCount; j++) {
 			final int nextPosition = parent.getChildAdapterPosition(parent.getChildAt(j));
-			if (nextPosition != endPosition + 1 || !sameCard(adapter, endPosition, nextPosition)) {
+			if (nextPosition != endPosition + 1 || !sameCard(parent, endPosition, nextPosition)) {
 				break;
 			}
 			endPosition = nextPosition;
@@ -182,21 +174,21 @@ public class PreferenceCardDecoration extends RecyclerView.ItemDecoration {
 	}
 
 	/**
-	 * @param adapter       the preference adapter
+	 * @param parent        the preference RecyclerView
 	 * @param upperPosition the adapter position of the upper row (may be out of range)
 	 * @param lowerPosition the adapter position directly below it (may be out of range)
 	 * @return whether the two adjacent positions belong to the same card: both are card rows sharing a
 	 *         parent, and the lower one isn't forced onto its own card
 	 */
-	private boolean sameCard(PreferenceGroupAdapter adapter, int upperPosition, int lowerPosition) {
-		if (!isCardRow(adapter, upperPosition) || !isCardRow(adapter, lowerPosition)) {
+	private boolean sameCard(RecyclerView parent, int upperPosition, int lowerPosition) {
+		if (!isCardRow(parent, upperPosition) || !isCardRow(parent, lowerPosition)) {
 			return false;
 		}
-		final Preference lower = adapter.getItem(lowerPosition);
+		final Preference lower = rowAt(parent, lowerPosition);
 		if (breakBeforeKeys.contains(lower.getKey())) {
 			return false;
 		}
-		return adapter.getItem(upperPosition).getParent() == lower.getParent();
+		return rowAt(parent, upperPosition).getParent() == lower.getParent();
 	}
 
 	/**
@@ -204,46 +196,67 @@ public class PreferenceCardDecoration extends RecyclerView.ItemDecoration {
 	 * gap when it opens a new group — a forced footer break, a different parent, or the list start —
 	 * but not when a header directly above it has already spaced it.
 	 *
-	 * @param adapter  the preference adapter
+	 * @param parent   the preference RecyclerView
 	 * @param position the adapter position being measured
 	 * @return whether a group gap should precede this position
 	 */
-	private boolean startsNewGroup(PreferenceGroupAdapter adapter, int position) {
-		final Preference pref = adapter.getItem(position);
+	private boolean startsNewGroup(RecyclerView parent, int position) {
+		final Preference pref = rowAt(parent, position);
 		if (pref instanceof PreferenceCategory) {
 			return true;
 		}
 		if (breakBeforeKeys.contains(pref.getKey())) {
 			return true;
 		}
-		if (adapter.getItem(position - 1) instanceof PreferenceCategory) {
+		if (rowAt(parent, position - 1) instanceof PreferenceCategory) {
 			return false;
 		}
-		return !sameCard(adapter, position - 1, position);
+		return !sameCard(parent, position - 1, position);
 	}
 
 	/**
-	 * @param adapter  the preference adapter
+	 * @param parent   the preference RecyclerView
 	 * @param position the adapter position to classify
 	 * @return whether the position is a normal preference (a card row), not a category section header
 	 */
-	private boolean isCardRow(PreferenceGroupAdapter adapter, int position) {
-		if (position < 0 || position >= adapter.getItemCount()) {
-			return false;
-		}
-		final Preference pref = adapter.getItem(position);
+	private boolean isCardRow(RecyclerView parent, int position) {
+		final Preference pref = rowAt(parent, position);
 		return nonNull(pref) && !(pref instanceof PreferenceCategory);
 	}
 
 	/**
-	 * @param parent the preference RecyclerView
-	 * @return the {@link PreferenceGroupAdapter} backing the list, or null if some other adapter is set
+	 * @param parent   the preference RecyclerView
+	 * @param position the adapter position to test
+	 * @return whether this is the list's last row — nothing is rendered after it
 	 */
-	private PreferenceGroupAdapter adapterOf(RecyclerView parent) {
-		final RecyclerView.Adapter<?> adapter = parent.getAdapter();
-		if (adapter instanceof PreferenceGroupAdapter groupAdapter) {
-			return groupAdapter;
+	private boolean isLastRow(RecyclerView parent, int position) {
+		return isNull(rowAt(parent, position + 1));
+	}
+
+	/**
+	 * The single place in the app that touches {@link PreferenceGroupAdapter}. That adapter is internal
+	 * to androidx ({@code @RestrictTo(LIBRARY_GROUP_PREFIX)}), yet it is the only thing that knows the
+	 * flattened row order the list actually renders — the public {@code PreferenceScreen} tree carries
+	 * no adapter positions. Reading it is therefore a deliberate coupling rather than an oversight, and
+	 * it is confined to this one method so an androidx-preference bump has a single site to fix (#242).
+	 * <p>
+	 * The failure mode is soft by design: should a future release change or drop the adapter, the type
+	 * check simply stops matching, every position reads as "no preference here", and the settings
+	 * screens quietly lose their card backgrounds instead of crashing.
+	 *
+	 * @param parent   the preference RecyclerView
+	 * @param position the adapter position to read
+	 * @return the preference rendered at that position, or null when the position is out of range or
+	 *         the list is backed by some other adapter
+	 */
+	@SuppressLint("RestrictedApi")
+	private static Preference rowAt(RecyclerView parent, int position) {
+		if (!(parent.getAdapter() instanceof PreferenceGroupAdapter adapter)) {
+			return null;
 		}
-		return null;
+		if (position < 0 || position >= adapter.getItemCount()) {
+			return null;
+		}
+		return adapter.getItem(position);
 	}
 }

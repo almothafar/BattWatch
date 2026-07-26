@@ -41,6 +41,12 @@ jobs:
       - name: Run unit tests
         run: ./gradlew test --stacktrace
 
+      # Lint is not part of assemble, so it needs its own step — without one it silently rots
+      # (that is how the formatted="false" blocker in #146 and the RestrictedApi errors in #242
+      # both reached master). It runs before the APK builds because it is the cheaper gate.
+      - name: Run lint
+        run: ./gradlew :app:lintDebug --stacktrace
+
       - name: Build debug APK
         run: ./gradlew assembleDebug --stacktrace
 
@@ -55,6 +61,14 @@ jobs:
           path: |
             app/build/reports/tests/
             app/build/test-results/
+          retention-days: 30
+
+      - name: Upload lint report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: lint-report
+          path: app/build/reports/lint-results-debug.*
           retention-days: 30
 
       - name: Upload APK artifacts
@@ -83,5 +97,6 @@ jobs:
         run: |
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## Build Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Lint passed with no errors" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Debug APK built successfully" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Release APK built successfully" >> $GITHUB_STEP_SUMMARY
