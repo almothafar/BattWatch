@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Themed-icon silhouette for Android 13+ (#244).
+
+  Android tints the monochrome layer a single colour and keeps only its alpha, so this cannot reuse
+  @mipmap/ic_launcher_foreground: the papercut waves, the mint shield outline, the amber battery and
+  the gauge ticks all collapse into one flat blob once colour is gone. Redrawn as the two elements
+  that still read at launcher size — the shield, with the bolt knocked out of it via evenOdd.
+
+  Geometry is sized to the 66dp safe-zone circle of the 108dp adaptive canvas, so no launcher mask
+  (circle, squircle, rounded square) clips it.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+        android:width="108dp"
+        android:height="108dp"
+        android:viewportWidth="108"
+        android:viewportHeight="108">
+
+    <path
+            android:fillColor="#FFFFFFFF"
+            android:fillType="evenOdd"
+            android:pathData="M54,28 L31,37.8 L31,52.5 C31,66.2 40.8,78.9 54,82 C67.2,78.9 77,66.2 77,52.5 L77,37.8 Z M47,42 L47,56.3 L51.2,56.3 L51.2,68 L61,52.4 L55.4,52.4 L61,42 Z"/>
+
+</vector>
