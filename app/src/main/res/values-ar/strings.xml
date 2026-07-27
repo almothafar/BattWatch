@@ -6,7 +6,6 @@
     <string name="discharging">تستهلك</string>
     <string name="not_charging">لا تشحن</string>
     <string name="unknown">غير معروف</string>
-    <string name="full">كامل</string>
     <string name="charged">مشحونة</string>
 
     <string name="temperature">الحرارة</string>
@@ -71,17 +70,13 @@
     <string name="pref_header_summary_alerts">ما الذي يُنبَّه له — مستويات البطارية، اكتمال الشحن، الحرارة، الاستهلاك السريع، الشحن</string>
     <string name="pref_header_summary_behaviour">كيف تُصدر التنبيهات صوتاً وكيف تظهر ومتى يُسمح بها — وضع الصامت، الاهتزاز، ساعات الهدوء</string>
 
-    <string name="pref_title_ringtone">الرنين</string>
     <string name="pref_ringtone_silent">صامت</string>
     <string name="pref_title_vibrate">الرجاج</string>
 
-    <string name="warn_start_level">مستوى التحذير يبدأ من</string>
-    <string name="alert_start_level">المستوى الحرج يبدأ من</string>
 
     <!-- Combined critical/warning battery range slider -->
     <string name="battery_range_caption_critical">حرج %1$d%%</string>
     <string name="battery_range_caption_warning">تحذير %1$d%%</string>
-    <string name="battery_range_summary">حرج %1$d%% • تحذير %2$d%%</string>
     <string name="temperature_unit">وحدة الحرارة</string>
     <string name="off">إطفاء</string>
     <string name="on">تشغيل</string>
@@ -103,9 +98,6 @@
     <string name="notifications_alert_sound_ringtone">صوت المستوى الحرج</string>
     <string name="notifications_warning_sound_ringtone">صوت مستوى التنبيه</string>
     <string name="notifications_full_sound_ringtone">صوت تنبيه اكتمال الشحن</string>
-    <string name="notifications_sound">التنبيه بالصوت</string>
-    <string name="notifications_sound_summary_on">التنبيه بالصوت مفعل</string>
-    <string name="notifications_sound_summary_off">التنبيه بالصوت معطل</string>
     <string name="notify_for_warning_level">التنبيه لمستوى التحذير</string>
     <string name="notify_for_warning_level_summary_on">مستوى التحذير مفعل</string>
     <string name="notify_for_warning_level_summary_off">مستوى التحذير معطل</string>
@@ -245,7 +237,6 @@
 
     <!-- Battery Insights screen -->
     <string name="battery_insights_title">تحليلات البطارية</string>
-    <string name="battery_insights_menu">تحليلات البطارية</string>
     <string name="view_battery_insights">عرض تحليلات البطارية</string>
     <string name="battery_health">صحة البطارية</string>
     <string name="charge_cycles">دورات الشحن</string>
@@ -269,7 +260,6 @@
     <string name="look_up_my_model">ابحث عن طرازي</string>
     <string name="no_browser_found">لا يوجد متصفح لفتح البحث</string>
     <string name="save">حفظ</string>
-    <string name="clear">مسح</string>
     <string name="error_design_capacity_range">أدخل سعة بين %1$d و %2$d mAh</string>
     <string name="health_basis_measured">متوسط السعة المقاسة مقابل التصميمية</string>
     <!-- #114: cycle-based estimate labelled by its source -->
