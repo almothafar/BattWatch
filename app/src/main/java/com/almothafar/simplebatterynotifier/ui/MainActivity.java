@@ -463,17 +463,10 @@ public class MainActivity extends BaseActivity {
 	 * Opens the app's notification settings page directly
 	 */
 	private void openNotificationSettings() {
-		final Intent intent = new Intent();
-
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-			// Android 8.0+: Open app notification settings directly
-			intent.setAction(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
-			intent.putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName());
-		} else {
-			// Older Android: Open app details settings
-			intent.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-			intent.setData(Uri.fromParts("package", getPackageName(), null));
-		}
+		// minSdk is 26 (O), so the app notification settings screen is always available and the
+		// pre-O fallback to the app details screen can never run.
+		final Intent intent = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+		intent.putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName());
 
 		startActivity(intent);
 	}
