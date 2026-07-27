@@ -1,27 +1,22 @@
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- #75 (fade + bob): a persistent fading edge + scrollbar always signal the list scrolls, and
+     on first open a one-time gentle bob (see BatteryDetailsFragment) reinforces it. -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/batteryDetailsScroll"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:scrollbars="vertical"
+    android:requiresFadingEdge="vertical"
+    android:fadingEdgeLength="28dp"
     tools:context="com.almothafar.simplebatterynotifier.ui.fragment.BatteryDetailsFragment">
 
-    <!-- #75 (fade + bob): a persistent fading edge + scrollbar always signal the list scrolls, and
-         on first open a one-time gentle bob (see BatteryDetailsFragment) reinforces it. Footer stays pinned. -->
-    <ScrollView
-        android:id="@+id/batteryDetailsScroll"
+    <TableLayout
+        android:id="@+id/batteryDetailsTable"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:fillViewport="true"
-        android:scrollbars="vertical"
-        android:requiresFadingEdge="vertical"
-        android:fadingEdgeLength="28dp">
+        android:layout_height="wrap_content"
+        android:stretchColumns="0,2"
+        android:padding="20sp"
+        android:orientation="horizontal" />
 
-        <TableLayout
-            android:id="@+id/batteryDetailsTable"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:stretchColumns="0,2"
-            android:padding="20sp"
-            android:orientation="horizontal" />
-
-    </ScrollView>
-</FrameLayout>
+</ScrollView>
