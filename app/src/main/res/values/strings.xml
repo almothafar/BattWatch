@@ -279,7 +279,11 @@
     <string name="look_up_my_model">Look up my model</string>
     <string name="no_browser_found">No browser available to open the search</string>
     <string name="save">Save</string>
-    <string name="error_design_capacity_range">Enter a capacity between %1$d and %2$d mAh</string>
+    <!-- PluralsCandidate does not apply: this is a range with two independent quantities, and a
+         <plurals> selects a form from exactly one. The word lint spotted after %1$d is the
+         conjunction "and", not a countable noun, and "mAh" is an invariant unit symbol in both
+         languages. There is nothing here to inflect. -->
+    <string name="error_design_capacity_range" tools:ignore="PluralsCandidate">Enter a capacity between %1$d and %2$d mAh</string>
     <string name="health_basis_measured">Averaged measured capacity vs design</string>
     <!-- #114: the cycle-based estimate is labelled by its source. OS-reported cycles cover the
          battery's whole life; app-tracked cycles start at install, so they understate real wear. -->
@@ -413,6 +417,10 @@
     <string name="feedback_support_email" translatable="false">support@almothafar.com</string>
 
     <!-- Accessibility -->
-    <string name="battery_progress_description">Battery at %1$d percent</string>
+    <!-- PluralsCandidate does not apply: "percent" is invariant in English ("1 percent",
+         "5 percent"), and the Arabic "بالمئة" is a fixed per-hundred phrase, not the counted noun,
+         so Arabic's number agreement does not reach it either. Neither locale has a form to select,
+         so a <plurals> would be six identical entries. -->
+    <string name="battery_progress_description" tools:ignore="PluralsCandidate">Battery at %1$d percent</string>
     <string name="battery_details_separator">:</string>
 </resources>
