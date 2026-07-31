@@ -266,6 +266,12 @@
     <string name="measured_capacity">Measured Capacity</string>
     <string name="capacity_min_label">min</string>
     <string name="capacity_max_label">max</string>
+    <!-- #260: coldest/hottest battery temperature of the current charge, shown in Insights. The range
+         only starts over when a charge finishes, which is what the basis line tells the user. -->
+    <string name="temperature_range">Temperature Range</string>
+    <string name="temperature_range_basis">Since the last full charge</string>
+    <string name="temperature_min_label">min</string>
+    <string name="temperature_max_label">max</string>
     <!-- Info icon (#116) explaining that the measured health/capacity is averaged over many readings -->
     <string name="health_measured_info_cd">How battery health is measured</string>
     <string name="health_measured_info_dialog_title">How this is measured</string>
