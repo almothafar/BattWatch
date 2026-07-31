@@ -1,5 +1,23 @@
 # Changelog
 
+## [3.2.0](https://github.com/almothafar/BattWatch/compare/v3.1.0...v3.2.0) (2026-07-31)
+
+
+### Features
+
+* add a monochrome layer to the launcher icon ([#252](https://github.com/almothafar/BattWatch/issues/252)) ([6948cbe](https://github.com/almothafar/BattWatch/commit/6948cbe02fa71dfd2db9eff4cbc6ad12ef247acc))
+* adopt the BattWatch launcher icon and add Play listing assets ([#236](https://github.com/almothafar/BattWatch/issues/236)) ([1ecdfa0](https://github.com/almothafar/BattWatch/commit/1ecdfa00aba1c40a9d1caf1d58d6658befda4120))
+* restore a complete landscape layout for the main screen ([#253](https://github.com/almothafar/BattWatch/issues/253)) ([07f902c](https://github.com/almothafar/BattWatch/commit/07f902ccc5ec8d077e927b0c2da2a707eb91bdfc))
+* semantic alert icons and a level-mirroring ongoing icon ([#240](https://github.com/almothafar/BattWatch/issues/240)) ([e9b8e4e](https://github.com/almothafar/BattWatch/commit/e9b8e4e8a025af6922b883d9e2a27518d9a2f858))
+
+
+### Bug Fixes
+
+* clear the RestrictedApi lint errors and run lint in CI ([#250](https://github.com/almothafar/BattWatch/issues/250)) ([0798a80](https://github.com/almothafar/BattWatch/commit/0798a80648ce780890f7a053f96e4a9c3b54c5c5))
+* format quiet-hours time with the shared locale-safe helper ([#247](https://github.com/almothafar/BattWatch/issues/247)) ([db64c6b](https://github.com/almothafar/BattWatch/commit/db64c6b391b9006a76a4e4bcdf1ecb24d1c3d0c8))
+* stop shipping hardcoded English placeholders on Battery Insights ([#251](https://github.com/almothafar/BattWatch/issues/251)) ([27b148e](https://github.com/almothafar/BattWatch/commit/27b148e19c10ef7bdd04f6bfead07dc09bafca7f))
+* stop the Insights cards being clipped, and clear the layout lint nits ([#255](https://github.com/almothafar/BattWatch/issues/255)) ([41dfed4](https://github.com/almothafar/BattWatch/commit/41dfed4121307dc6943693e85c56d5bc6095e4b8))
+
 ## [3.1.0](https://github.com/almothafar/BattWatch/compare/v3.0.1...v3.1.0) (2026-07-24)
 
 
