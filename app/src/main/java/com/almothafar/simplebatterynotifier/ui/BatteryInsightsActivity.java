@@ -23,8 +23,10 @@ import com.almothafar.simplebatterynotifier.R;
 import com.almothafar.simplebatterynotifier.model.BatteryHealthGrade;
 import com.almothafar.simplebatterynotifier.service.BatteryCapacityTracker;
 import com.almothafar.simplebatterynotifier.service.BatteryHealthTracker;
+import com.almothafar.simplebatterynotifier.service.BatteryTemperatureTracker;
 import com.almothafar.simplebatterynotifier.service.SystemService;
 import com.almothafar.simplebatterynotifier.util.GeneralHelper;
+import com.almothafar.simplebatterynotifier.util.TemperatureUtils;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
@@ -51,6 +53,8 @@ public class BatteryInsightsActivity extends BaseActivity {
 	private View measuredCapacityRange;
 	private TextView measuredCapacityMinText;
 	private TextView measuredCapacityMaxText;
+	private TextView temperatureMinText;
+	private TextView temperatureMaxText;
 
 	@Override
 	protected void onCreate(final Bundle savedInstanceState) {
@@ -81,6 +85,8 @@ public class BatteryInsightsActivity extends BaseActivity {
 		measuredCapacityRange = findViewById(R.id.measuredCapacityRange);
 		measuredCapacityMinText = findViewById(R.id.measuredCapacityMinText);
 		measuredCapacityMaxText = findViewById(R.id.measuredCapacityMaxText);
+		temperatureMinText = findViewById(R.id.temperatureMinText);
+		temperatureMaxText = findViewById(R.id.temperatureMaxText);
 
 		// Tap the warning icon (shown only when the reading can't be trusted, #94) to explain why
 		healthWarningIcon.setOnClickListener(v -> showUnreliableReadingDialog());
@@ -128,6 +134,9 @@ public class BatteryInsightsActivity extends BaseActivity {
 
 		// Averaged measured capacity with its min/max spread (#116).
 		showMeasuredCapacity(capacity, unreliable);
+
+		// Coldest/hottest reading since the battery last finished charging (#260).
+		showTemperatureRange(BatteryTemperatureTracker.getRange(this));
 
 		// Metrics and the design-capacity row are shown the same way in every state.
 		chargeCyclesText.setText(String.valueOf(cycles));
@@ -204,6 +213,24 @@ public class BatteryInsightsActivity extends BaseActivity {
 		measuredCapacityMinText.setText(String.valueOf(capacity.minMah()));
 		measuredCapacityMaxText.setText(String.valueOf(capacity.maxMah()));
 		measuredCapacityRange.setVisibility(View.VISIBLE);
+	}
+
+	/**
+	 * Shows the coldest and hottest battery temperature seen since the battery last finished charging
+	 * (#260), in the user's display unit. Both cells read "—" until the monitoring service has folded
+	 * in its first usable reading — on a fresh install, or right after a completed charge reset the
+	 * range.
+	 *
+	 * @param range the recorded temperature range, or null when nothing has been recorded yet
+	 */
+	private void showTemperatureRange(BatteryTemperatureTracker.TemperatureRange range) {
+		if (isNull(range)) {
+			temperatureMinText.setText(R.string.battery_value_pending);
+			temperatureMaxText.setText(R.string.battery_value_pending);
+			return;
+		}
+		temperatureMinText.setText(TemperatureUtils.format(this, range.minTenthsC()));
+		temperatureMaxText.setText(TemperatureUtils.format(this, range.maxTenthsC()));
 	}
 
 	/**
