@@ -7,6 +7,7 @@ import android.os.BatteryManager;
 import androidx.preference.PreferenceManager;
 import androidx.test.core.app.ApplicationProvider;
 
+import com.almothafar.simplebatterynotifier.R;
 import com.almothafar.simplebatterynotifier.receiver.BatteryLevelReceiver.LevelAlertState;
 import com.almothafar.simplebatterynotifier.service.AlertType;
 import com.almothafar.simplebatterynotifier.service.NotificationService;
@@ -168,6 +169,46 @@ public class BatteryLevelReceiverTest {
 	}
 
 	@Test
+	public void temperature_cooledBelowHysteresis_dismissesStaleAlert() {
+		try (MockedStatic<NotificationService> ns = mockStatic(NotificationService.class)) {
+			publishBattery(BatteryManager.BATTERY_STATUS_DISCHARGING, 80, 100, 0, 460);
+			receive();
+			// Cooled to 41.0 °C (≤ 45 − 3 hysteresis): the spell is over, so the shown warning goes too (#259).
+			publishBattery(BatteryManager.BATTERY_STATUS_DISCHARGING, 79, 100, 0, 410);
+			receive();
+
+			ns.verify(() -> NotificationService.clearTemperatureAlert(any(Context.class)), times(1));
+		}
+	}
+
+	@Test
+	public void temperature_withinHysteresisBand_keepsAlertShown() {
+		try (MockedStatic<NotificationService> ns = mockStatic(NotificationService.class)) {
+			publishBattery(BatteryManager.BATTERY_STATUS_DISCHARGING, 80, 100, 0, 460);
+			receive();
+			// 43.0 °C — below the 45 °C threshold but not yet past the hysteresis, so the battery is still
+			// hot enough for the warning to be true. Dismissing here would flap the notification.
+			publishBattery(BatteryManager.BATTERY_STATUS_DISCHARGING, 79, 100, 0, 430);
+			receive();
+
+			ns.verify(() -> NotificationService.clearTemperatureAlert(any(Context.class)), never());
+		}
+	}
+
+	@Test
+	public void temperature_alertDisabledWhileShown_dismissesStaleAlert() {
+		try (MockedStatic<NotificationService> ns = mockStatic(NotificationService.class)) {
+			publishBattery(BatteryManager.BATTERY_STATUS_DISCHARGING, 80, 100, 0, 460);
+			receive();
+			// Switching the alert off is the other way a spell ends: the warning must not be left behind.
+			setHighTemperatureAlertEnabled(false);
+			receive();
+
+			ns.verify(() -> NotificationService.clearTemperatureAlert(any(Context.class)), times(1));
+		}
+	}
+
+	@Test
 	public void unexpectedAction_isIgnored() {
 		// The receiver reads the delivered intent (#159); a wrong-action intent (whose missing extras
 		// would otherwise read as a 0% battery) must be dropped by the guard, not alerted on.
@@ -206,7 +247,14 @@ public class BatteryLevelReceiverTest {
 	private void enableAlertEveryTick() {
 		PreferenceManager.getDefaultSharedPreferences(context)
 				.edit()
-				.putBoolean(context.getString(com.almothafar.simplebatterynotifier.R.string._pref_key_notify_every_tick), true)
+				.putBoolean(context.getString(R.string._pref_key_notify_every_tick), true)
+				.commit();
+	}
+
+	private void setHighTemperatureAlertEnabled(final boolean enabled) {
+		PreferenceManager.getDefaultSharedPreferences(context)
+				.edit()
+				.putBoolean(context.getString(R.string._pref_key_notify_high_temperature), enabled)
 				.commit();
 	}
 
