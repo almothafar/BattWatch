@@ -227,6 +227,10 @@ public final class SystemService {
 
 		// Absent below Android 14 (and on devices whose fuel gauge doesn't report it) — normalized to
 		// -1 like getChargeCycleCount, so snapshot consumers don't need a second sticky read (#161).
+		// InlinedApi is safe here: EXTRA_CYCLE_COUNT is a compile-time String constant, so javac
+		// inlines its value and nothing is resolved at runtime. On a device older than the API that
+		// defined it the extra is simply absent and the default below is returned.
+		@SuppressLint("InlinedApi")
 		final int rawCycleCount = batteryStatus.getIntExtra(BatteryManager.EXTRA_CYCLE_COUNT, -1);
 		final int cycleCount = rawCycleCount > 0 ? rawCycleCount : -1;
 
@@ -581,6 +585,9 @@ public final class SystemService {
 		if (isNull(batteryStatus)) {
 			return -1;
 		}
+		// InlinedApi is safe here for the same reason as in readBatteryExtras: EXTRA_CYCLE_COUNT is a
+		// compile-time String constant, so an older device just finds no such extra and gets the default.
+		@SuppressLint("InlinedApi")
 		final int cycles = batteryStatus.getIntExtra(BatteryManager.EXTRA_CYCLE_COUNT, -1);
 		return cycles > 0 ? cycles : -1;
 	}

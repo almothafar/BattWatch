@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Narrowly scoped lint suppressions (#245). Everything here is a warning lint gets wrong about this
+  project, listed file by file rather than disabled globally, so a new occurrence elsewhere still
+  surfaces. Suppressions that can live next to the code use tools:ignore or @SuppressLint instead;
+  this file is only for resources that have nowhere to put an annotation.
+
+  There is deliberately no lint-baseline.xml: a baseline hides existing debt, while these entries
+  each state a reason.
+-->
+<lint>
+
+    <!--
+      "Launcher icons should not fill every pixel of their square region."
+
+      These five PNGs are the legacy raster launcher icon. The real icon is the adaptive one in
+      mipmap-anydpi-v26 (#236), whose foreground is drawn inside the adaptive safe zone and whose
+      shape the launcher masks. A legacy raster has no mask and no safe zone — filling its square is
+      what it is supposed to do, so the guidance lint is quoting does not apply to these files.
+
+      Listed per file so the check stays live for any icon added later.
+    -->
+    <issue id="IconLauncherShape">
+        <ignore path="src/main/res/mipmap-mdpi/ic_launcher.png"/>
+        <ignore path="src/main/res/mipmap-hdpi/ic_launcher.png"/>
+        <ignore path="src/main/res/mipmap-xhdpi/ic_launcher.png"/>
+        <ignore path="src/main/res/mipmap-xxhdpi/ic_launcher.png"/>
+        <ignore path="src/main/res/mipmap-xxxhdpi/ic_launcher.png"/>
+    </issue>
+
+</lint>
