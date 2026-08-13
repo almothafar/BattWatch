@@ -278,11 +278,10 @@ public final class NotificationService {
 	 * Dismiss a shown high-temperature alert (#259).
 	 * <p>
 	 * Called when the hot spell ends — the battery cooled past the hysteresis point, or the user
-	 * switched the alert off while one was showing. The warning describes a condition that is over,
-	 * and nothing else would ever take it down: it is posted once per spell and never updated in
-	 * place, so without this it sat in the shade until the user swiped it and read as "still
-	 * overheating" on a phone that had long since cooled. Same "don't leave a stale alert alive"
-	 * cleanup as {@link #clearFastDrainAlert}.
+	 * switched the alert off while one was showing. The alert is posted once per spell and never
+	 * updated in place, so nothing else would ever take it down: without this it sat in the shade
+	 * reading as "still overheating" on a phone that had long since cooled. Same "don't leave a
+	 * stale alert alive" cleanup as {@link #clearFastDrainAlert}.
 	 *
 	 * @param context The application context
 	 */

@@ -140,8 +140,7 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 	 * The hysteresis flag is persisted (#164) so a process restart mid-hot-spell cannot fire a
 	 * duplicate alert; another alert can only fire once the battery has cooled at least
 	 * {@link #TEMPERATURE_HYSTERESIS_C}°C below the threshold. That same re-arm is the end of the
-	 * spell, so it also takes the shown alert down (#259) — it describes a condition that is over,
-	 * and nothing else would ever clear it.
+	 * spell, so it also takes the shown alert down (#259).
 	 *
 	 * @param context    The application context
 	 * @param batteryDO  Current battery snapshot (non-null; the caller already checked)
@@ -162,14 +161,13 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 
 		if (decision.alerted() != previouslyAlerted) {
 			sharedPref.edit().putBoolean(PREF_TEMPERATURE_ALERTED, decision.alerted()).apply();
-			// Re-arming means the spell is over (cooled past the hysteresis, or the user switched the
-			// alert off): take the stale warning down with it (#259).
-			if (!decision.alerted()) {
-				NotificationService.clearTemperatureAlert(context);
-			}
 		}
 		if (decision.shouldNotify()) {
 			NotificationService.sendTemperatureNotification(context, rawTenthsC);
+		} else if (previouslyAlerted && !decision.alerted()) {
+			// The spell just ended: cooled past the hysteresis, or the alert switched off while one was
+			// showing. Dismiss the stale warning (#259) — staying inside the band holds, so it can't flap.
+			NotificationService.clearTemperatureAlert(context);
 		}
 	}
 

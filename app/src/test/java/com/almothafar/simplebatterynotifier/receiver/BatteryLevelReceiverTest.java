@@ -251,7 +251,7 @@ public class BatteryLevelReceiverTest {
 				.commit();
 	}
 
-	private void setHighTemperatureAlertEnabled(final boolean enabled) {
+	private void setHighTemperatureAlertEnabled(boolean enabled) {
 		PreferenceManager.getDefaultSharedPreferences(context)
 				.edit()
 				.putBoolean(context.getString(R.string._pref_key_notify_high_temperature), enabled)

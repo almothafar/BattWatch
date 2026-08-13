@@ -40,6 +40,9 @@ public class NotificationServiceTest {
 	 * replace a critical/warning/full level alert, cleared together with the level alert on
 	 * disconnect, and the level alert's plug-in dismissal is the explicit
 	 * {@link NotificationService#clearLevelAlert} — not an ID collision.
+	 * <p>
+	 * Home for the {@code clearX} dismissals generally: each must cancel its own ID and leave every
+	 * other alert showing, which is the property an ID mix-up would break.
 	 */
 	@RunWith(RobolectricTestRunner.class)
 	@Config(sdk = 34)
@@ -99,6 +102,18 @@ public class NotificationServiceTest {
 			NotificationService.clearFastDrainAlert(context);
 
 			// The plug-in dismissal targets the stale drain warning; "Charging started" keeps showing.
+			assertEquals(1, shadowOf(manager).size());
+		}
+
+		@Test
+		public void clearTemperatureAlert_dismissesOnlyTheTemperatureAlert() {
+			NotificationService.sendTemperatureNotification(context, 460);
+			NotificationService.notifyChargeConnected(context, ChargeSpeed.unknown(), false);
+
+			NotificationService.clearTemperatureAlert(context);
+
+			// The cooled-down dismissal (#259) targets the overheat warning by its own ID; anything else
+			// showing keeps showing.
 			assertEquals(1, shadowOf(manager).size());
 		}
 
