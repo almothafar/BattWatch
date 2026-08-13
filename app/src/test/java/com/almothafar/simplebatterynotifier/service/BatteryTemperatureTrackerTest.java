@@ -10,13 +10,13 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 /**
  * Unit tests for the per-charge temperature range (issue #260). The pure helpers carry the feature's
- * correctness: the running min/max, the edge-triggered reset at the end of a charge, and the
- * plausibility gate. Temperatures are tenths of a degree Celsius throughout.
+ * correctness: the running min/max, the edge-triggered reset at the end of a charge with its drop-out
+ * band, and the "device reported no temperature" gate. Temperatures are tenths of a degree Celsius
+ * throughout.
  */
 public class BatteryTemperatureTrackerTest {
 
@@ -61,36 +61,64 @@ public class BatteryTemperatureTrackerTest {
 		stats = BatteryTemperatureTracker.fold(stats, 400, 79, DISCHARGING);
 
 		// An equal state back, so record()'s !equals check skips the write — the save-on-change rule
-		// the trackers share. (Record value equality, not identity: only rejected readings return the
-		// same instance.)
+		// the trackers share.
 		assertEquals(stats, BatteryTemperatureTracker.fold(stats, 300, 78, DISCHARGING));
 	}
 
-	// --- the plausibility gate -----------------------------------------------
+	@Test
+	public void alarminglyHotReading_isRecordedNotDropped() {
+		// 105 °C. "How hot did it actually get?" is the whole question this card answers, so the only
+		// reading ever filtered out is the one that means "no reading" — nothing is second-guessed for
+		// being extreme.
+		TemperatureStats stats = BatteryTemperatureTracker.fold(NOTHING_RECORDED, 250, 80, DISCHARGING);
+		stats = BatteryTemperatureTracker.fold(stats, 1050, 78, DISCHARGING);
+
+		assertEquals(1050, stats.maxTenthsC());
+	}
+
+	// --- the "no reading" gate -----------------------------------------------
 
 	@Test
-	public void zeroReading_isRejectedAsNotReported() {
+	public void unreportedReading_isIgnored() {
 		// SystemService defaults EXTRA_TEMPERATURE to 0, so 0 means "this device didn't report one".
-		assertSame(NOTHING_RECORDED, BatteryTemperatureTracker.fold(NOTHING_RECORDED, 0, 80, DISCHARGING));
+		assertEquals(NOTHING_RECORDED, BatteryTemperatureTracker.fold(NOTHING_RECORDED, 0, 80, DISCHARGING));
 	}
 
 	@Test
-	public void readingBelowThePlausibleBand_isRejected() {
-		final int tooCold = BatteryTemperatureTracker.MIN_PLAUSIBLE_TENTHS_C - 1;
-		assertSame(NOTHING_RECORDED, BatteryTemperatureTracker.fold(NOTHING_RECORDED, tooCold, 80, DISCHARGING));
-	}
-
-	@Test
-	public void readingAboveThePlausibleBand_isRejected() {
-		final int tooHot = BatteryTemperatureTracker.MAX_PLAUSIBLE_TENTHS_C + 1;
-		assertSame(NOTHING_RECORDED, BatteryTemperatureTracker.fold(NOTHING_RECORDED, tooHot, 80, DISCHARGING));
-	}
-
-	@Test
-	public void implausibleReading_leavesAnExistingRangeUntouched() {
+	public void unreportedReading_leavesAnExistingRangeUntouched() {
 		final TemperatureStats seeded = BatteryTemperatureTracker.fold(NOTHING_RECORDED, 305, 80, DISCHARGING);
 
-		assertSame(seeded, BatteryTemperatureTracker.fold(seeded, 0, 79, DISCHARGING));
+		assertEquals(seeded, BatteryTemperatureTracker.fold(seeded, 0, 79, DISCHARGING));
+	}
+
+	@Test
+	public void unreportedReading_stillMovesTheResetFlag() {
+		TemperatureStats stats = BatteryTemperatureTracker.fold(NOTHING_RECORDED, 330, 100, FULL);
+		assertTrue(stats.fullSeen());
+
+		// The flag must not be gated behind a usable reading: on a device that never reports a
+		// temperature it would freeze on whatever a fresh install left it holding.
+		stats = BatteryTemperatureTracker.fold(stats, 0, 60, DISCHARGING);
+
+		assertFalse(stats.fullSeen());
+		assertEquals(330, stats.minTenthsC());
+		assertEquals(330, stats.maxTenthsC());
+	}
+
+	@Test
+	public void chargeCompletingWithNoReading_clearsTheRangeForTheNextOne() {
+		TemperatureStats stats = BatteryTemperatureTracker.fold(NOTHING_RECORDED, 200, 60, DISCHARGING);
+		stats = BatteryTemperatureTracker.fold(stats, 450, 80, CHARGING);
+		stats = BatteryTemperatureTracker.fold(stats, 0, 100, FULL);
+
+		// The charge finished, so the old range is stale even though this tick brought nothing to
+		// replace it with.
+		assertTrue(stats.isEmpty());
+		assertTrue(stats.fullSeen());
+
+		stats = BatteryTemperatureTracker.fold(stats, 330, 100, FULL);
+		assertEquals(330, stats.minTenthsC());
+		assertEquals(330, stats.maxTenthsC());
 	}
 
 	// --- the end-of-charge reset ---------------------------------------------
@@ -118,6 +146,33 @@ public class BatteryTemperatureTrackerTest {
 	}
 
 	@Test
+	public void overnightTopUpCycle_doesNotResetTheRangeAgain() {
+		TemperatureStats stats = BatteryTemperatureTracker.fold(NOTHING_RECORDED, 330, 100, FULL);
+
+		// A phone left on the charger drifts 100 → 99 and tops back up, over and over. Re-arming on a
+		// bare "not full" would wipe the range on each of those cycles, so by morning it would span a
+		// few minutes instead of the night.
+		stats = BatteryTemperatureTracker.fold(stats, 360, 99, CHARGING);
+		assertTrue(stats.fullSeen());
+
+		stats = BatteryTemperatureTracker.fold(stats, 310, 100, FULL);
+
+		assertEquals(310, stats.minTenthsC());
+		assertEquals(360, stats.maxTenthsC());
+	}
+
+	@Test
+	public void leavingFull_reArmsOnlyOnceOutOfTheFullBand() {
+		TemperatureStats stats = BatteryTemperatureTracker.fold(NOTHING_RECORDED, 330, 100, FULL);
+
+		stats = BatteryTemperatureTracker.fold(stats, 340, 96, DISCHARGING);
+		assertTrue(stats.fullSeen());
+
+		stats = BatteryTemperatureTracker.fold(stats, 350, NotificationService.FULL_PERCENTAGE, DISCHARGING);
+		assertFalse(stats.fullSeen());
+	}
+
+	@Test
 	public void leavingFull_reArmsTheResetForTheNextCharge() {
 		TemperatureStats stats = BatteryTemperatureTracker.fold(NOTHING_RECORDED, 330, 100, FULL);
 		stats = BatteryTemperatureTracker.fold(stats, 420, 70, DISCHARGING);
@@ -126,6 +181,18 @@ public class BatteryTemperatureTrackerTest {
 		stats = BatteryTemperatureTracker.fold(stats, 350, 100, FULL);
 		assertEquals(350, stats.minTenthsC());
 		assertEquals(350, stats.maxTenthsC());
+	}
+
+	@Test
+	public void chargeCappedDeviceRestingAtFull_doesNotReArmOnItsOwnLevel() {
+		// A device whose charge cap stops it at 80% reports FULL there. Its resting level is below the
+		// drop-out band, so re-arming on the level alone would reset the range on every tick.
+		TemperatureStats stats = BatteryTemperatureTracker.fold(NOTHING_RECORDED, 300, 80, FULL);
+		stats = BatteryTemperatureTracker.fold(stats, 340, 80, FULL);
+		stats = BatteryTemperatureTracker.fold(stats, 290, 80, FULL);
+
+		assertEquals(290, stats.minTenthsC());
+		assertEquals(340, stats.maxTenthsC());
 	}
 
 	@Test

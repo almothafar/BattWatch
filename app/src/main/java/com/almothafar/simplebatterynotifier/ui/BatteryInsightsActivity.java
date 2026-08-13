@@ -25,6 +25,7 @@ import com.almothafar.simplebatterynotifier.service.BatteryCapacityTracker;
 import com.almothafar.simplebatterynotifier.service.BatteryHealthTracker;
 import com.almothafar.simplebatterynotifier.service.BatteryTemperatureTracker;
 import com.almothafar.simplebatterynotifier.service.SystemService;
+import com.almothafar.simplebatterynotifier.ui.widget.MinMaxRangeView;
 import com.almothafar.simplebatterynotifier.util.GeneralHelper;
 import com.almothafar.simplebatterynotifier.util.TemperatureUtils;
 
@@ -50,11 +51,8 @@ public class BatteryInsightsActivity extends BaseActivity {
 	private TextView designCapacityText;
 	private ImageView healthMeasuredInfoIcon;
 	private TextView measuredCapacityText;
-	private View measuredCapacityRange;
-	private TextView measuredCapacityMinText;
-	private TextView measuredCapacityMaxText;
-	private TextView temperatureMinText;
-	private TextView temperatureMaxText;
+	private MinMaxRangeView measuredCapacityRange;
+	private MinMaxRangeView temperatureRange;
 
 	@Override
 	protected void onCreate(final Bundle savedInstanceState) {
@@ -83,10 +81,7 @@ public class BatteryInsightsActivity extends BaseActivity {
 		healthMeasuredInfoIcon = findViewById(R.id.healthMeasuredInfoIcon);
 		measuredCapacityText = findViewById(R.id.measuredCapacityText);
 		measuredCapacityRange = findViewById(R.id.measuredCapacityRange);
-		measuredCapacityMinText = findViewById(R.id.measuredCapacityMinText);
-		measuredCapacityMaxText = findViewById(R.id.measuredCapacityMaxText);
-		temperatureMinText = findViewById(R.id.temperatureMinText);
-		temperatureMaxText = findViewById(R.id.temperatureMaxText);
+		temperatureRange = findViewById(R.id.temperatureRange);
 
 		// Tap the warning icon (shown only when the reading can't be trusted, #94) to explain why
 		healthWarningIcon.setOnClickListener(v -> showUnreliableReadingDialog());
@@ -210,8 +205,7 @@ public class BatteryInsightsActivity extends BaseActivity {
 		}
 		// Pass the numbers as Strings so they render in Western digits (0-9) in every locale (#96).
 		measuredCapacityText.setText(getString(R.string.design_capacity_value, String.valueOf(capacity.averageMah())));
-		measuredCapacityMinText.setText(String.valueOf(capacity.minMah()));
-		measuredCapacityMaxText.setText(String.valueOf(capacity.maxMah()));
+		measuredCapacityRange.setRange(String.valueOf(capacity.minMah()), String.valueOf(capacity.maxMah()));
 		measuredCapacityRange.setVisibility(View.VISIBLE);
 	}
 
@@ -225,12 +219,12 @@ public class BatteryInsightsActivity extends BaseActivity {
 	 */
 	private void showTemperatureRange(BatteryTemperatureTracker.TemperatureRange range) {
 		if (isNull(range)) {
-			temperatureMinText.setText(R.string.battery_value_pending);
-			temperatureMaxText.setText(R.string.battery_value_pending);
+			temperatureRange.setPending();
 			return;
 		}
-		temperatureMinText.setText(TemperatureUtils.format(this, range.minTenthsC()));
-		temperatureMaxText.setText(TemperatureUtils.format(this, range.maxTenthsC()));
+		temperatureRange.setRange(
+				TemperatureUtils.format(this, range.minTenthsC()),
+				TemperatureUtils.format(this, range.maxTenthsC()));
 	}
 
 	/**

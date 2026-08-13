@@ -105,8 +105,9 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 		BatteryHealthTracker.recordBatteryState(context, percentage, status);
 
 		// #260: keep the coldest/hottest reading of the current charge for the Insights temperature
-		// range. The status and level go in too — finishing a charge is what starts a new range.
-		BatteryTemperatureTracker.record(context, batteryDO.getTemperature(), percentage, status);
+		// range. The whole reading goes in — finishing a charge is what starts a new range, so the
+		// tracker needs the level and status as well as the temperature.
+		BatteryTemperatureTracker.record(context, batteryDO);
 
 		final SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(context);
 		final LevelAlertConfig config = new LevelAlertConfig(

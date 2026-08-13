@@ -246,12 +246,10 @@
     <string name="design_capacity">السعة التصميمية</string>
     <string name="design_capacity_value">%1$s mAh</string>
     <string name="measured_capacity">السعة المقاسة</string>
-    <string name="capacity_min_label">الأدنى</string>
-    <string name="capacity_max_label">الأعلى</string>
+    <string name="range_min_label">الأدنى</string>
+    <string name="range_max_label">الأعلى</string>
     <string name="temperature_range">نطاق الحرارة</string>
-    <string name="temperature_range_basis">منذ آخر شحن كامل</string>
-    <string name="temperature_min_label">الأدنى</string>
-    <string name="temperature_max_label">الأعلى</string>
+    <string name="temperature_range_basis">منذ آخر مرة اكتمل شحن البطارية</string>
     <string name="health_measured_info_cd">كيف تُقاس صحة البطارية</string>
     <string name="health_measured_info_dialog_title">كيف يُحسب هذا</string>
     <string name="health_measured_info_dialog_message">تقارن قيمة الصحة هذه السعة المقاسة لبطاريتك بالسعة التصميمية التي أدخلتها. تُحسب السعة المقاسة كمتوسط لعدة قراءات على مدى الوقت، لذا تبقى ثابتة بدلاً من التغيّر مع كل تحديث. يوضّح الأدنى والأعلى مدى تفاوت تلك القراءات.</string>

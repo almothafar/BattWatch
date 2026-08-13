@@ -17,6 +17,13 @@
         <attr name="gaugeLevelDescription" format="string"/>
     </declare-styleable>
 
+    <declare-styleable name="MinMaxRangeView">
+        <!-- Size of the two value cells; the "min"/"max" captions above them are fixed -->
+        <attr name="rangeValueTextSize" format="dimension"/>
+        <!-- Whether the values are the card's primary figure, and so shown bold -->
+        <attr name="rangeValueBold" format="boolean"/>
+    </declare-styleable>
+
     <declare-styleable name="BatteryRangeSliderPreference">
         <!-- SharedPreferences keys the two thumbs persist to -->
         <attr name="criticalKey" format="string"/>
