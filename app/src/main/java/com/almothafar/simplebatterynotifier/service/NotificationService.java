@@ -232,11 +232,7 @@ public final class NotificationService {
 	 * @param context The application context
 	 */
 	public static void clearNotifications(Context context) {
-		final NotificationManager manager = getNotificationManager(context);
-		if (nonNull(manager)) {
-			manager.cancel(NOTIFICATION_ID);
-			manager.cancel(CHARGE_CONNECTED_NOTIFICATION_ID);
-		}
+		cancel(context, NOTIFICATION_ID, CHARGE_CONNECTED_NOTIFICATION_ID);
 	}
 
 	/**
@@ -250,10 +246,7 @@ public final class NotificationService {
 	 * @param context The application context
 	 */
 	public static void clearLevelAlert(Context context) {
-		final NotificationManager manager = getNotificationManager(context);
-		if (nonNull(manager)) {
-			manager.cancel(NOTIFICATION_ID);
-		}
+		cancel(context, NOTIFICATION_ID);
 	}
 
 	/**
@@ -268,10 +261,7 @@ public final class NotificationService {
 	 * @param context The application context
 	 */
 	public static void clearFastDrainAlert(Context context) {
-		final NotificationManager manager = getNotificationManager(context);
-		if (nonNull(manager)) {
-			manager.cancel(FAST_DRAIN_NOTIFICATION_ID);
-		}
+		cancel(context, FAST_DRAIN_NOTIFICATION_ID);
 	}
 
 	/**
@@ -286,10 +276,7 @@ public final class NotificationService {
 	 * @param context The application context
 	 */
 	public static void clearTemperatureAlert(Context context) {
-		final NotificationManager manager = getNotificationManager(context);
-		if (nonNull(manager)) {
-			manager.cancel(TEMPERATURE_NOTIFICATION_ID);
-		}
+		cancel(context, TEMPERATURE_NOTIFICATION_ID);
 	}
 
 	/**
@@ -640,6 +627,23 @@ public final class NotificationService {
 		final NotificationManager manager = getNotificationManager(context);
 		if (nonNull(manager)) {
 			manager.notify(id, notification);
+		}
+	}
+
+	/**
+	 * Dismiss notifications by id, no-op when the NotificationManager is unavailable. The counterpart
+	 * to {@link #post}: every {@code clearX} entry point routes through here, so the manager lookup and
+	 * its null guard have one home rather than one per alert type.
+	 *
+	 * @param context The application context
+	 * @param ids     The notification ids to dismiss
+	 */
+	private static void cancel(Context context, int... ids) {
+		final NotificationManager manager = getNotificationManager(context);
+		if (nonNull(manager)) {
+			for (final int id : ids) {
+				manager.cancel(id);
+			}
 		}
 	}
 
