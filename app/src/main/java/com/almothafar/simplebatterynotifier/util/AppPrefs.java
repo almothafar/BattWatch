@@ -43,7 +43,13 @@ public final class AppPrefs {
 	 * the "unplug before 100%" advice the alert copy itself gives.
 	 */
 	public static final int DEFAULT_CHARGE_TARGET = 90;
-	/** Lowest accepted charge target; mirrors the slider's {@code android:min} in pref_alerts.xml. */
+	/**
+	 * Lowest accepted charge target; mirrors the slider's {@code app:min} in pref_alerts.xml.
+	 * <p>
+	 * {@code app:min}, not {@code android:min}: androidx {@code SeekBarPreference} declares {@code min} in
+	 * the library namespace, so {@code android:min} is read by nothing, raises no error and leaves the
+	 * slider bottoming out at 0.
+	 */
 	public static final int MIN_CHARGE_TARGET = 80;
 	/**
 	 * Highest accepted charge target; mirrors the slider's {@code android:max} in pref_alerts.xml. At
@@ -62,7 +68,7 @@ public final class AppPrefs {
 
 	/** Default "high drain" limit in %/h. */
 	public static final int DEFAULT_DRAIN_LIMIT_PPH = 20;
-	/** Lowest accepted drain limit in %/h; mirrors the slider's {@code android:min} in pref_alerts.xml. */
+	/** Lowest accepted drain limit in %/h; mirrors the slider's {@code app:min} in pref_alerts.xml. */
 	public static final int MIN_DRAIN_LIMIT_PPH = 5;
 	/** Highest accepted drain limit in %/h; mirrors the slider's {@code android:max} in pref_alerts.xml. */
 	public static final int MAX_DRAIN_LIMIT_PPH = 60;
@@ -141,7 +147,7 @@ public final class AppPrefs {
 
 	/**
 	 * Clamps a stored charge target to {@code [MIN_CHARGE_TARGET, MAX_CHARGE_TARGET]}. The bounds mirror
-	 * the slider's {@code android:min}/{@code android:max} in {@code pref_alerts.xml}. Pure so it is
+	 * the slider's {@code app:min}/{@code android:max} in {@code pref_alerts.xml}. Pure so it is
 	 * unit-testable.
 	 *
 	 * @param stored the raw persisted target in percent
@@ -195,7 +201,7 @@ public final class AppPrefs {
 
 	/**
 	 * Clamps a stored drain limit to {@code [MIN_DRAIN_LIMIT_PPH, MAX_DRAIN_LIMIT_PPH]}. The bounds mirror
-	 * the slider's {@code android:min}/{@code android:max} in {@code pref_alerts.xml}. Pure so it is
+	 * the slider's {@code app:min}/{@code android:max} in {@code pref_alerts.xml}. Pure so it is
 	 * unit-testable.
 	 *
 	 * @param stored the raw persisted limit in %/h

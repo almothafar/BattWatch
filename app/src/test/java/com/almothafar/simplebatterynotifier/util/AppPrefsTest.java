@@ -97,9 +97,7 @@ public class AppPrefsTest {
 			assertEquals(AppPrefs.DEFAULT_DRAIN_LIMIT_PPH, AppPrefs.drainLimitPph(context));
 
 			// A corrupt out-of-range stored value is clamped on read, not returned raw.
-			PreferenceManager.getDefaultSharedPreferences(context).edit()
-			                 .putInt(context.getString(R.string._pref_key_fast_drain_limit), 999)
-			                 .apply();
+			PreferenceManager.getDefaultSharedPreferences(context).edit().putInt(context.getString(R.string._pref_key_fast_drain_limit), 999).apply();
 			assertEquals(AppPrefs.MAX_DRAIN_LIMIT_PPH, AppPrefs.drainLimitPph(context));
 		}
 
@@ -109,17 +107,13 @@ public class AppPrefsTest {
 			assertEquals(90, AppPrefs.DEFAULT_CHARGE_TARGET);
 			assertEquals(AppPrefs.DEFAULT_CHARGE_TARGET, AppPrefs.chargeTarget(context));
 
-			PreferenceManager.getDefaultSharedPreferences(context).edit()
-			                 .putInt(context.getString(R.string._pref_key_charge_target), 999)
-			                 .apply();
+			PreferenceManager.getDefaultSharedPreferences(context).edit().putInt(context.getString(R.string._pref_key_charge_target), 999).apply();
 			assertEquals(AppPrefs.MAX_CHARGE_TARGET, AppPrefs.chargeTarget(context));
 		}
 
 		@Test
 		public void chargeTarget_readsBackAStoredValue() {
-			PreferenceManager.getDefaultSharedPreferences(context).edit()
-			                 .putInt(context.getString(R.string._pref_key_charge_target), 85)
-			                 .apply();
+			PreferenceManager.getDefaultSharedPreferences(context).edit().putInt(context.getString(R.string._pref_key_charge_target), 85).apply();
 
 			assertEquals(85, AppPrefs.chargeTarget(context));
 		}

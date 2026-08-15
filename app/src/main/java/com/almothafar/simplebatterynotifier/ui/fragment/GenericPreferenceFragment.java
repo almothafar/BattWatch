@@ -30,6 +30,7 @@ import com.almothafar.simplebatterynotifier.R;
 import com.almothafar.simplebatterynotifier.service.NotificationService;
 import com.almothafar.simplebatterynotifier.ui.preference.RingtonePreference;
 import com.almothafar.simplebatterynotifier.util.AppPrefs;
+import com.almothafar.simplebatterynotifier.util.BatteryPercentFormatter;
 import com.almothafar.simplebatterynotifier.util.TemperatureUtils;
 import com.almothafar.simplebatterynotifier.ui.preference.TimePickerPreference;
 import com.almothafar.simplebatterynotifier.ui.preference.TimePickerPreferenceDialogFragmentCompat;
@@ -348,7 +349,7 @@ public class GenericPreferenceFragment extends CardPreferenceFragment
 	 * Adds the temperature-unit suffix for the high-temperature threshold, and the wording that follows
 	 * the charge target (#263).
 	 */
-	private void updateSeekBarPreferenceSummary(final SeekBarPreference seekBarPref) {
+	private void updateSeekBarPreferenceSummary(SeekBarPreference seekBarPref) {
 		final String key = seekBarPref.getKey();
 		if (isNull(key)) {
 			return;
@@ -380,8 +381,10 @@ public class GenericPreferenceFragment extends CardPreferenceFragment
 	private void applyChargeTargetWording(SeekBarPreference slider) {
 		final int target = AppPrefs.chargeTarget(requireContext());
 		final boolean fullCharge = AppPrefs.targetIsAFullCharge(target);
-		slider.setSummary(getString(
-				fullCharge ? R.string.charge_target_summary_full : R.string.charge_target_summary, target));
+		// Formatted rather than passed as an int: getString formats with the resource locale, so a %1$d
+		// would print ٩٠ on ar-EG/ar-SA/ar-JO. Numbers stay Western in every locale (#96).
+		slider.setSummary(getString(fullCharge ? R.string.charge_target_summary_full : R.string.charge_target_summary,
+				BatteryPercentFormatter.formatWhole(target)));
 
 		final Preference alertSwitch = findPreference(getString(R.string._pref_key_notify_for_full_level));
 		if (alertSwitch instanceof final TwoStatePreference toggle) {
@@ -425,8 +428,7 @@ public class GenericPreferenceFragment extends CardPreferenceFragment
 	 * <p>
 	 * Shows the ringtone title, or the URI if title cannot be retrieved.
 	 */
-	private void updateRingtonePreferenceSummary(final SharedPreferences sharedPreferences,
-	                                              final RingtonePreference ringtonePref) {
+	private void updateRingtonePreferenceSummary(SharedPreferences sharedPreferences, RingtonePreference ringtonePref) {
 		final String uri = sharedPreferences.getString(ringtonePref.getKey(), null);
 		if (nonNull(uri) && !uri.isEmpty()) {
 			try {
@@ -448,8 +450,7 @@ public class GenericPreferenceFragment extends CardPreferenceFragment
 	 * <p>
 	 * Shows the selected time value.
 	 */
-	private void updateTimePickerPreferenceSummary(final SharedPreferences sharedPreferences,
-	                                                final TimePickerPreference timePickerPref) {
+	private void updateTimePickerPreferenceSummary(SharedPreferences sharedPreferences, TimePickerPreference timePickerPref) {
 		final String value = sharedPreferences.getString(timePickerPref.getKey(), "");
 		if (nonNull(value) && !value.isEmpty()) {
 			timePickerPref.setSummary(value);

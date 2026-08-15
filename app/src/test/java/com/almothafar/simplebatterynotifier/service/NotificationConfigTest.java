@@ -15,6 +15,8 @@ import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 
+import java.util.Locale;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -120,12 +122,12 @@ public class NotificationConfigTest {
 		assertTrue(config.content, config.content.contains("85%"));
 		assertTrue(config.bigContent, config.bigContent.contains("85%"));
 		assertTrue(config.bigContent, config.bigContent.contains("100%"));
-		assertTrue(config.content, !config.content.contains("%1$d"));
-		assertTrue(config.bigContent, !config.bigContent.contains("%1$d"));
+		assertTrue(config.content, !config.content.contains("%1$s"));
+		assertTrue(config.bigContent, !config.bigContent.contains("%1$s"));
 	}
 
 	@Test
-	@Config(sdk = 34, qualifiers = "ar")
+	@Config(sdk = 34, qualifiers = "ar-rEG")
 	public void almostFullCopy_formatsInArabic() {
 		// The Arabic strings carry both a positional argument and literal percent signs, which have to be
 		// escaped independently of the English ones; getString would throw on a mismatch.
@@ -136,15 +138,41 @@ public class NotificationConfigTest {
 		// "charge target" in Arabic — proves values-ar was actually loaded rather than falling back to
 		// English, which would make the rest of these assertions vacuous.
 		assertTrue(config.content, config.content.contains("هدف الشحن"));
-		assertTrue(config.content, config.content.contains("85"));
-		assertTrue(config.bigContent, config.bigContent.contains("85"));
-		assertTrue(config.bigContent, config.bigContent.contains("100"));
-		assertTrue(config.content, !config.content.contains("%1$d"));
-		assertTrue(config.bigContent, !config.bigContent.contains("%1$d"));
+		assertTrue(config.content, config.content.contains("85%"));
+		assertTrue(config.bigContent, config.bigContent.contains("85%"));
+		assertTrue(config.bigContent, config.bigContent.contains("100%"));
+		assertTrue(config.content, !config.content.contains("%1$s"));
+		assertTrue(config.bigContent, !config.bigContent.contains("%1$s"));
+	}
+
+	/**
+	 * The digits a real Arabic user sees stay Western (#96).
+	 * <p>
+	 * The region tag is the whole point of this test. Under a bare {@code "ar"} qualifier CLDR picks the
+	 * Western numbering system anyway, so an assertion on {@code "85"} passes whether the code is right or
+	 * wrong — that is precisely how #241 survived the #154 fix. {@code ar-rEG} is what Android's language
+	 * picker actually produces, and there {@code getString} with a {@code %1$d} placeholder would render
+	 * {@code ٨٥}. This asserts the premise first, so a future reader can see the test can still fail.
+	 */
+	@Test
+	@Config(sdk = 34, qualifiers = "ar-rEG")
+	public void almostFullCopy_keepsWesternDigitsUnderARegionBearingArabicLocale() {
+		// Premise: this locale really does localise digits, so the assertions below are not vacuous.
+		assertEquals("ar-rEG should select Eastern Arabic digits", "٨٥", String.format(Locale.getDefault(), "%d", 85));
+
+		setChargeTarget(85);
+
+		final NotificationConfig config = fullAlertAt(85);
+
+		assertTrue(config.ticker, config.ticker.contains("85%"));
+		assertTrue(config.content, config.content.contains("85%"));
+		assertTrue(config.bigContent, config.bigContent.contains("85%"));
+		assertTrue("Eastern digits leaked into the ticker: " + config.ticker, !config.ticker.contains("٨٥"));
+		assertTrue("Eastern digits leaked into the body: " + config.content, !config.content.contains("٨٥"));
 	}
 
 	@Test
-	@Config(sdk = 34, qualifiers = "ar")
+	@Config(sdk = 34, qualifiers = "ar-rEG")
 	public void chargeCompleteCopy_formatsInArabic() {
 		setChargeTarget(AppPrefs.MAX_CHARGE_TARGET);
 

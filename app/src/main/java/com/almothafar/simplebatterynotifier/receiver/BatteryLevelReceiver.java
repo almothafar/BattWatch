@@ -276,8 +276,7 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 	 * @return which alert to send now ({@code null} for none), whether to dismiss a stale full alert,
 	 * and the new state to persist
 	 */
-	static LevelAlertDecision decideLevelAlert(LevelAlertState state, int percentage,
-	                                           ChargeState power, LevelAlertConfig config) {
+	static LevelAlertDecision decideLevelAlert(LevelAlertState state, int percentage, ChargeState power, LevelAlertConfig config) {
 		// Off the charger the charge session is over: re-arm exactly as the unplug transition does, and
 		// dismiss the full alert if one is still occupying the shared level-alert notification.
 		final boolean chargeSessionOver = !power.plugged() && (state.fullNotified() || state.fullAlertShown());
@@ -296,8 +295,7 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 	 * The discharging side: critical first, then warning, de-duplicated via {@code prevType} —
 	 * except at/below the red-alert floor, where the critical alert always re-fires.
 	 */
-	private static LevelAlertDecision decideDischarging(LevelAlertState state, int percentage,
-	                                                    LevelAlertConfig config) {
+	private static LevelAlertDecision decideDischarging(LevelAlertState state, int percentage, LevelAlertConfig config) {
 		// Force the critical alert through the de-dupe at the red-alert floor: about to die trumps "already told you".
 		AlertType prevType = percentage <= NotificationService.RED_ALERT_LEVEL ? null : state.prevType();
 		AlertType notifyType = null;
@@ -339,14 +337,17 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 	 *                   alone is not enough, see {@link #decideLevelAlert}
 	 * @param config     the user's alert thresholds and toggles
 	 */
-	private static LevelAlertDecision decideChargingOrFull(LevelAlertState state, int percentage,
-	                                                       ChargeState power, LevelAlertConfig config) {
+	private static LevelAlertDecision decideChargingOrFull(LevelAlertState state, int percentage, ChargeState power, LevelAlertConfig config) {
+		// One reading of "the charge you asked for is done", used by both the fire condition and the
+		// re-arm below. They are exact opposites, and evaluating the predicate twice invites them to
+		// drift apart — which is the bug the re-arm comment describes.
+		final boolean chargeDone = power.reachedChargeTarget(percentage, config.chargeTarget());
+
 		boolean fullNotified = state.fullNotified();
 		boolean fullAlertShown = state.fullAlertShown();
 		AlertType notifyType = null;
 
-		if (!fullNotified && config.fullNotifyEnabled()
-				&& power.reachedChargeTarget(percentage, config.chargeTarget())) {
+		if (!fullNotified && config.fullNotifyEnabled() && chargeDone) {
 			notifyType = AlertType.FULL;
 			fullNotified = true;
 			fullAlertShown = true;
@@ -362,9 +363,7 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 		// cable was in: undismissable, and audible on every tick for anyone using the silent-mode
 		// override. Leaving the charge behind is what re-arms, so "still there" must not.
 		// BatteryTemperatureTracker.nextFullSeen guards the identical hazard the same way.
-		if (!power.reachedChargeTarget(percentage, config.chargeTarget())
-				&& percentage <= AppPrefs.reArmLevel(config.chargeTarget())
-				&& percentage > config.warningLevel()) {
+		if (!chargeDone && percentage <= AppPrefs.reArmLevel(config.chargeTarget()) && percentage > config.warningLevel()) {
 			fullNotified = false;
 		}
 		return new LevelAlertDecision(notifyType,
@@ -389,8 +388,7 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 	 *
 	 * @return whether to notify now, and the new alerted flag to persist
 	 */
-	static TemperatureDecision decideTemperature(final boolean alreadyAlerted, final boolean enabled,
-	                                             final int rawTenthsC, final int thresholdCelsius) {
+	static TemperatureDecision decideTemperature(boolean alreadyAlerted, boolean enabled, int rawTenthsC, int thresholdCelsius) {
 		if (!enabled) {
 			return new TemperatureDecision(false, false);
 		}
@@ -452,9 +450,7 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 	 * @param previous the state loaded at the start of this tick
 	 * @param state    the state to persist
 	 */
-	static void saveLevelStateIfChanged(SharedPreferences prefs,
-	                                    LevelAlertState previous,
-	                                    LevelAlertState state) {
+	static void saveLevelStateIfChanged(SharedPreferences prefs, LevelAlertState previous, LevelAlertState state) {
 		if (state.equals(previous)) {
 			return;
 		}
@@ -555,8 +551,13 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 	 * @param fullNotifyEnabled whether the full-battery alert is enabled
 	 * @param alertEveryTick    whether the critical alert repeats on every level tick
 	 */
-	record LevelAlertConfig(int criticalLevel, int warningLevel, int chargeTarget, boolean warningEnabled,
-	                        boolean fullNotifyEnabled, boolean alertEveryTick) {
+	record LevelAlertConfig(
+			int criticalLevel,
+			int warningLevel,
+			int chargeTarget,
+			boolean warningEnabled,
+			boolean fullNotifyEnabled,
+			boolean alertEveryTick) {
 	}
 
 	/**

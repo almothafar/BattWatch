@@ -23,6 +23,11 @@ SimpleBatteryNotifier is an Android application that monitors battery status and
 - Constants: UPPER_SNAKE_CASE (e.g., `TAG`, `ANIMATION_DURATION`)
 - Private fields: camelCase (e.g., `batteryDO`, `healthStatus`)
 
+### Formatting & Wrapping
+- **Max line width 160.** If it fits on one line, put it on one line — do not wrap needlessly. A wrapped signature that measures under 160 is a defect.
+- **More than 4 parameters → one per line**, even when the whole list would fit inside 160. Four or fewer stay on one line whenever they fit. Past four the eye can't count the arguments or spot a wrong-order one, so the count beats the width.
+- **Chained calls (builders, streams): all on one line if they fit, otherwise one call per line.** Never a half-and-half split where some calls share a line and others don't — the break positions then carry no meaning.
+
 ### Code Organization
 - Keep utility classes final with private constructors
 - Group related methods together
@@ -237,10 +242,12 @@ The project uses **JUnit 4** for pure logic, with **Robolectric** and **Mockito*
 - Prefix internal keys with underscore: `_pref_key_*`. Internal identifiers (`_pref_key_*`, `_pref_value_*`, `pref_category_*`, `extra_category`, URIs) are **not** translated — leave them out of `values-ar/`.
 - Use descriptive names: `battery_health_good`, not `bh_g`
 
-### Locale in `String.format`
-- **Never call `String.format` without a locale.** `Locale.ROOT` for anything persisted or parsed back by our code; `Locale.getDefault()` only for text a person reads (UI, content descriptions).
-- CLDR selects Eastern Arabic digits for region-bearing Arabic locales (`ar-SA`, `ar-EG`, `ar-JO`), so a locale-less `%d` prints `٨` and a persisted value stops parsing. Shipped twice — #154 and #241.
-- **Locale tests must use a region tag.** Bare `Locale.forLanguageTag("ar")` formats Western digits, so a test using it passes against the defect; that is how #241 survived the #154 fix. Use `ar-EG` and assert the premise (plain `String.format` really does emit `٠٨:٣٠`) before asserting the behaviour.
+### Numbers Are Always Western Digits
+- **Every number a user sees renders Western (`85`), never Eastern Arabic (`٨٥`), in any locale.** The words around a number are translated; the number is not. Product decision, enforced by `BatteryPercentFormatter` since #96.
+- **`Locale.ROOT` for all numeric formatting** — persisted and user-facing alike. `Locale.getDefault()` has no numeric use in this app.
+- **`getString(id, someInt)` is the trap.** `Resources.getString` formats with the *resource* locale, so a `%1$d` placeholder emits Eastern digits on `ar-EG`/`ar-SA`/`ar-JO` with no `String.format` anywhere in your code. Declare the placeholder as `%1$s` and pass an already-formatted string — `BatteryPercentFormatter.formatWhole(target)` for percentages, which brings its own `%` sign.
+- CLDR selects Eastern Arabic digits for region-bearing Arabic locales, so a locale-less or `getDefault()` `%d` prints `٨`, a persisted value stops parsing, and a displayed one stops matching the rest of the app. Shipped twice — #154 and #241.
+- **Locale tests must use a region tag.** Bare `"ar"` formats Western digits, so a test using it passes against the defect; that is how #241 survived the #154 fix. Use `ar-rEG` (the Robolectric/resource-qualifier spelling) and assert the digits a real user would see.
 
 ### Logging
 - Build log messages with `+` concatenation — **never `String.format`**. `android.util.Log` has no placeholder/varargs API, so concatenation is the official Android idiom; it also cannot throw on an argument-type mismatch, which matters inside a `BroadcastReceiver` where a throw becomes a crash loop.

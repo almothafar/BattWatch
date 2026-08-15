@@ -90,8 +90,12 @@ public final class BatteryTemperatureTracker {
 	 *
 	 * @return the range to persist, value-equal to {@code previous} when nothing changed
 	 */
-	static TemperatureStats fold(TemperatureStats previous, int rawTenthsC, int levelPercent, int status,
-	                             int chargeTarget) {
+	static TemperatureStats fold(
+			TemperatureStats previous,
+			int rawTenthsC,
+			int levelPercent,
+			int status,
+			int chargeTarget) {
 		// The end-of-charge bookkeeping is decided before the reading is judged. Deciding it after
 		// would couple the two: on a device that reports no temperature the flag could never move, so
 		// the reset would stay stuck at whatever a fresh install left it on.
@@ -146,8 +150,7 @@ public final class BatteryTemperatureTracker {
 	 *
 	 * @return the new {@code fullSeen} flag
 	 */
-	static boolean nextFullSeen(TemperatureStats previous, int levelPercent, boolean chargeComplete,
-	                            int chargeTarget) {
+	static boolean nextFullSeen(TemperatureStats previous, int levelPercent, boolean chargeComplete, int chargeTarget) {
 		if (chargeComplete) {
 			return true;
 		}

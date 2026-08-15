@@ -306,8 +306,12 @@ public class BatteryLevelReceiverTest {
 	 * Build the battery-changed intent {@link #receive()} will deliver. The receiver reads the
 	 * delivered intent directly (#159), so no sticky broadcast is involved anymore.
 	 */
-	private void publishBattery(final int status, final int level, final int scale, final int plugged,
-	                            final int temperatureTenthsC) {
+	private void publishBattery(
+			int status,
+			int level,
+			int scale,
+			int plugged,
+			int temperatureTenthsC) {
 		final Intent battery = new Intent(Intent.ACTION_BATTERY_CHANGED);
 		battery.putExtra(BatteryManager.EXTRA_STATUS, status);
 		battery.putExtra(BatteryManager.EXTRA_LEVEL, level);

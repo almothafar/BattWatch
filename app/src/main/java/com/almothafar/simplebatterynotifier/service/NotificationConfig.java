@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 
 import com.almothafar.simplebatterynotifier.R;
 import com.almothafar.simplebatterynotifier.util.AppPrefs;
+import com.almothafar.simplebatterynotifier.util.BatteryPercentFormatter;
 
 /**
  * Configuration for a battery-level notification (reduces parameter count).
@@ -107,8 +108,7 @@ final class NotificationConfig {
 	 *
 	 * @return the copy and channel for this alert
 	 */
-	private static AlertStyle fullAlertStyle(Context context, SharedPreferences prefs, String defaultSound,
-	                                         int levelPercent) {
+	private static AlertStyle fullAlertStyle(Context context, SharedPreferences prefs, String defaultSound, int levelPercent) {
 		final int target = AppPrefs.chargeTarget(context);
 		// Below the target the only way here is a charge the battery reported as complete.
 		final boolean chargeIsComplete = AppPrefs.targetIsAFullCharge(target) || levelPercent < target;
@@ -126,17 +126,27 @@ final class NotificationConfig {
 			// Two different numbers, deliberately: the ticker reports the level the battery actually
 			// reached, the body names the target that level crossed. Plugging in at 95% with a target of
 			// 90 is "95% reached" against "your 90% charge target", and both are true.
-			ticker = context.getString(R.string.notification_almost_full_ticker, levelPercent);
+			//
+			// Both go through BatteryPercentFormatter rather than a %1$d placeholder: getString formats
+			// with the resource locale, so a bare int would print ٩٥ on ar-EG/ar-SA/ar-JO. Numbers stay
+			// Western in every locale (#96).
+			final String reachedText = BatteryPercentFormatter.formatWhole(levelPercent);
+			final String targetText = BatteryPercentFormatter.formatWhole(target);
+
+			ticker = context.getString(R.string.notification_almost_full_ticker, reachedText);
 			title = context.getString(R.string.notification_almost_full_title);
-			content = context.getString(R.string.notification_almost_full_content, target);
-			bigContent = context.getString(R.string.notification_almost_full_content_big, target);
+			content = context.getString(R.string.notification_almost_full_content, targetText);
+			bigContent = context.getString(R.string.notification_almost_full_content_big, targetText);
 		}
 
 		return new AlertStyle(
 				NotificationChannels.CHANNEL_ID_FULL,
 				R.drawable.ic_stat_battery_full,
 				prefs.getString(context.getString(R.string._pref_key_notifications_full_sound_ringtone), defaultSound),
-				ticker, title, content, bigContent);
+				ticker,
+				title,
+				content,
+				bigContent);
 	}
 
 	/**
@@ -163,7 +173,13 @@ final class NotificationConfig {
 	 * @param content    the collapsed content line
 	 * @param bigContent the expanded (BigTextStyle) content
 	 */
-	private record AlertStyle(String channelId, int iconRes, String alarmSound, String ticker,
-	                          String title, String content, String bigContent) {
+	private record AlertStyle(
+			String channelId,
+			int iconRes,
+			String alarmSound,
+			String ticker,
+			String title,
+			String content,
+			String bigContent) {
 	}
 }
