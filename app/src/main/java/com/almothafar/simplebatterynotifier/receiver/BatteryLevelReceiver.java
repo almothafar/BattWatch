@@ -1,5 +1,6 @@
 package com.almothafar.simplebatterynotifier.receiver;
 
+import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -209,7 +210,7 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 		final TemperatureDecision decision = decideTemperature(previouslyAlerted, enabled, rawTenthsC, thresholdCelsius);
 
 		if (decision.alerted() != previouslyAlerted) {
-			sharedPref.edit().putBoolean(PREF_TEMPERATURE_ALERTED, decision.alerted()).apply();
+			persistTemperatureAlerted(sharedPref, decision.alerted());
 		}
 		if (decision.shouldNotify()) {
 			NotificationService.sendTemperatureNotification(context, rawTenthsC);
@@ -217,6 +218,33 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 			// The spell just ended: cooled past the hysteresis, or the alert switched off while one was
 			// showing. Dismiss the stale warning (#259) — staying inside the band holds, so it can't flap.
 			NotificationService.clearTemperatureAlert(context);
+		}
+	}
+
+	/**
+	 * Persist the hot-spell flag, synchronously when it is being turned <em>on</em> (#268).
+	 * <p>
+	 * The flag is written before the notification is posted so that a process killed in between leaves
+	 * the recoverable state — a flag claiming an alert that isn't showing, which the next cool tick
+	 * resolves with a no-op cancel. {@code apply()} does not actually give that ordering: it returns
+	 * before the write reaches disk, so a hard kill can lose the flag while the notification, living in
+	 * system_server, survives. The alert is then stranded with nothing left to dismiss it. Turning the
+	 * flag <em>off</em> keeps {@code apply()} — losing that write is self-healing, because the next tick
+	 * re-decides the same transition and repeats the cancel.
+	 * <p>
+	 * Only a hot-spell transition reaches here (the caller compares against the stored value), so this
+	 * is roughly two synchronous writes per spell, never one per broadcast.
+	 *
+	 * @param sharedPref The shared preferences
+	 * @param alerted    the flag value to store; {@code true} means an alert is now on screen
+	 */
+	@SuppressLint("ApplySharedPref") // Durability is the point — see above; the write is per-spell, not per-tick
+	static void persistTemperatureAlerted(SharedPreferences sharedPref, boolean alerted) {
+		final SharedPreferences.Editor edit = sharedPref.edit().putBoolean(PREF_TEMPERATURE_ALERTED, alerted);
+		if (alerted) {
+			edit.commit();
+		} else {
+			edit.apply();
 		}
 	}
 

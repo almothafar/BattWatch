@@ -1,5 +1,7 @@
 package com.almothafar.simplebatterynotifier.receiver;
 
+import android.content.SharedPreferences;
+
 import com.almothafar.simplebatterynotifier.receiver.BatteryLevelReceiver.ChargeState;
 import com.almothafar.simplebatterynotifier.receiver.BatteryLevelReceiver.LevelAlertConfig;
 import com.almothafar.simplebatterynotifier.receiver.BatteryLevelReceiver.LevelAlertDecision;
@@ -14,6 +16,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Answers.RETURNS_SELF;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link BatteryLevelReceiver}'s pure decision cores (#164), in the
@@ -354,5 +361,36 @@ public class BatteryLevelReceiverDecisionTest {
 		final TemperatureDecision d = BatteryLevelReceiver.decideTemperature(true, false, 470, THRESHOLD_C);
 		assertFalse(d.shouldNotify());
 		assertFalse(d.alerted());
+	}
+
+	// --- durability of the "alert is showing" flag (#268) -------------------------------------------
+	// A real SharedPreferences can't tell commit() from apply() — both read back — so these assert on
+	// the editor itself. That is the whole behaviour under test: the flag must reach disk before the
+	// notification posts, or a process kill strands an alert nothing can dismiss.
+
+	@Test
+	public void temperatureFlag_whenTheAlertFires_isWrittenSynchronously() {
+		final SharedPreferences.Editor editor = mock(SharedPreferences.Editor.class, RETURNS_SELF);
+		final SharedPreferences prefs = mock(SharedPreferences.class);
+		when(prefs.edit()).thenReturn(editor);
+
+		BatteryLevelReceiver.persistTemperatureAlerted(prefs, true);
+
+		verify(editor).commit();
+		verify(editor, never()).apply();
+	}
+
+	@Test
+	public void temperatureFlag_whenTheSpellEnds_staysAsynchronous() {
+		final SharedPreferences.Editor editor = mock(SharedPreferences.Editor.class, RETURNS_SELF);
+		final SharedPreferences prefs = mock(SharedPreferences.class);
+		when(prefs.edit()).thenReturn(editor);
+
+		// Losing the re-arm write is harmless — the next cool tick re-decides it — so it must not pay
+		// for a synchronous disk write.
+		BatteryLevelReceiver.persistTemperatureAlerted(prefs, false);
+
+		verify(editor).apply();
+		verify(editor, never()).commit();
 	}
 }
