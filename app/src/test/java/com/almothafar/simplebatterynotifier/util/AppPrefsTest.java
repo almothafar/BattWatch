@@ -102,6 +102,27 @@ public class AppPrefsTest {
 		}
 
 		@Test
+		public void chargeTarget_defaultsToTheAdviceTheAppGivesAndClampsStoredValues() {
+			// 90 is the app's own "unplug before 100%" guidance, now something the alert can act on.
+			assertEquals(90, AppPrefs.DEFAULT_CHARGE_TARGET);
+			assertEquals(AppPrefs.DEFAULT_CHARGE_TARGET, AppPrefs.chargeTarget(context));
+
+			PreferenceManager.getDefaultSharedPreferences(context).edit()
+			                 .putInt(context.getString(R.string._pref_key_charge_target), 999)
+			                 .apply();
+			assertEquals(AppPrefs.MAX_CHARGE_TARGET, AppPrefs.chargeTarget(context));
+		}
+
+		@Test
+		public void chargeTarget_readsBackAStoredValue() {
+			PreferenceManager.getDefaultSharedPreferences(context).edit()
+			                 .putInt(context.getString(R.string._pref_key_charge_target), 85)
+			                 .apply();
+
+			assertEquals(85, AppPrefs.chargeTarget(context));
+		}
+
+		@Test
 		public void vibrateEnabled_defaultsTrueAndReadsBack() {
 			// Defaults on (matches the switch's android:defaultValue in pref_behaviour.xml).
 			assertTrue(AppPrefs.DEFAULT_VIBRATE);
@@ -142,6 +163,54 @@ public class AppPrefsTest {
 			assertNotNull("warningDefault attr missing from pref_alerts.xml", xmlWarning);
 			assertEquals(AppPrefs.DEFAULT_CRITICAL_LEVEL, (int) xmlCritical);
 			assertEquals(AppPrefs.DEFAULT_WARNING_LEVEL, (int) xmlWarning);
+		}
+
+		/**
+		 * The same drift guard for the charge-target slider (#263): its XML default and bounds must equal
+		 * the {@link AppPrefs} constants, which are what clamp the stored value on read. A slider that
+		 * could reach a value the clamp rejects would silently move the alert somewhere else.
+		 */
+		@Test
+		public void xmlChargeTargetSlider_matchesTheFacadeConstants() throws Exception {
+			final XmlResourceParser parser = context.getResources().getXml(R.xml.pref_alerts);
+			Integer xmlDefault = null;
+			Integer xmlMin = null;
+			Integer xmlMax = null;
+
+			for (int event = parser.getEventType(); event != XmlPullParser.END_DOCUMENT; event = parser.next()) {
+				if (event != XmlPullParser.START_TAG || !isChargeTargetSlider(parser)) {
+					continue;
+				}
+				for (int i = 0; i < parser.getAttributeCount(); i++) {
+					final int attrRes = parser.getAttributeNameResource(i);
+					if (attrRes == android.R.attr.defaultValue) {
+						xmlDefault = parser.getAttributeIntValue(i, Integer.MIN_VALUE);
+					} else if (attrRes == android.R.attr.min) {
+						xmlMin = parser.getAttributeIntValue(i, Integer.MIN_VALUE);
+					} else if (attrRes == android.R.attr.max) {
+						xmlMax = parser.getAttributeIntValue(i, Integer.MIN_VALUE);
+					}
+				}
+			}
+
+			assertNotNull("charge-target slider missing from pref_alerts.xml", xmlDefault);
+			assertEquals(AppPrefs.DEFAULT_CHARGE_TARGET, (int) xmlDefault);
+			assertEquals(AppPrefs.MIN_CHARGE_TARGET, (int) xmlMin);
+			assertEquals(AppPrefs.MAX_CHARGE_TARGET, (int) xmlMax);
+		}
+
+		/**
+		 * Whether the tag the parser is on is the charge-target slider, identified by its preference key
+		 * rather than its position — the screen grows and the categories get reordered.
+		 */
+		private boolean isChargeTargetSlider(final XmlResourceParser parser) {
+			for (int i = 0; i < parser.getAttributeCount(); i++) {
+				if (parser.getAttributeNameResource(i) == android.R.attr.key
+						&& parser.getAttributeResourceValue(i, 0) == R.string._pref_key_charge_target) {
+					return true;
+				}
+			}
+			return false;
 		}
 	}
 

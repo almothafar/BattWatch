@@ -38,6 +38,28 @@ public final class AppPrefs {
 	/** Default warning battery level in percent — the single owner of this value (#162). */
 	public static final int DEFAULT_WARNING_LEVEL = 40;
 
+	/**
+	 * Default charge target in percent — the level the full-battery alert fires at (#263). 90 matches
+	 * the "unplug before 100%" advice the alert copy itself gives.
+	 */
+	public static final int DEFAULT_CHARGE_TARGET = 90;
+	/** Lowest accepted charge target; mirrors the slider's {@code android:min} in pref_alerts.xml. */
+	public static final int MIN_CHARGE_TARGET = 80;
+	/**
+	 * Highest accepted charge target; mirrors the slider's {@code android:max} in pref_alerts.xml. At
+	 * this value the alert waits for a genuinely complete charge, which is what the app did before the
+	 * target existed.
+	 */
+	public static final int MAX_CHARGE_TARGET = 100;
+	/**
+	 * How far below the charge target the level must fall before an end-of-charge episode re-arms.
+	 * <p>
+	 * The full-battery alert fires once per charge session; without a margin it would re-arm on the very
+	 * tick it fired and then fire again on every percent up to 100. At the maximum target this is the
+	 * {@code ≤ 95} band the alert has always re-armed on.
+	 */
+	public static final int CHARGE_TARGET_REARM_MARGIN = 5;
+
 	/** Default "high drain" limit in %/h. */
 	public static final int DEFAULT_DRAIN_LIMIT_PPH = 20;
 	/** Lowest accepted drain limit in %/h; mirrors the slider's {@code android:min} in pref_alerts.xml. */
@@ -100,6 +122,60 @@ public final class AppPrefs {
 		              .putInt(context.getString(R.string._pref_key_critical_battery_level), levels.critical())
 		              .putInt(context.getString(R.string._pref_key_warn_battery_level), levels.warning())
 		              .apply();
+	}
+
+	/**
+	 * The charge target in percent (#263): the level at which the full-battery alert fires while
+	 * charging, instead of only when the battery reports a completed charge. Reads
+	 * {@link #DEFAULT_CHARGE_TARGET} when unset and always {@link #clampChargeTarget clamps} the stored
+	 * value, so a corrupt preference can't move the alert somewhere the slider can't reach.
+	 *
+	 * @param context Application context
+	 *
+	 * @return the configured charge target in percent
+	 */
+	public static int chargeTarget(Context context) {
+		return clampChargeTarget(prefs(context).getInt(
+				context.getString(R.string._pref_key_charge_target), DEFAULT_CHARGE_TARGET));
+	}
+
+	/**
+	 * Clamps a stored charge target to {@code [MIN_CHARGE_TARGET, MAX_CHARGE_TARGET]}. The bounds mirror
+	 * the slider's {@code android:min}/{@code android:max} in {@code pref_alerts.xml}. Pure so it is
+	 * unit-testable.
+	 *
+	 * @param stored the raw persisted target in percent
+	 *
+	 * @return the target clamped to {@code [MIN_CHARGE_TARGET, MAX_CHARGE_TARGET]}
+	 */
+	public static int clampChargeTarget(int stored) {
+		return Math.max(MIN_CHARGE_TARGET, Math.min(MAX_CHARGE_TARGET, stored));
+	}
+
+	/**
+	 * Whether a charge target means "wait for a genuinely full battery" — the behaviour the app had
+	 * before the target was configurable, and the one place that decides which wording the settings and
+	 * the notification use ("full" vs "almost full", #263).
+	 *
+	 * @param chargeTarget the configured charge target in percent
+	 *
+	 * @return true when the target is a complete charge
+	 */
+	public static boolean targetIsAFullCharge(int chargeTarget) {
+		return chargeTarget >= MAX_CHARGE_TARGET;
+	}
+
+	/**
+	 * The level an end-of-charge episode re-arms at: {@code target − CHARGE_TARGET_REARM_MARGIN}. Shared
+	 * by the full-battery alert's once-per-charge flag and the temperature range's per-charge reset
+	 * (#260/#263), so the two agree on when a charge session has genuinely been left behind. Pure.
+	 *
+	 * @param chargeTarget the configured charge target in percent
+	 *
+	 * @return the level at/below which the episode re-arms
+	 */
+	public static int reArmLevel(int chargeTarget) {
+		return chargeTarget - CHARGE_TARGET_REARM_MARGIN;
 	}
 
 	/**

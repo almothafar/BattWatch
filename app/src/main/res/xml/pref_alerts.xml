@@ -90,6 +90,24 @@
             android:title="@string/notify_for_full_level"
             app:iconSpaceReserved="false" />
 
+        <!-- #263: the level the alert fires at while charging. defaultValue/min/max must match
+             AppPrefs.DEFAULT/MIN/MAX_CHARGE_TARGET, which clamp the stored value when it is read;
+             AppPrefsTest guards the pair against drift. At the maximum the alert waits for a
+             completed charge, which is what the app did before this slider existed. This slider's
+             summary and the switch title above it are set from the value in
+             GenericPreferenceFragment: below a full charge the alert is about being almost full. -->
+        <SeekBarPreference
+            android:defaultValue="90"
+            android:dependency="@string/_pref_key_notify_for_full_level"
+            android:key="@string/_pref_key_charge_target"
+            android:min="80"
+            android:max="100"
+            android:title="@string/charge_target"
+            style="@style/PreferenceSeekBar"
+            app:showSeekBarValue="true"
+            app:adjustable="true"
+            app:iconSpaceReserved="false" />
+
         <com.almothafar.simplebatterynotifier.ui.preference.RingtonePreference
             android:defaultValue="content://settings/system/notification_sound"
             android:dependency="@string/_pref_key_notify_for_full_level"

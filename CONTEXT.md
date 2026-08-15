@@ -27,6 +27,13 @@ The battery's rated full capacity when new (mAh), from the manufacturer's spec. 
 best-effort auto-detected from the kernel. Distinct from the measured current full capacity.
 _Avoid_: rated capacity (in prose only), max capacity.
 
+**Charge target**:
+The level the user wants charging to stop at, in percent. The full-battery alert fires when the
+battery reaches it while charging (default 90%, range 80–100), and it is also what "this charge is
+done" means for the temperature range. At 100% it means a genuinely complete charge, and the alert
+waits for one.
+_Avoid_: charge limit, charge cap (that is the OEM hardware feature), threshold.
+
 **Temperature range**:
 The lowest and highest battery temperature seen since the battery last finished charging, in the
 user's display unit. Accumulated from the readings the monitoring service observes; completing a

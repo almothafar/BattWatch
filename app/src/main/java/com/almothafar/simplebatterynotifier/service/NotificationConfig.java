@@ -71,14 +71,7 @@ final class NotificationConfig {
 					context.getString(R.string.notification_warning_title),
 					context.getString(R.string.notification_warning_content, warningLevel),
 					context.getString(R.string.notification_warning_content_big, warningLevel));
-			case FULL -> new AlertStyle(
-					NotificationChannels.CHANNEL_ID_FULL,
-					R.drawable.ic_stat_battery_full,
-					prefs.getString(context.getString(R.string._pref_key_notifications_full_sound_ringtone), defaultSound),
-					context.getString(R.string.notification_full_level_ticker),
-					context.getString(R.string.notification_full_level_title),
-					context.getString(R.string.notification_full_level_content),
-					context.getString(R.string.notification_full_level_content_big));
+			case FULL -> fullAlertStyle(context, prefs, defaultSound);
 		};
 		this.channelId = style.channelId();
 		this.iconRes = style.iconRes();
@@ -87,6 +80,46 @@ final class NotificationConfig {
 		this.title = style.title();
 		this.content = style.content();
 		this.bigContent = style.bigContent();
+	}
+
+	/**
+	 * The full-battery alert's presentation, which follows the user's charge target (#263).
+	 * <p>
+	 * Below a full charge the battery is <em>not</em> full, so "Battery fully charged" would be a plain
+	 * lie: the alert says the target was reached and names it. At the maximum target the original
+	 * {@code notification_full_level_*} copy is used verbatim, so the behaviour of an install that never
+	 * touches the slider is unchanged. Two string sets rather than one parameterised one — the messages
+	 * differ in more than a number.
+	 *
+	 * @param context      The application context
+	 * @param prefs        SharedPreferences containing user settings
+	 * @param defaultSound the fallback alarm sound URI
+	 *
+	 * @return the copy and channel for this alert
+	 */
+	private static AlertStyle fullAlertStyle(Context context, SharedPreferences prefs, String defaultSound) {
+		final int target = AppPrefs.chargeTarget(context);
+		final String sound = prefs.getString(
+				context.getString(R.string._pref_key_notifications_full_sound_ringtone), defaultSound);
+
+		if (AppPrefs.targetIsAFullCharge(target)) {
+			return new AlertStyle(
+					NotificationChannels.CHANNEL_ID_FULL,
+					R.drawable.ic_stat_battery_full,
+					sound,
+					context.getString(R.string.notification_full_level_ticker),
+					context.getString(R.string.notification_full_level_title),
+					context.getString(R.string.notification_full_level_content),
+					context.getString(R.string.notification_full_level_content_big));
+		}
+		return new AlertStyle(
+				NotificationChannels.CHANNEL_ID_FULL,
+				R.drawable.ic_stat_battery_full,
+				sound,
+				context.getString(R.string.notification_almost_full_ticker, target),
+				context.getString(R.string.notification_almost_full_title),
+				context.getString(R.string.notification_almost_full_content, target),
+				context.getString(R.string.notification_almost_full_content_big, target));
 	}
 
 	/**

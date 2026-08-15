@@ -28,6 +28,7 @@ import androidx.preference.SeekBarPreference;
 import com.almothafar.simplebatterynotifier.R;
 import com.almothafar.simplebatterynotifier.service.NotificationService;
 import com.almothafar.simplebatterynotifier.ui.preference.RingtonePreference;
+import com.almothafar.simplebatterynotifier.util.AppPrefs;
 import com.almothafar.simplebatterynotifier.util.TemperatureUtils;
 import com.almothafar.simplebatterynotifier.ui.preference.TimePickerPreference;
 import com.almothafar.simplebatterynotifier.ui.preference.TimePickerPreferenceDialogFragmentCompat;
@@ -343,7 +344,8 @@ public class GenericPreferenceFragment extends CardPreferenceFragment
 	/**
 	 * Update summary for SeekBarPreference
 	 * <p>
-	 * Adds the temperature-unit suffix for the high-temperature threshold.
+	 * Adds the temperature-unit suffix for the high-temperature threshold, and the wording that follows
+	 * the charge target (#263).
 	 */
 	private void updateSeekBarPreferenceSummary(final SeekBarPreference seekBarPref) {
 		final String key = seekBarPref.getKey();
@@ -352,6 +354,29 @@ public class GenericPreferenceFragment extends CardPreferenceFragment
 		}
 		if (key.equals(getString(R.string._pref_key_high_temperature_threshold))) {
 			seekBarPref.setSummary(seekBarPref.getValue() + temperatureUnitSuffix(TemperatureUtils.isFahrenheit(requireContext())));
+		} else if (key.equals(getString(R.string._pref_key_charge_target))) {
+			applyChargeTargetWording(seekBarPref, seekBarPref.getValue());
+		}
+	}
+
+	/**
+	 * Say what the chosen charge target will actually do (#263).
+	 * <p>
+	 * Below a full charge the alert is not about a full battery, so the switch above the slider stops
+	 * claiming it is: it becomes "Notify when almost full", and the slider spells out the level it will
+	 * alert at. At the maximum both read exactly as they did before the target was configurable.
+	 *
+	 * @param slider the charge-target slider
+	 * @param target the selected charge target in percent
+	 */
+	private void applyChargeTargetWording(final SeekBarPreference slider, final int target) {
+		final boolean fullCharge = AppPrefs.targetIsAFullCharge(target);
+		slider.setSummary(getString(
+				fullCharge ? R.string.charge_target_summary_full : R.string.charge_target_summary, target));
+
+		final Preference alertSwitch = findPreference(getString(R.string._pref_key_notify_for_full_level));
+		if (nonNull(alertSwitch)) {
+			alertSwitch.setTitle(fullCharge ? R.string.notify_for_full_level : R.string.notify_when_almost_full);
 		}
 	}
 

@@ -142,6 +142,41 @@ public class BatteryLevelReceiverTest {
 	}
 
 	@Test
+	public void chargeTarget_alertsOnTheWayUpAndOnlyOnce() {
+		// End-to-end for #263: the stored target, not a constant, is what the alert fires at — and the
+		// rest of the climb to a full charge stays quiet.
+		setChargeTarget(90);
+		saveLevelState(new LevelAlertState(89, null, false, false));
+
+		try (MockedStatic<NotificationService> ns = mockStatic(NotificationService.class)) {
+			publishBattery(BatteryManager.BATTERY_STATUS_CHARGING, 90, 100, BatteryManager.BATTERY_PLUGGED_AC);
+			receive();
+			publishBattery(BatteryManager.BATTERY_STATUS_CHARGING, 95, 100, BatteryManager.BATTERY_PLUGGED_AC);
+			receive();
+			publishBattery(BatteryManager.BATTERY_STATUS_FULL, 100, 100, BatteryManager.BATTERY_PLUGGED_AC);
+			receive();
+
+			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.FULL)), times(1));
+		}
+	}
+
+	@Test
+	public void chargeTarget_whileDischarging_neverAlerts() {
+		setChargeTarget(90);
+
+		try (MockedStatic<NotificationService> ns = mockStatic(NotificationService.class)) {
+			// The second broadcast repeats the level, which is the path that reaches the full-battery
+			// branch while discharging — the one place a bare "level ≥ target" would announce a charge
+			// that never happened.
+			publishBattery(BatteryManager.BATTERY_STATUS_DISCHARGING, 90, 100, 0);
+			receive();
+			receive();
+
+			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.FULL)), never());
+		}
+	}
+
+	@Test
 	public void unplugAtFull_dismissesTheStaleAlertBeforePostingTheCriticalOne() {
 		// The level alerts share one notification ID, so the dismissal has to run first: cancelling
 		// after sending would wipe the critical alert this same broadcast just decided. Only the
@@ -267,6 +302,13 @@ public class BatteryLevelReceiverTest {
 		PreferenceManager.getDefaultSharedPreferences(context)
 				.edit()
 				.putBoolean(context.getString(R.string._pref_key_notify_every_tick), true)
+				.commit();
+	}
+
+	private void setChargeTarget(int target) {
+		PreferenceManager.getDefaultSharedPreferences(context)
+				.edit()
+				.putInt(context.getString(R.string._pref_key_charge_target), target)
 				.commit();
 	}
 

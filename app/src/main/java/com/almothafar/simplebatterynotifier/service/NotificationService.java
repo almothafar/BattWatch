@@ -48,7 +48,6 @@ import static java.util.Objects.nonNull;
 public final class NotificationService {
 	// Battery thresholds
 	public static final int RED_ALERT_LEVEL = 4;
-	public static final int FULL_PERCENTAGE = 95;
 	private static final String TAG = NotificationService.class.getSimpleName();
 
 	// Notification IDs — each alert gets its own so one can never replace another.
