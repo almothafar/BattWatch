@@ -534,7 +534,7 @@ String.format(Locale.ROOT, "%02d:%02d", hour, minute);
 BatteryPercentFormatter.formatWhole(level); // "85%"
 ```
 
-**`getString(id, someInt)` is the trap.** `Resources.getString` formats with the *resource* locale, so a `%1$d` placeholder produces Eastern digits on `ar-EG`/`ar-SA`/`ar-JO` even though no `String.format` appears in your code. Use a `%1$s` placeholder and pass an already-formatted string:
+**`getString(id, someInt)` is the trap.** `Resources.getString` formats with the **configuration** locale — the device's, not the one the string was declared in — so a `%1$d` placeholder produces Eastern digits on `ar-EG`/`ar-SA`/`ar-JO` even though no `String.format` appears in your code. Use a `%1$s` placeholder and pass an already-formatted string:
 
 ```xml
 <!-- ❌ BAD - %1$d is formatted by the resource locale -->
@@ -549,7 +549,11 @@ BatteryPercentFormatter.formatWhole(level); // "85%"
 context.getString(R.string.notification_almost_full_content, BatteryPercentFormatter.formatWhole(target));
 ```
 
-**Locale tests must use a region tag.** Bare `"ar"` formats Western digits, so a test written against it passes even when the defect is present — that is exactly how #241 survived the #154 fix. Use `ar-rEG` (the Robolectric/resource-qualifier spelling of `ar-EG`) and assert the digits a real user would see.
+**`translatable="false"` is not protection.** It keeps a string out of the translation files; it does nothing about formatting, because the digits are chosen by the device's locale rather than by the file the string came from. An untranslated `%1$d` renders `٤٠` on an Arabic device exactly like a translated one — `battery_level_percent` did, until #273.
+
+**No string resource may contain `%d` at all.** Since every number is formatted in code, a numeric placeholder in a resource has no legitimate use, and `StringResourceDigitsTest` fails the build on one in any `values*` file. That is a static property of the catalogue, so it is checked as one rather than string by string.
+
+**Locale tests must use a region tag.** Bare `"ar"` formats Western digits, so a test written against it passes even when the defect is present — that is exactly how #241 survived the #154 fix. Use `ar-rEG` (the Robolectric/resource-qualifier spelling of `ar-EG`) and assert the digits a real user would see. Assert the premise (`String.format(Locale.getDefault(), "%d", 40)` really does yield `٤٠`) first, so the test visibly can still fail.
 
 **Why?** CLDR selects the Eastern Arabic numbering system for region-bearing Arabic locales (`ar-SA`, `ar-EG`, `ar-JO`), so `%d` prints `٨` rather than `8`, a persisted value stops parsing, and a displayed one stops matching the rest of the app. This shipped twice — issues #154 and #241.
 
@@ -771,7 +775,7 @@ When reviewing code, check:
 - [ ] All null checks in place
 - [ ] No silent/broad `catch`; expected failures validated, not caught
 - [ ] No hardcoded user-facing strings; `values-ar/` kept in parity
-- [ ] Every number a user sees is Western digits — `Locale.ROOT` everywhere, `%1$s` not `%1$d` in resources
+- [ ] Every number a user sees is Western digits — `Locale.ROOT` everywhere, `%1$s` not `%1$d` in resources, `translatable="false"` included
 - [ ] Locale tests use a region tag (`ar-rEG`), never bare `ar`
 - [ ] Log messages use `+` concatenation, not `String.format`
 - [ ] Permissions checked (Android 13+)
