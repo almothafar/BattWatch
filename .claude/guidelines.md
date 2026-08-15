@@ -151,13 +151,14 @@ The project uses **JUnit 4** for pure logic, with **Robolectric** and **Mockito*
 - Only implement features that are directly requested
 - Don't add "improvements" beyond the requirements
 - Keep solutions simple and focused
-- Three similar lines of code is better than a premature abstraction
+- Three similar lines of code is better than a premature abstraction — but "premature" means the duplication is still hypothetical. Once the same shape is genuinely repeated, or the operation already has a counterpart helper it should mirror (a `post` implies a `cancel`), extracting it is not premature and "When to Extract Methods" below applies instead.
 
 ### When to Extract Methods
 - Method exceeds ~30 lines
 - Logic is duplicated in multiple places
 - Complex algorithm that needs clear naming
 - Side effect separation (separate mutation from computation)
+- A shared utility or its symmetric counterpart already exists — the new code should join it rather than re-implement the same guard clauses
 
 ### Performance Considerations
 - Minimize object allocations in frequently called methods (e.g., `onDraw`)

@@ -134,17 +134,19 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 	}
 
 	/**
-	 * Send a high-temperature safety alert when the battery exceeds the configured threshold.
+	 * Send a high-temperature safety alert when the battery exceeds the configured threshold, and
+	 * dismiss it again once the hot spell ends.
 	 * <p>
 	 * The hysteresis flag is persisted (#164) so a process restart mid-hot-spell cannot fire a
 	 * duplicate alert; another alert can only fire once the battery has cooled at least
-	 * {@link #TEMPERATURE_HYSTERESIS_C}°C below the threshold.
+	 * {@link #TEMPERATURE_HYSTERESIS_C}°C below the threshold. That same re-arm is the end of the
+	 * spell, so it also takes the shown alert down (#259).
 	 *
 	 * @param context    The application context
 	 * @param batteryDO  Current battery snapshot (non-null; the caller already checked)
 	 * @param sharedPref The shared preferences
 	 */
-	private void handleTemperature(final Context context, final BatteryDO batteryDO, final SharedPreferences sharedPref) {
+	private void handleTemperature(Context context, BatteryDO batteryDO, SharedPreferences sharedPref) {
 		final boolean enabled = sharedPref.getBoolean(context.getString(R.string._pref_key_notify_high_temperature), true);
 
 		// The threshold is stored canonically in Celsius; the battery reading is also Celsius
@@ -162,6 +164,10 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 		}
 		if (decision.shouldNotify()) {
 			NotificationService.sendTemperatureNotification(context, rawTenthsC);
+		} else if (previouslyAlerted && !decision.alerted()) {
+			// The spell just ended: cooled past the hysteresis, or the alert switched off while one was
+			// showing. Dismiss the stale warning (#259) — staying inside the band holds, so it can't flap.
+			NotificationService.clearTemperatureAlert(context);
 		}
 	}
 
@@ -240,6 +246,8 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 	 *   <li><b>Cooled below threshold − hysteresis</b> — re-arm for the next spell;</li>
 	 *   <li><b>In the hysteresis band between them</b> — hold the current state.</li>
 	 * </ul>
+	 * Re-arming doubles as "the spell is over": the caller dismisses the shown alert on that
+	 * transition (#259), which is why the disabled case re-arms too rather than just going quiet.
 	 *
 	 * @param alreadyAlerted   whether this hot spell's alert has already fired
 	 * @param enabled          whether the high-temperature alert is enabled
