@@ -17,16 +17,13 @@ import com.almothafar.simplebatterynotifier.util.AppPrefs;
  * that in the terms people already think in, and needs no history or database — just a running
  * minimum and maximum.
  * <p>
- * <b>When the range resets.</b> Only when a charge completes. Plugging in, unplugging and the clock
- * do nothing. "Charge complete" is {@link BatteryManager#BATTERY_STATUS_FULL} <em>or</em> the user's
- * charge target ({@link AppPrefs#chargeTarget}): the status alone misses devices whose charge cap stops
- * them short of the target, and the level alone misses OEMs that report full a percent early. Sharing
- * the target with the full-battery alert (#263) is what keeps one definition of "this charge is done":
- * on a phone habitually unplugged at 90% a fixed 100% is never reached, and the range would grow for
- * weeks without ever starting over. The reset is edge-triggered through
- * {@link TemperatureStats#fullSeen()} — it fires once per completed charge and re-arms only once the
- * battery has genuinely dropped out of the full band (see {@link #nextFullSeen}), so neither sitting
- * plugged in at full nor the overnight top-up cycle keeps wiping the range.
+ * <b>When the range resets.</b> Only when a charge completes. Plugging in, unplugging and the clock do nothing. "Charge complete" is
+ * {@link BatteryManager#BATTERY_STATUS_FULL} <em>or</em> the user's charge target ({@link AppPrefs#chargeTarget}): the status alone misses devices whose charge
+ * cap stops them short of the target, and the level alone misses OEMs that report full a percent early. Sharing the target with the full-battery alert (#263)
+ * is what keeps one definition of "this charge is done": on a phone habitually unplugged at 90% a fixed 100% is never reached, and the range would grow for
+ * weeks without ever starting over. The reset is edge-triggered through {@link TemperatureStats#fullSeen()} — it fires once per completed charge and re-arms
+ * only once the battery has genuinely dropped out of the full band (see {@link #nextFullSeen}), so neither sitting plugged in at full nor the overnight top-up
+ * cycle keeps wiping the range.
  * <p>
  * <b>Storage.</b> The stats live in the backup-excluded transient file ({@link TransientState}):
  * another device's temperature range says nothing about this one, and a fresh install fills in on the
@@ -132,16 +129,14 @@ public final class BatteryTemperatureTracker {
 	}
 
 	/**
-	 * The reset flag to carry into the next broadcast. Set the moment a charge completes; cleared only
-	 * once the battery has genuinely dropped out of the full band ({@link AppPrefs#reArmLevel}).
+	 * The reset flag to carry into the next broadcast. Set the moment a charge completes; cleared only once the battery has genuinely dropped out of the full
+	 * band ({@link AppPrefs#reArmLevel}).
 	 * <p>
-	 * Re-arming on a bare "no longer full" would fire the reset repeatedly overnight: a phone left on
-	 * the charger drifts 100 → 99 (status {@code CHARGING}) and tops back up again and again, and each
-	 * of those dips would re-arm, so by morning the range would span the last few minutes instead of
-	 * the night. The drop-out band is the one the full-battery alert already re-arms on
-	 * ({@code fullNotified} in {@code BatteryLevelReceiver}), which is why both read it from the same
-	 * place. It also holds the flag on charge-capped devices, which report FULL well below the target
-	 * and would otherwise re-arm on their own resting level and reset on every following tick.
+	 * Re-arming on a bare "no longer full" would fire the reset repeatedly overnight: a phone left on the charger drifts 100 → 99 (status {@code CHARGING}) and
+	 * tops back up again and again, and each of those dips would re-arm, so by morning the range would span the last few minutes instead of the night. The
+	 * drop-out band is the one the full-battery alert already re-arms on ({@code fullNotified} in {@code BatteryLevelReceiver}), which is why both read it from
+	 * the same place. It also holds the flag on charge-capped devices, which report FULL well below the target and would otherwise re-arm on their own resting
+	 * level and reset on every following tick.
 	 *
 	 * @param previous       the range so far
 	 * @param levelPercent   the battery level as a whole percent
@@ -158,9 +153,8 @@ public final class BatteryTemperatureTracker {
 	}
 
 	/**
-	 * Whether this broadcast says the charge has finished. Both signals count, because neither is
-	 * reliable alone: a device with a charge cap can report FULL well below the target, and some OEMs
-	 * report the level a tick before the status catches up.
+	 * Whether this broadcast says the charge has finished. Both signals count, because neither is reliable alone: a device with a charge cap can report FULL
+	 * well below the target, and some OEMs report the level a tick before the status catches up.
 	 *
 	 * @param levelPercent the battery level as a whole percent
 	 * @param status       the {@code BatteryManager} status extra from this broadcast

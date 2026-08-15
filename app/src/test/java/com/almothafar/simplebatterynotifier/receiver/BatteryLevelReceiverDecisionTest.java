@@ -37,11 +37,9 @@ public class BatteryLevelReceiverDecisionTest {
 	private static final int THRESHOLD_C = 45;
 	private static final int TARGET_90 = 90;
 
-	// Every pre-#263 case runs at the maximum charge target, where the alert waits for a genuinely
-	// complete charge — so this suite doubles as the proof that setting the slider to 100% restores the
-	// pre-#263 behaviour exactly. It is deliberately NOT the shipped default: an install that never
-	// touches the slider gets DEFAULT_CHARGE_TARGET (90) and is meant to start alerting there, which is
-	// the whole point of #263. The target-driven cases below cover that path.
+	// Every pre-#263 case runs at the maximum charge target, where the alert waits for a genuinely complete charge — so this suite doubles as the proof that
+	// setting the slider to 100% restores the pre-#263 behaviour exactly. It is deliberately NOT the shipped default: an install that never touches the slider
+	// gets DEFAULT_CHARGE_TARGET (90) and is meant to start alerting there, which is the whole point of #263. The target-driven cases below cover that path.
 	private static final LevelAlertConfig DEFAULTS =
 			new LevelAlertConfig(CRITICAL, WARNING, AppPrefs.MAX_CHARGE_TARGET, true, true, false);
 	private static final LevelAlertConfig TARGET_AT_90 =
@@ -53,9 +51,8 @@ public class BatteryLevelReceiverDecisionTest {
 	private static final ChargeState UNPLUGGED_STILL_FULL = new ChargeState(false, true, false, false);
 	private static final ChargeState CHARGING = new ChargeState(true, false, false, true);
 	private static final ChargeState FULL_ON_CHARGER = new ChargeState(false, true, false, true);
-	// Plugged in but neither charging nor full: BATTERY_STATUS_NOT_CHARGING, what a device parked at an
-	// OEM charge cap reports. Distinguishes the charging gate from the cable gate, which every other
-	// case here has moving together.
+	// Plugged in but neither charging nor full: BATTERY_STATUS_NOT_CHARGING, what a device parked at an OEM charge cap reports. Distinguishes the charging gate
+	// from the cable gate, which every other case here has moving together.
 	private static final ChargeState PLUGGED_NOT_CHARGING = new ChargeState(false, false, true, true);
 
 	// Episode state shorthands: nothing alerted yet, and "the full alert fired and is on screen".
@@ -179,8 +176,7 @@ public class BatteryLevelReceiverDecisionTest {
 
 	@Test
 	public void charging_levelLeavesFullBand_reArmsFullAlert() {
-		// Notified at full, then the level drops to 90 (≤ the 95 re-arm level of a 100 target, above
-		// warning): re-armed.
+		// Notified at full, then the level drops to 90 (≤ the 95 re-arm level of a 100 target, above warning): re-armed.
 		final LevelAlertDecision d = BatteryLevelReceiver.decideLevelAlert(
 				fullAlertShowing(90), 90, CHARGING, DEFAULTS);
 
@@ -218,8 +214,7 @@ public class BatteryLevelReceiverDecisionTest {
 
 	@Test
 	public void charging_reachesTheTarget_firesBeforeAFullCharge() {
-		// The point of the feature: at a target of 90 the alert arrives while the battery is still
-		// climbing, not once it has already sat at 100%.
+		// The point of the feature: at a target of 90 the alert arrives while the battery is still climbing, not once it has already sat at 100%.
 		final LevelAlertDecision d = BatteryLevelReceiver.decideLevelAlert(
 				fresh(89, null), TARGET_90, CHARGING, TARGET_AT_90);
 
@@ -239,9 +234,8 @@ public class BatteryLevelReceiverDecisionTest {
 
 	@Test
 	public void charging_fromTheTargetToFull_firesExactlyOnce() {
-		// The re-arm level moves with the target for this reason alone: at a fixed 95 the flag cleared
-		// on the very tick the alert fired, and every percent from 90 to 96 fired again — seven
-		// notifications for one charge.
+		// The re-arm level moves with the target for this reason alone: at a fixed 95 the flag cleared on the very tick the alert fired, and every percent from
+		// 90 to 96 fired again — seven notifications for one charge.
 		LevelAlertState state = fresh(89, null);
 		int fired = 0;
 
@@ -260,8 +254,8 @@ public class BatteryLevelReceiverDecisionTest {
 
 	@Test
 	public void discharging_pastTheTarget_neverFires() {
-		// decideChargingOrFull is also reached with the level unchanged while discharging, so the
-		// trigger has to be gated on charging: sitting at 90% on the way DOWN is not a finished charge.
+		// decideChargingOrFull is also reached with the level unchanged while discharging, so the trigger has to be gated on charging: sitting at 90% on the
+		// way DOWN is not a finished charge.
 		final LevelAlertDecision changed = BatteryLevelReceiver.decideLevelAlert(
 				fresh(91, null), TARGET_90, DISCHARGING, TARGET_AT_90);
 		assertNull(changed.notifyType());
@@ -274,9 +268,8 @@ public class BatteryLevelReceiverDecisionTest {
 
 	@Test
 	public void pluggedAndHoldingAtACap_firesOnTheTarget() {
-		// A device parked at its own charge cap reports NOT_CHARGING, not FULL: cable in, nothing
-		// flowing, no completed-charge status ever coming. Requiring CHARGING left the whole feature
-		// silently dead there — on exactly the phones whose owners went looking for a charge target.
+		// A device parked at its own charge cap reports NOT_CHARGING, not FULL: cable in, nothing flowing, no completed-charge status ever coming. Requiring
+		// CHARGING left the whole feature silently dead there — on exactly the phones whose owners went looking for a charge target.
 		final LevelAlertDecision d = BatteryLevelReceiver.decideLevelAlert(
 				fresh(95, null), 95, PLUGGED_NOT_CHARGING, TARGET_AT_90);
 
@@ -286,8 +279,8 @@ public class BatteryLevelReceiverDecisionTest {
 
 	@Test
 	public void pluggedAndHoldingAtACap_doesNotRepeatWhileItSitsThere() {
-		// The cap holds the level steady for hours, so this broadcast repeats unchanged. Only the first
-		// may alert — the re-arm has to see the charge left behind, not just a level inside the band.
+		// The cap holds the level steady for hours, so this broadcast repeats unchanged. Only the first may alert — the re-arm has to see the charge left
+		// behind, not just a level inside the band.
 		LevelAlertState state = fresh(95, null);
 		int fired = 0;
 
@@ -303,8 +296,8 @@ public class BatteryLevelReceiverDecisionTest {
 
 	@Test
 	public void pluggedButDischarging_neverFiresOnTheLevel() {
-		// The cable alone is not enough: a phone drawing more than the charger supplies reports
-		// DISCHARGING with the cable in. The battery is going down, so no charge is finishing.
+		// The cable alone is not enough: a phone drawing more than the charger supplies reports DISCHARGING with the cable in. The battery is going down, so no
+		// charge is finishing.
 		final ChargeState pluggedButDraining = new ChargeState(false, false, false, true);
 		final LevelAlertDecision d = BatteryLevelReceiver.decideLevelAlert(
 				fresh(95, null), 95, pluggedButDraining, TARGET_AT_90);
@@ -315,9 +308,8 @@ public class BatteryLevelReceiverDecisionTest {
 
 	@Test
 	public void pluggedInAboveTheTarget_firesTheAlert() {
-		// Connecting a charger at 95% with a target of 90 has nothing left to reach, so the alert has to
-		// come from the level already being there. It rides on the unplug re-arm, which is why removing
-		// that would break this quietly.
+		// Connecting a charger at 95% with a target of 90 has nothing left to reach, so the alert has to come from the level already being there. It rides on
+		// the unplug re-arm, which is why removing that would break this quietly.
 		final LevelAlertDecision unplugged = BatteryLevelReceiver.decideLevelAlert(
 				fullAlertShowing(95), 95, DISCHARGING, TARGET_AT_90);
 		assertFalse(unplugged.newState().fullNotified());
@@ -329,8 +321,8 @@ public class BatteryLevelReceiverDecisionTest {
 
 	@Test
 	public void charging_droppingBelowTheReArmLevel_armsTheNextAlert() {
-		// A top-up without unplugging: the level has to fall a margin below the target before the alert
-		// can fire again, so the flag holds at 86 and clears at 85.
+		// A top-up without unplugging: the level has to fall a margin below the target before the alert can fire again, so the flag holds at 86 and clears at
+		// 85.
 		final LevelAlertDecision inBand = BatteryLevelReceiver.decideLevelAlert(
 				fullAlertShowing(86), 86, CHARGING, TARGET_AT_90);
 		assertTrue(inBand.newState().fullNotified());
@@ -342,8 +334,8 @@ public class BatteryLevelReceiverDecisionTest {
 
 	@Test
 	public void maximumTarget_waitsForACompletedCharge() {
-		// 100% is the opt-out: reaching the level is not enough, the battery must report the charge
-		// finished — bit for bit what the app did before the target existed.
+		// 100% is the opt-out: reaching the level is not enough, the battery must report the charge finished — bit for bit what the app did before the target
+		// existed.
 		final LevelAlertDecision atLevel = BatteryLevelReceiver.decideLevelAlert(
 				fresh(99, null), 100, CHARGING, DEFAULTS);
 		assertNull(atLevel.notifyType());
@@ -361,16 +353,15 @@ public class BatteryLevelReceiverDecisionTest {
 
 		assertEquals(AlertType.FULL, d.notifyType());
 
-		// ...and having fired, it must stay fired. 80 is inside the re-arm band of a 90 target, so
-		// without the "a tick that fired never re-arms" guard the flag cleared on this very tick and the
-		// next identical broadcast alerted again — for as long as the phone sat on the charger.
+		// ...and having fired, it must stay fired. 80 is inside the re-arm band of a 90 target, so without the "a tick that fired never re-arms" guard the flag
+		// cleared on this very tick and the next identical broadcast alerted again — for as long as the phone sat on the charger.
 		assertTrue(d.newState().fullNotified());
 	}
 
 	@Test
 	public void chargeCappedBelowTheReArmLevel_doesNotRepeatOnEveryBroadcast() {
-		// The user-visible half of the assertion above: a device parked at its 80% cap re-decides the
-		// same broadcast every few seconds, and only the first one may alert.
+		// The user-visible half of the assertion above: a device parked at its 80% cap re-decides the same broadcast every few seconds, and only the first one
+		// may alert.
 		LevelAlertState state = fresh(80, null);
 		int fired = 0;
 

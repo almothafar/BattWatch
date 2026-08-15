@@ -162,15 +162,13 @@ public class AppPrefsTest {
 		}
 
 		/**
-		 * The same drift guard for the charge-target slider (#263), but asserted against a real
-		 * {@link SeekBarPreference} built from the XML rather than against the attribute text.
+		 * The same drift guard for the charge-target slider (#263), but asserted against a real {@link SeekBarPreference} built from the XML rather than
+		 * against the attribute text.
 		 * <p>
-		 * Reading the attributes would not have caught the bug it exists to catch. AndroidX declares
-		 * {@code min} in its <em>own</em> namespace — only {@code max} and {@code layout} come from
-		 * {@code android:} — so an {@code android:min="80"} is parsed by nobody and the slider silently
-		 * runs from 0. The screen then offers 80 positions the clamp rejects, and a user who picks one
-		 * sees a target the alert engine will never act on. Inflating the preference is the only
-		 * assertion that can tell the two apart.
+		 * Reading the attributes would not have caught the bug it exists to catch. AndroidX declares {@code min} in its <em>own</em> namespace — only
+		 * {@code max} and {@code layout} come from {@code android:} — so an {@code android:min="80"} is parsed by nobody and the slider silently runs from 0.
+		 * The screen then offers 80 positions the clamp rejects, and a user who picks one sees a target the alert engine will never act on. Inflating the
+		 * preference is the only assertion that can tell the two apart.
 		 */
 		@Test
 		public void chargeTargetSlider_boundsAreTheFacadeConstantsAtRuntime() throws Exception {
@@ -182,8 +180,8 @@ public class AppPrefsTest {
 		}
 
 		/**
-		 * The XML-declared default is the one value the framework owns rather than {@link AppPrefs}, so it
-		 * is still read from the attribute — that <em>is</em> where the framework reads it from.
+		 * The XML-declared default is the one value the framework owns rather than {@link AppPrefs}, so it is still read from the attribute — that <em>is</em>
+		 * where the framework reads it from.
 		 */
 		@Test
 		public void xmlChargeTargetDefault_matchesTheFacadeConstant() throws Exception {
@@ -210,8 +208,8 @@ public class AppPrefsTest {
 		}
 
 		/**
-		 * Builds the charge-target slider from {@code pref_alerts.xml} exactly as the preference framework
-		 * would, so its bounds are the ones a user's finger actually meets.
+		 * Builds the charge-target slider from {@code pref_alerts.xml} exactly as the preference framework would, so its bounds are the ones a user's finger
+		 * actually meets.
 		 *
 		 * @return the inflated slider, or {@code null} when the screen no longer declares one
 		 */
@@ -230,8 +228,8 @@ public class AppPrefsTest {
 		}
 
 		/**
-		 * Whether the tag the parser is on is the charge-target slider, identified by its preference key
-		 * rather than its position — the screen grows and the categories get reordered.
+		 * Whether the tag the parser is on is the charge-target slider, identified by its preference key rather than its position — the screen grows and the
+		 * categories get reordered.
 		 */
 		private boolean isChargeTargetSlider(XmlResourceParser parser) {
 			for (int i = 0; i < parser.getAttributeCount(); i++) {
@@ -245,9 +243,8 @@ public class AppPrefsTest {
 	}
 
 	/**
-	 * {@link AppPrefs#clampChargeTarget}: the same guarantee for the charge target (#263). Both
-	 * directions matter — a stored 0 is what a downgraded or restored preferences file yields, and
-	 * without the lower clamp it would fire the "almost full" alert at empty.
+	 * {@link AppPrefs#clampChargeTarget}: the same guarantee for the charge target (#263). Both directions matter — a stored 0 is what a downgraded or restored
+	 * preferences file yields, and without the lower clamp it would fire the "almost full" alert at empty.
 	 */
 	@RunWith(Parameterized.class)
 	public static class ClampChargeTarget {
@@ -276,8 +273,8 @@ public class AppPrefsTest {
 	}
 
 	/**
-	 * {@link AppPrefs#reArmLevel} and {@link AppPrefs#targetIsAFullCharge}: the two derivations the alert
-	 * engine, the notification copy and the temperature range all share (#263).
+	 * {@link AppPrefs#reArmLevel} and {@link AppPrefs#targetIsAFullCharge}: the two derivations the alert engine, the notification copy and the temperature
+	 * range all share (#263).
 	 */
 	public static class TargetDerivations {
 

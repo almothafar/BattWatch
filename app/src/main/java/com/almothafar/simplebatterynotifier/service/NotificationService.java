@@ -87,9 +87,8 @@ public final class NotificationService {
 	 * @param context      The application context
 	 * @param type         Which battery-level alert to send
 	 * @param levelPercent The battery level this alert fired at. The full-battery alert's copy depends
-	 *                     on it (#263): a charge that completed below the user's charge target must not
-	 *                     claim the target was reached. The critical/warning alerts word themselves from
-	 *                     their configured thresholds and ignore it.
+	 * on it (#263): a charge that completed below the user's charge target must not claim the target was reached. The critical/warning alerts word themselves
+	 * from their configured thresholds and ignore it.
 	 */
 	public static void sendNotification(Context context, AlertType type, int levelPercent) {
 		if (isNull(type)) {

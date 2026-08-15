@@ -21,14 +21,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Tests for the full-battery alert's copy (#263), which is the one place the charge target reaches the
- * user in words.
+ * Tests for the full-battery alert's copy (#263), which is the one place the charge target reaches the user in words.
  * <p>
- * Two things need pinning. Which of the two string sets is chosen — "you can unplug now" must never
- * claim a target the battery didn't reach, and must never call a charge complete when it isn't — and
- * that the parameterised strings actually format, in <b>both</b> locales: the previous full-battery copy
- * took no arguments at all, so a stray {@code %} in either translation would first surface as an
- * {@code IllegalFormatException} on a user's phone at the end of a charge.
+ * Two things need pinning. Which of the two string sets is chosen — "you can unplug now" must never claim a target the battery didn't reach, and must never
+ * call a charge complete when it isn't — and that the parameterised strings actually format, in <b>both</b> locales: the previous full-battery copy took no
+ * arguments at all, so a stray {@code %} in either translation would first surface as an {@code IllegalFormatException} on a user's phone at the end of a
+ * charge.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 34)
@@ -76,8 +74,7 @@ public class NotificationConfigTest {
 
 	@Test
 	public void firingAboveTheTarget_stillNamesTheTargetItReached() {
-		// Plugged in at 95% with a target of 90: "reached your 90% target" is true, so the almost-full
-		// copy stands.
+		// Plugged in at 95% with a target of 90: "reached your 90% target" is true, so the almost-full copy stands.
 		setChargeTarget(90);
 
 		final NotificationConfig config = fullAlertAt(95);
@@ -88,8 +85,8 @@ public class NotificationConfigTest {
 
 	@Test
 	public void theTickerReportsTheLevelReachedNotTheTarget() {
-		// The two numbers are deliberately different: 95% is where the battery got to, 90% is the target
-		// it crossed. Interpolating the target into both would claim the level was 90.
+		// The two numbers are deliberately different: 95% is where the battery got to, 90% is the target it crossed. Interpolating the target into both would
+		// claim the level was 90.
 		setChargeTarget(90);
 
 		final NotificationConfig config = fullAlertAt(95);
@@ -101,9 +98,8 @@ public class NotificationConfigTest {
 
 	@Test
 	public void chargeCompletedBelowTheTarget_reportsACompletedChargeNotTheTarget() {
-		// A charge-capped device (Samsung "Protect battery" at 85%) reports the charge finished short of
-		// the target. Saying "reached your 90% charge target" at 85% would state something that did not
-		// happen — the honest report is the one the battery gave: this charge is done.
+		// A charge-capped device (Samsung "Protect battery" at 85%) reports the charge finished short of the target. Saying "reached your 90% charge target" at
+		// 85% would state something that did not happen — the honest report is the one the battery gave: this charge is done.
 		setChargeTarget(90);
 
 		final NotificationConfig config = fullAlertAt(85);
@@ -129,14 +125,14 @@ public class NotificationConfigTest {
 	@Test
 	@Config(sdk = 34, qualifiers = "ar-rEG")
 	public void almostFullCopy_formatsInArabic() {
-		// The Arabic strings carry both a positional argument and literal percent signs, which have to be
-		// escaped independently of the English ones; getString would throw on a mismatch.
+		// The Arabic strings carry both a positional argument and literal percent signs, which have to be escaped independently of the English ones; getString
+		// would throw on a mismatch.
 		setChargeTarget(85);
 
 		final NotificationConfig config = fullAlertAt(85);
 
-		// "charge target" in Arabic — proves values-ar was actually loaded rather than falling back to
-		// English, which would make the rest of these assertions vacuous.
+		// "charge target" in Arabic — proves values-ar was actually loaded rather than falling back to English, which would make the rest of these assertions
+		// vacuous.
 		assertTrue(config.content, config.content.contains("هدف الشحن"));
 		assertTrue(config.content, config.content.contains("85%"));
 		assertTrue(config.bigContent, config.bigContent.contains("85%"));
@@ -148,11 +144,10 @@ public class NotificationConfigTest {
 	/**
 	 * The digits a real Arabic user sees stay Western (#96).
 	 * <p>
-	 * The region tag is the whole point of this test. Under a bare {@code "ar"} qualifier CLDR picks the
-	 * Western numbering system anyway, so an assertion on {@code "85"} passes whether the code is right or
-	 * wrong — that is precisely how #241 survived the #154 fix. {@code ar-rEG} is what Android's language
-	 * picker actually produces, and there {@code getString} with a {@code %1$d} placeholder would render
-	 * {@code ٨٥}. This asserts the premise first, so a future reader can see the test can still fail.
+	 * The region tag is the whole point of this test. Under a bare {@code "ar"} qualifier CLDR picks the Western numbering system anyway, so an assertion on
+	 * {@code "85"} passes whether the code is right or wrong — that is precisely how #241 survived the #154 fix. {@code ar-rEG} is what Android's language
+	 * picker actually produces, and there {@code getString} with a {@code %1$d} placeholder would render {@code ٨٥}. This asserts the premise first, so a
+	 * future reader can see the test can still fail.
 	 */
 	@Test
 	@Config(sdk = 34, qualifiers = "ar-rEG")

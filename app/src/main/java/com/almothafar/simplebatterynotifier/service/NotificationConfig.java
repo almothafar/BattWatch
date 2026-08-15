@@ -88,18 +88,14 @@ final class NotificationConfig {
 	/**
 	 * The full-battery alert's presentation, which follows the user's charge target (#263).
 	 * <p>
-	 * The "almost full" copy is used only when the alert actually fired on the target — the level
-	 * reached it. Below a full charge the battery is not full, so "Battery fully charged" would be a
-	 * plain lie; but the mirror image is a lie too, and the alert has a second trigger that can produce
-	 * it. A device whose charge cap reports a completed charge short of the target (Samsung's "Protect
-	 * battery" at 85%, Sony and Asus at 80) fires below it, and announcing "reached your 90% charge
-	 * target" at 85% states something that did not happen. Keying on the level rather than on the
-	 * preference alone keeps both wordings true on every path: a completed charge is reported as a
-	 * completed charge, whatever the target says.
+	 * The "almost full" copy is used only when the alert actually fired on the target — the level reached it. Below a full charge the battery is not full, so
+	 * "Battery fully charged" would be a plain lie; but the mirror image is a lie too, and the alert has a second trigger that can produce it. A device whose
+	 * charge cap reports a completed charge short of the target (Samsung's "Protect battery" at 85%, Sony and Asus at 80) fires below it, and announcing
+	 * "reached your 90% charge target" at 85% states something that did not happen. Keying on the level rather than on the preference alone keeps both wordings
+	 * true on every path: a completed charge is reported as a completed charge, whatever the target says.
 	 * <p>
-	 * At the maximum target that is the only reachable path, so the original
-	 * {@code notification_full_level_*} copy is used verbatim there. Two string sets rather than one
-	 * parameterised one — the messages differ in more than a number.
+	 * At the maximum target that is the only reachable path, so the original {@code notification_full_level_*} copy is used verbatim there. Two string sets
+	 * rather than one parameterised one — the messages differ in more than a number.
 	 *
 	 * @param context      The application context
 	 * @param prefs        SharedPreferences containing user settings
@@ -123,13 +119,11 @@ final class NotificationConfig {
 			content = context.getString(R.string.notification_full_level_content);
 			bigContent = context.getString(R.string.notification_full_level_content_big);
 		} else {
-			// Two different numbers, deliberately: the ticker reports the level the battery actually
-			// reached, the body names the target that level crossed. Plugging in at 95% with a target of
-			// 90 is "95% reached" against "your 90% charge target", and both are true.
+			// Two different numbers, deliberately: the ticker reports the level the battery actually reached, the body names the target that level crossed.
+			// Plugging in at 95% with a target of 90 is "95% reached" against "your 90% charge target", and both are true.
 			//
-			// Both go through BatteryPercentFormatter rather than a %1$d placeholder: getString formats
-			// with the resource locale, so a bare int would print ٩٥ on ar-EG/ar-SA/ar-JO. Numbers stay
-			// Western in every locale (#96).
+			// Both go through BatteryPercentFormatter rather than a %1$d placeholder: getString formats with the resource locale, so a bare int would print ٩٥
+			// on ar-EG/ar-SA/ar-JO. Numbers stay Western in every locale (#96).
 			final String reachedText = BatteryPercentFormatter.formatWhole(levelPercent);
 			final String targetText = BatteryPercentFormatter.formatWhole(target);
 

@@ -143,9 +143,8 @@ public class BatteryLevelReceiverTest {
 
 	@Test
 	public void chargeTarget_alertsOnTheWayUpAndOnlyOnce() {
-		// End-to-end for #263: the stored target, not a constant, is what the alert fires at — and the
-		// rest of the climb to a full charge stays quiet. The target is deliberately NOT the default 90,
-		// so a hardcoded default (or a mistyped preference key) fails this instead of sliding through.
+		// End-to-end for #263: the stored target, not a constant, is what the alert fires at — and the rest of the climb to a full charge stays quiet. The
+		// target is deliberately NOT the default 90, so a hardcoded default (or a mistyped preference key) fails this instead of sliding through.
 		setChargeTarget(85);
 		saveLevelState(new LevelAlertState(84, null, false, false));
 
@@ -165,9 +164,8 @@ public class BatteryLevelReceiverTest {
 
 	@Test
 	public void chargeTarget_atAnOemChargeCap_alertsFromTheNotChargingStatus() {
-		// End-to-end for the cap case: the device holds at 88% reporting NOT_CHARGING with the cable in,
-		// and never reports FULL. Pins the intent → ChargeState wiring, which is the half the decision
-		// tests can't see.
+		// End-to-end for the cap case: the device holds at 88% reporting NOT_CHARGING with the cable in, and never reports FULL. Pins the intent → ChargeState
+		// wiring, which is the half the decision tests can't see.
 		setChargeTarget(85);
 		saveLevelState(new LevelAlertState(88, null, false, false));
 
@@ -185,9 +183,8 @@ public class BatteryLevelReceiverTest {
 		setChargeTarget(85);
 
 		try (MockedStatic<NotificationService> ns = mockStatic(NotificationService.class)) {
-			// The second broadcast repeats the level, which is the path that reaches the full-battery
-			// branch while discharging — the one place a bare "level ≥ target" would announce a charge
-			// that never happened.
+			// The second broadcast repeats the level, which is the path that reaches the full-battery branch while discharging — the one place a bare "level ≥
+			// target" would announce a charge that never happened.
 			publishBattery(BatteryManager.BATTERY_STATUS_DISCHARGING, 85, 100, 0);
 			receive();
 			receive();

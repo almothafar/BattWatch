@@ -108,9 +108,10 @@ if(lacksPermission()) {  // No inversion needed
 
 ### 4. Line Width & Wrapping
 
-- Maximum line width: **160 characters**
+- Maximum line width: **160 characters** — this applies to comments and JavaDoc exactly as it does to code. Don't wrap a comment at 100 because the paragraph around it happens to be narrow; use the full width.
 - Don't over-wrap everything — **if it fits on one line, put it on one line**
 - Break long lines at logical points (method calls, operators)
+- **Markdown is never hard-wrapped.** In `.md` files — and in commit messages, PR bodies and issue bodies — let each paragraph run as one long line and let the editor soft-wrap it. Hard line breaks inside a paragraph make every later edit re-flow the whole block and turn a one-word change into a multi-line diff.
 
 ```java
 // ✅ GOOD - Reasonable line length
@@ -126,12 +127,9 @@ private static LevelAlertDecision decideDischarging(LevelAlertState state, int p
 
 ### 5. More Than 4 Parameters — One Per Line
 
-**A signature, constructor or call with more than 4 parameters gets one per line — even when it would fit
-inside 160 characters.** Four or fewer stay on a single line whenever they fit.
+**A signature, constructor or call with more than 4 parameters gets one per line — even when it would fit inside 160 characters.** Four or fewer stay on a single line whenever they fit.
 
-Past four, a run-on list stops being scannable: you can't tell at a glance how many arguments there are, and
-a wrong-order argument hides in the middle of it. The line-width rule is about *not* wrapping needlessly; this
-rule is about a count the eye can't parse, so it wins over "but it fits".
+Past four, a run-on list stops being scannable: you can't tell at a glance how many arguments there are, and a wrong-order argument hides in the middle of it. The line-width rule is about *not* wrapping needlessly; this rule is about a count the eye can't parse, so it wins over "but it fits".
 
 ```java
 // ❌ BAD - 6 components, packed onto two arbitrary lines
@@ -153,8 +151,7 @@ static boolean nextFullSeen(TemperatureStats previous, int levelPercent, boolean
 
 ### 6. Chained Calls — All On One Line, Or One Per Line
 
-**Builder chains and streams go on a single line if they fit. If they don't, every call in the chain gets its
-own line** — never a half-and-half split where some calls share a line and others don't.
+**Builder chains and streams go on a single line if they fit. If they don't, every call in the chain gets its own line** — never a half-and-half split where some calls share a line and others don't.
 
 ```java
 // ✅ GOOD - fits, so one line
@@ -519,12 +516,9 @@ Identifiers are **not** copy — leave them out of `values-ar/`:
 
 ### 5. Numbers Are Always Western Digits
 
-**Every number a user sees renders in Western digits (`85`), never Eastern Arabic (`٨٥`) — in any locale.**
-The words around a number are translated; the number itself is not. This is a product decision, and
-`BatteryPercentFormatter` has enforced it since #96.
+**Every number a user sees renders in Western digits (`85`), never Eastern Arabic (`٨٥`) — in any locale.** The words around a number are translated; the number itself is not. This is a product decision, and `BatteryPercentFormatter` has enforced it since #96.
 
-That means `Locale.ROOT` for **all** numeric formatting — persisted *and* user-facing alike. `Locale.getDefault()`
-has no numeric use in this app.
+That means `Locale.ROOT` for **all** numeric formatting — persisted *and* user-facing alike. `Locale.getDefault()` has no numeric use in this app.
 
 ```java
 // ❌ BAD - no locale: under a region-bearing Arabic locale this yields "٠٨:٣٠"
@@ -540,9 +534,7 @@ String.format(Locale.ROOT, "%02d:%02d", hour, minute);
 BatteryPercentFormatter.formatWhole(level); // "85%"
 ```
 
-**`getString(id, someInt)` is the trap.** `Resources.getString` formats with the *resource* locale, so a
-`%1$d` placeholder produces Eastern digits on `ar-EG`/`ar-SA`/`ar-JO` even though no `String.format` appears
-in your code. Use a `%1$s` placeholder and pass an already-formatted string:
+**`getString(id, someInt)` is the trap.** `Resources.getString` formats with the *resource* locale, so a `%1$d` placeholder produces Eastern digits on `ar-EG`/`ar-SA`/`ar-JO` even though no `String.format` appears in your code. Use a `%1$s` placeholder and pass an already-formatted string:
 
 ```xml
 <!-- ❌ BAD - %1$d is formatted by the resource locale -->
@@ -557,9 +549,7 @@ in your code. Use a `%1$s` placeholder and pass an already-formatted string:
 context.getString(R.string.notification_almost_full_content, BatteryPercentFormatter.formatWhole(target));
 ```
 
-**Locale tests must use a region tag.** Bare `"ar"` formats Western digits, so a test written against it
-passes even when the defect is present — that is exactly how #241 survived the #154 fix. Use `ar-rEG` (the
-Robolectric/resource-qualifier spelling of `ar-EG`) and assert the digits a real user would see.
+**Locale tests must use a region tag.** Bare `"ar"` formats Western digits, so a test written against it passes even when the defect is present — that is exactly how #241 survived the #154 fix. Use `ar-rEG` (the Robolectric/resource-qualifier spelling of `ar-EG`) and assert the digits a real user would see.
 
 **Why?** CLDR selects the Eastern Arabic numbering system for region-bearing Arabic locales (`ar-SA`, `ar-EG`, `ar-JO`), so `%d` prints `٨` rather than `8`, a persisted value stops parsing, and a displayed one stops matching the rest of the app. This shipped twice — issues #154 and #241.
 
@@ -772,8 +762,9 @@ When reviewing code, check:
 - [ ] All curly brackets present (even single-line)
 - [ ] Locals marked `final` where appropriate; parameters **not** marked `final`
 - [ ] No FQNs (uses imports)
-- [ ] Line width ≤ 160 characters, and nothing wrapped that would fit on one line
+- [ ] Line width ≤ 160 characters — comments and JavaDoc included — and nothing wrapped that would fit on one line
 - [ ] More than 4 parameters → one per line; chained calls all on one line or one per line
+- [ ] Markdown (and commit/PR/issue text) not hard-wrapped; no tooling metadata or generator footers
 - [ ] Early returns instead of deep nesting
 - [ ] No code duplication (DRY)
 - [ ] Methods ≤ 50 lines

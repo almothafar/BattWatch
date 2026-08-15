@@ -25,9 +25,8 @@ public class BatteryTemperatureTrackerTest {
 	private static final int CHARGING = BatteryManager.BATTERY_STATUS_CHARGING;
 	private static final int FULL = BatteryManager.BATTERY_STATUS_FULL;
 
-	// The maximum charge target — "a charge is done when the battery is full", which is what these
-	// cases were written against before the target became the user's (#263). The target-driven cases
-	// are grouped at the end.
+	// The maximum charge target — "a charge is done when the battery is full", which is what these cases were written against before the target became the
+	// user's (#263). The target-driven cases are grouped at the end.
 	private static final int TARGET = AppPrefs.MAX_CHARGE_TARGET;
 	private static final int TARGET_90 = 90;
 
@@ -242,9 +241,8 @@ public class BatteryTemperatureTrackerTest {
 
 	@Test
 	public void reachingTheChargeTarget_countsAsAFinishedCharge() {
-		// The reason the target is shared with the full-battery alert: on a phone habitually unplugged
-		// at 90% the charge never "completes" at 100%, so a fixed definition left the range growing for
-		// weeks without ever starting over.
+		// The reason the target is shared with the full-battery alert: on a phone habitually unplugged at 90% the charge never "completes" at 100%, so a fixed
+		// definition left the range growing for weeks without ever starting over.
 		TemperatureStats stats = BatteryTemperatureTracker.fold(NOTHING_RECORDED, 200, 60, CHARGING, TARGET_90);
 		stats = BatteryTemperatureTracker.fold(stats, 450, 85, CHARGING, TARGET_90);
 		stats = BatteryTemperatureTracker.fold(stats, 330, TARGET_90, CHARGING, TARGET_90);
@@ -256,8 +254,8 @@ public class BatteryTemperatureTrackerTest {
 
 	@Test
 	public void unpluggingAtTheTarget_doesNotResetTheRangeAgain() {
-		// The range must span the discharge that follows, so the reset stays edge-triggered: it fires on
-		// the tick the target was reached and not again until the level drops out of the band.
+		// The range must span the discharge that follows, so the reset stays edge-triggered: it fires on the tick the target was reached and not again until
+		// the level drops out of the band.
 		TemperatureStats stats = BatteryTemperatureTracker.fold(NOTHING_RECORDED, 330, TARGET_90, CHARGING, TARGET_90);
 		stats = BatteryTemperatureTracker.fold(stats, 400, TARGET_90, DISCHARGING, TARGET_90);
 		stats = BatteryTemperatureTracker.fold(stats, 280, 87, DISCHARGING, TARGET_90);
