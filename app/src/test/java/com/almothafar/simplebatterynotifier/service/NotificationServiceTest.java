@@ -65,7 +65,7 @@ public class NotificationServiceTest {
 
 		@Test
 		public void chargeNotification_doesNotReplaceLevelAlert() {
-			NotificationService.sendNotification(context, AlertType.CRITICAL);
+			NotificationService.sendNotification(context, AlertType.CRITICAL, 15);
 			NotificationService.notifyChargeConnected(context, ChargeSpeed.unknown(), false);
 
 			// Distinct IDs: both must be showing, not "Charging started" swallowing the critical alert.
@@ -74,7 +74,7 @@ public class NotificationServiceTest {
 
 		@Test
 		public void clearNotifications_onDisconnect_removesLevelAlertAndChargeNotification() {
-			NotificationService.sendNotification(context, AlertType.CRITICAL);
+			NotificationService.sendNotification(context, AlertType.CRITICAL, 15);
 			NotificationService.notifyChargeConnected(context, ChargeSpeed.unknown(), false);
 
 			NotificationService.clearNotifications(context);
@@ -85,7 +85,7 @@ public class NotificationServiceTest {
 
 		@Test
 		public void clearLevelAlert_dismissesOnlyTheLevelAlert() {
-			NotificationService.sendNotification(context, AlertType.CRITICAL);
+			NotificationService.sendNotification(context, AlertType.CRITICAL, 15);
 			NotificationService.notifyChargeConnected(context, ChargeSpeed.unknown(), false);
 
 			NotificationService.clearLevelAlert(context);
@@ -121,7 +121,7 @@ public class NotificationServiceTest {
 		public void nullAlertType_postsNothing() {
 			// The old int API's default branch posted a completely BLANK notification for an invalid
 			// type (#160). With the enum, the only invalid value left is null — and it must be a no-op.
-			NotificationService.sendNotification(context, null);
+			NotificationService.sendNotification(context, null, 50);
 
 			assertEquals(0, shadowOf(manager).size());
 		}

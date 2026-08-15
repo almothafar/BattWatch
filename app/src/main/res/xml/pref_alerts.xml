@@ -90,6 +90,30 @@
             android:title="@string/notify_for_full_level"
             app:iconSpaceReserved="false" />
 
+        <!-- #263: the level the alert fires at while charging. defaultValue/min/max must match
+             AppPrefs.DEFAULT/MIN/MAX_CHARGE_TARGET, which clamp the stored value when it is read;
+             AppPrefsTest guards the pair against drift by inflating this preference — note the
+             minimum is app:min, since androidx SeekBarPreference reads `min` from its own namespace
+             and ignores android:min entirely. At the maximum the alert waits for a completed charge,
+             which is what the app did before this slider existed. This slider's summary and the
+             switch title above it are set from the value in GenericPreferenceFragment: below a full
+             charge the alert is about being almost full.
+
+             Deliberately NOT gated by the alert switch above (the same call the drain limit makes
+             below, for the same reason): the target also defines "this charge is done" for the
+             Insights temperature range (#260), so switching the alert off must not lock a control
+             that still governs a feature the user did not disable. -->
+        <SeekBarPreference
+            android:defaultValue="90"
+            android:key="@string/_pref_key_charge_target"
+            app:min="80"
+            android:max="100"
+            android:title="@string/charge_target"
+            style="@style/PreferenceSeekBar"
+            app:showSeekBarValue="true"
+            app:adjustable="true"
+            app:iconSpaceReserved="false" />
+
         <com.almothafar.simplebatterynotifier.ui.preference.RingtonePreference
             android:defaultValue="content://settings/system/notification_sound"
             android:dependency="@string/_pref_key_notify_for_full_level"
@@ -114,11 +138,14 @@
             android:title="@string/notify_high_temperature"
             app:iconSpaceReserved="false" />
 
+        <!-- configureTemperatureThreshold() overrides both bounds at runtime (they shift when the user
+             displays °F), so these are the pre-configuration values only. Still app:min, not
+             android:min — the latter is silently ignored and would read as working. -->
         <SeekBarPreference
             android:defaultValue="45"
             android:dependency="@string/_pref_key_notify_high_temperature"
             android:key="@string/_pref_key_high_temperature_threshold"
-            android:min="40"
+            app:min="40"
             android:max="60"
             android:title="@string/high_temperature_threshold"
             style="@style/PreferenceSeekBar"
@@ -144,11 +171,13 @@
 
         <!-- Shared with #108's table colouring, so it is NOT gated by the alert toggle above.
              defaultValue/min/max must match AppPrefs.DEFAULT/MIN/MAX_DRAIN_LIMIT_PPH,
-             which clamp the stored value when it is read (#108/#109). -->
+             which clamp the stored value when it is read (#108/#109).
+             app:min, not android:min — androidx SeekBarPreference reads `min` from its own namespace,
+             so android:min is silently ignored and the slider bottoms out at 0. -->
         <SeekBarPreference
             android:defaultValue="20"
             android:key="@string/_pref_key_fast_drain_limit"
-            android:min="5"
+            app:min="5"
             android:max="60"
             android:summary="@string/drain_limit_summary"
             android:title="@string/drain_limit"
@@ -159,12 +188,12 @@
 
         <!-- defaultValue/min/max of both timing sliders must match FastDrainDetector's
              DEFAULT/MIN/MAX_SUSTAINED_MINUTES and DEFAULT/MIN/MAX_REMINDER_MINUTES, which clamp
-             the stored values when they are read (#109). -->
+             the stored values when they are read (#109). app:min for the same reason as above. -->
         <SeekBarPreference
             android:defaultValue="5"
             android:dependency="@string/_pref_key_notify_fast_drain"
             android:key="@string/_pref_key_fast_drain_sustained_minutes"
-            android:min="1"
+            app:min="1"
             android:max="30"
             android:title="@string/fast_drain_sustained_minutes"
             style="@style/PreferenceSeekBar"
@@ -176,7 +205,7 @@
             android:defaultValue="15"
             android:dependency="@string/_pref_key_notify_fast_drain"
             android:key="@string/_pref_key_fast_drain_reminder_minutes"
-            android:min="5"
+            app:min="5"
             android:max="60"
             android:title="@string/fast_drain_reminder_minutes"
             style="@style/PreferenceSeekBar"

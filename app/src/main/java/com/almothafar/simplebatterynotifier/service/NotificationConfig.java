@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 
 import com.almothafar.simplebatterynotifier.R;
 import com.almothafar.simplebatterynotifier.util.AppPrefs;
+import com.almothafar.simplebatterynotifier.util.BatteryPercentFormatter;
 
 /**
  * Configuration for a battery-level notification (reduces parameter count).
@@ -31,11 +32,13 @@ final class NotificationConfig {
 	/**
 	 * Create a NotificationConfig from preferences and type
 	 *
-	 * @param context The application context
-	 * @param prefs   SharedPreferences containing user settings
-	 * @param type    Which battery-level alert to configure (non-null)
+	 * @param context      The application context
+	 * @param prefs        SharedPreferences containing user settings
+	 * @param type         Which battery-level alert to configure (non-null)
+	 * @param levelPercent The battery level the alert fired at; only the full-battery alert's copy
+	 *                     depends on it (#263)
 	 */
-	NotificationConfig(Context context, SharedPreferences prefs, AlertType type) {
+	NotificationConfig(Context context, SharedPreferences prefs, AlertType type, int levelPercent) {
 		this.type = type;
 
 		// Load common preferences
@@ -71,14 +74,7 @@ final class NotificationConfig {
 					context.getString(R.string.notification_warning_title),
 					context.getString(R.string.notification_warning_content, warningLevel),
 					context.getString(R.string.notification_warning_content_big, warningLevel));
-			case FULL -> new AlertStyle(
-					NotificationChannels.CHANNEL_ID_FULL,
-					R.drawable.ic_stat_battery_full,
-					prefs.getString(context.getString(R.string._pref_key_notifications_full_sound_ringtone), defaultSound),
-					context.getString(R.string.notification_full_level_ticker),
-					context.getString(R.string.notification_full_level_title),
-					context.getString(R.string.notification_full_level_content),
-					context.getString(R.string.notification_full_level_content_big));
+			case FULL -> fullAlertStyle(context, prefs, defaultSound, levelPercent);
 		};
 		this.channelId = style.channelId();
 		this.iconRes = style.iconRes();
@@ -87,6 +83,64 @@ final class NotificationConfig {
 		this.title = style.title();
 		this.content = style.content();
 		this.bigContent = style.bigContent();
+	}
+
+	/**
+	 * The full-battery alert's presentation, which follows the user's charge target (#263).
+	 * <p>
+	 * The "almost full" copy is used only when the alert actually fired on the target — the level reached it. Below a full charge the battery is not full, so
+	 * "Battery fully charged" would be a plain lie; but the mirror image is a lie too, and the alert has a second trigger that can produce it. A device whose
+	 * charge cap reports a completed charge short of the target (Samsung's "Protect battery" at 85%, Sony and Asus at 80) fires below it, and announcing
+	 * "reached your 90% charge target" at 85% states something that did not happen. Keying on the level rather than on the preference alone keeps both wordings
+	 * true on every path: a completed charge is reported as a completed charge, whatever the target says.
+	 * <p>
+	 * At the maximum target that is the only reachable path, so the original {@code notification_full_level_*} copy is used verbatim there. Two string sets
+	 * rather than one parameterised one — the messages differ in more than a number.
+	 *
+	 * @param context      The application context
+	 * @param prefs        SharedPreferences containing user settings
+	 * @param defaultSound the fallback alarm sound URI
+	 * @param levelPercent the battery level the alert fired at
+	 *
+	 * @return the copy and channel for this alert
+	 */
+	private static AlertStyle fullAlertStyle(Context context, SharedPreferences prefs, String defaultSound, int levelPercent) {
+		final int target = AppPrefs.chargeTarget(context);
+		// Below the target the only way here is a charge the battery reported as complete.
+		final boolean chargeIsComplete = AppPrefs.targetIsAFullCharge(target) || levelPercent < target;
+
+		final String ticker;
+		final String title;
+		final String content;
+		final String bigContent;
+		if (chargeIsComplete) {
+			ticker = context.getString(R.string.notification_full_level_ticker);
+			title = context.getString(R.string.notification_full_level_title);
+			content = context.getString(R.string.notification_full_level_content);
+			bigContent = context.getString(R.string.notification_full_level_content_big);
+		} else {
+			// Two different numbers, deliberately: the ticker reports the level the battery actually reached, the body names the target that level crossed.
+			// Plugging in at 95% with a target of 90 is "95% reached" against "your 90% charge target", and both are true.
+			//
+			// Both go through BatteryPercentFormatter rather than a %1$d placeholder: getString formats with the resource locale, so a bare int would print ٩٥
+			// on ar-EG/ar-SA/ar-JO. Numbers stay Western in every locale (#96).
+			final String reachedText = BatteryPercentFormatter.formatWhole(levelPercent);
+			final String targetText = BatteryPercentFormatter.formatWhole(target);
+
+			ticker = context.getString(R.string.notification_almost_full_ticker, reachedText);
+			title = context.getString(R.string.notification_almost_full_title);
+			content = context.getString(R.string.notification_almost_full_content, targetText);
+			bigContent = context.getString(R.string.notification_almost_full_content_big, targetText);
+		}
+
+		return new AlertStyle(
+				NotificationChannels.CHANNEL_ID_FULL,
+				R.drawable.ic_stat_battery_full,
+				prefs.getString(context.getString(R.string._pref_key_notifications_full_sound_ringtone), defaultSound),
+				ticker,
+				title,
+				content,
+				bigContent);
 	}
 
 	/**
@@ -113,7 +167,13 @@ final class NotificationConfig {
 	 * @param content    the collapsed content line
 	 * @param bigContent the expanded (BigTextStyle) content
 	 */
-	private record AlertStyle(String channelId, int iconRes, String alarmSound, String ticker,
-	                          String title, String content, String bigContent) {
+	private record AlertStyle(
+			String channelId,
+			int iconRes,
+			String alarmSound,
+			String ticker,
+			String title,
+			String content,
+			String bigContent) {
 	}
 }

@@ -107,6 +107,7 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 		final ChargeState power = new ChargeState(
 				status == BatteryManager.BATTERY_STATUS_CHARGING,
 				status == BatteryManager.BATTERY_STATUS_FULL,
+				status == BatteryManager.BATTERY_STATUS_NOT_CHARGING,
 				intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) > 0);
 
 		// Build the reading from the delivered intent; with a non-null intent this never returns null.
@@ -160,6 +161,7 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 		final LevelAlertConfig config = new LevelAlertConfig(
 				AppPrefs.criticalLevel(context),
 				AppPrefs.warningLevel(context),
+				AppPrefs.chargeTarget(context),
 				sharedPref.getBoolean(context.getString(R.string._pref_key_notify_for_warning_level), true),
 				sharedPref.getBoolean(context.getString(R.string._pref_key_notify_for_full_level), true),
 				sharedPref.getBoolean(context.getString(R.string._pref_key_notify_every_tick), false));
@@ -174,7 +176,7 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 			NotificationService.clearLevelAlert(context);
 		}
 		if (nonNull(decision.notifyType())) {
-			NotificationService.sendNotification(context, decision.notifyType());
+			NotificationService.sendNotification(context, decision.notifyType(), percentage);
 		}
 	}
 
@@ -259,12 +261,10 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 	 * transition, and the alert would otherwise linger — un-swipeable, when the user has the
 	 * sticky-notification preference on.
 	 * <p>
-	 * Closing the episode is one-shot and applies {@link #reArmForNewDischarge}, so the fallback ends
-	 * in exactly the state the seen transition would have produced. Dismissal keys off
-	 * {@code fullAlertShown} rather than {@code fullNotified}: the latter re-arms mid-charge inside the
-	 * {@code (warning, FULL_PERCENTAGE]} band while the notification is still on screen, and it stays
-	 * set after a critical alert has repainted the shared ID — reading it would both strand stale full
-	 * alerts and cancel live critical ones.
+	 * Closing the episode is one-shot and applies {@link #reArmForNewDischarge}, so the fallback ends in exactly the state the seen transition would have
+	 * produced. Dismissal keys off {@code fullAlertShown} rather than {@code fullNotified}: the latter re-arms mid-charge inside the
+	 * {@code (warning, target − margin]} band while the notification is still on screen, and it stays set after a critical alert has repainted the shared ID —
+	 * reading it would both strand stale full alerts and cancel live critical ones.
 	 *
 	 * @param state      current persisted episode state
 	 * @param percentage current battery percentage (whole, via the single rounding policy #158)
@@ -274,8 +274,7 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 	 * @return which alert to send now ({@code null} for none), whether to dismiss a stale full alert,
 	 * and the new state to persist
 	 */
-	static LevelAlertDecision decideLevelAlert(LevelAlertState state, int percentage,
-	                                           ChargeState power, LevelAlertConfig config) {
+	static LevelAlertDecision decideLevelAlert(LevelAlertState state, int percentage, ChargeState power, LevelAlertConfig config) {
 		// Off the charger the charge session is over: re-arm exactly as the unplug transition does, and
 		// dismiss the full alert if one is still occupying the shared level-alert notification.
 		final boolean chargeSessionOver = !power.plugged() && (state.fullNotified() || state.fullAlertShown());
@@ -285,7 +284,7 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 		final boolean levelChanged = episode.prevLevel() != percentage;
 		final LevelAlertDecision decision = levelChanged && !power.charging()
 		                                    ? decideDischarging(episode, percentage, config)
-		                                    : decideChargingOrFull(episode, percentage, power.fullOnCharger(), config);
+		                                    : decideChargingOrFull(episode, percentage, power, config);
 
 		return decision.withClearFullAlert(dismissFullAlert);
 	}
@@ -294,8 +293,7 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 	 * The discharging side: critical first, then warning, de-duplicated via {@code prevType} —
 	 * except at/below the red-alert floor, where the critical alert always re-fires.
 	 */
-	private static LevelAlertDecision decideDischarging(LevelAlertState state, int percentage,
-	                                                    LevelAlertConfig config) {
+	private static LevelAlertDecision decideDischarging(LevelAlertState state, int percentage, LevelAlertConfig config) {
 		// Force the critical alert through the de-dupe at the red-alert floor: about to die trumps "already told you".
 		AlertType prevType = percentage <= NotificationService.RED_ALERT_LEVEL ? null : state.prevType();
 		AlertType notifyType = null;
@@ -321,28 +319,43 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 	/**
 	 * The charging-or-unchanged side: the full alert fires once per charge session, re-armed once
 	 * the level has genuinely dropped out of the full band while staying above the warning band.
+	 * <p>
+	 * "Full" is the user's <b>charge target</b> (#263), not only a completed charge: at the default 90 the alert arrives while the battery is still climbing,
+	 * which is the point — being told to unplug at 100% is being told after the wear the alert warns about has happened. Reaching the target only counts
+	 * <em>while charging</em>; see {@link ChargeState#reachedChargeTarget}.
+	 * <p>
+	 * The re-arm band moves with the target ({@link AppPrefs#reArmLevel}) rather than sitting at a fixed 95%. A fixed point below the target would re-arm on
+	 * the very tick the alert fired and then fire again on every percent up to 100 — seven notifications for one charge at a target of 90.
 	 *
-	 * @param state         current persisted episode state
-	 * @param percentage    current battery percentage
-	 * @param fullOnCharger charge complete <em>and</em> still on the charger — the status alone is not
-	 *                      enough, see {@link #decideLevelAlert}
-	 * @param config        the user's alert thresholds and toggles
+	 * @param state      current persisted episode state
+	 * @param percentage current battery percentage
+	 * @param power      what this broadcast says about charging, fullness and the cable — the status
+	 *                   alone is not enough, see {@link #decideLevelAlert}
+	 * @param config     the user's alert thresholds and toggles
 	 */
-	private static LevelAlertDecision decideChargingOrFull(LevelAlertState state, int percentage,
-	                                                       boolean fullOnCharger, LevelAlertConfig config) {
+	private static LevelAlertDecision decideChargingOrFull(LevelAlertState state, int percentage, ChargeState power, LevelAlertConfig config) {
+		// One reading of "the charge you asked for is done", used by both the fire condition and the re-arm below. They are exact opposites, and evaluating the
+		// predicate twice invites them to drift apart — which is the bug the re-arm comment describes.
+		final boolean chargeDone = power.reachedChargeTarget(percentage, config.chargeTarget());
+
 		boolean fullNotified = state.fullNotified();
 		boolean fullAlertShown = state.fullAlertShown();
 		AlertType notifyType = null;
 
-		if (!fullNotified && fullOnCharger && config.fullNotifyEnabled()) {
+		if (!fullNotified && config.fullNotifyEnabled() && chargeDone) {
 			notifyType = AlertType.FULL;
 			fullNotified = true;
 			fullAlertShown = true;
 		}
-		// Only the once-per-charge flag re-arms here. Whether the alert is still on screen is a
-		// separate fact: the battery drifting down to FULL_PERCENTAGE doesn't take the notification
-		// away, and conflating the two left stale full alerts undismissable after a missed unplug.
-		if (percentage <= NotificationService.FULL_PERCENTAGE && percentage > config.warningLevel()) {
+		// Only the once-per-charge flag re-arms here. Whether the alert is still on screen is a separate fact: the battery drifting down out of the band
+		// doesn't take the notification away, and conflating the two left stale full alerts undismissable after a missed unplug.
+		//
+		// A broadcast that still reports the charge done never re-arms, whatever the level says. A device whose charge cap completes the charge below the
+		// re-arm level — Samsung's "Protect battery" at 85%, Sony and Asus at 80 — otherwise satisfies the fire condition and the re-arm band at the same time,
+		// so the flag cleared as fast as it was set and the alert re-posted for as long as the cable was in: undismissable, and audible on every tick for
+		// anyone using the silent-mode override. Leaving the charge behind is what re-arms, so "still there" must not. BatteryTemperatureTracker.nextFullSeen
+		// guards the identical hazard the same way.
+		if (!chargeDone && percentage <= AppPrefs.reArmLevel(config.chargeTarget()) && percentage > config.warningLevel()) {
 			fullNotified = false;
 		}
 		return new LevelAlertDecision(notifyType,
@@ -367,8 +380,7 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 	 *
 	 * @return whether to notify now, and the new alerted flag to persist
 	 */
-	static TemperatureDecision decideTemperature(final boolean alreadyAlerted, final boolean enabled,
-	                                             final int rawTenthsC, final int thresholdCelsius) {
+	static TemperatureDecision decideTemperature(boolean alreadyAlerted, boolean enabled, int rawTenthsC, int thresholdCelsius) {
 		if (!enabled) {
 			return new TemperatureDecision(false, false);
 		}
@@ -430,9 +442,7 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 	 * @param previous the state loaded at the start of this tick
 	 * @param state    the state to persist
 	 */
-	static void saveLevelStateIfChanged(SharedPreferences prefs,
-	                                    LevelAlertState previous,
-	                                    LevelAlertState state) {
+	static void saveLevelStateIfChanged(SharedPreferences prefs, LevelAlertState previous, LevelAlertState state) {
 		if (state.equals(previous)) {
 			return;
 		}
@@ -451,8 +461,7 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 	 * @param prevLevel      the percentage seen on the previous broadcast (gates the discharge branch)
 	 * @param prevType       the last level alert sent while discharging ({@code null} when none)
 	 * @param fullNotified   whether the full-battery alert has fired this charge session — the
-	 *                       once-per-charge de-dupe, re-armed by the {@code (warning,
-	 *                       FULL_PERCENTAGE]} band
+	 * once-per-charge de-dupe, re-armed by the {@code (warning, target − margin]} band (see {@link AppPrefs#reArmLevel})
 	 * @param fullAlertShown whether a full alert currently occupies the shared level-alert
 	 *                       notification. Distinct from {@code fullNotified}: the band re-arms that
 	 *                       one while the notification is still up, and a critical/warning alert
@@ -466,11 +475,13 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 	 * always travel together and are all read from the same intent, so they are one value rather
 	 * than three adjacent booleans at every call site.
 	 *
-	 * @param charging whether the battery status is {@code BATTERY_STATUS_CHARGING}
-	 * @param full     whether the battery status is {@code BATTERY_STATUS_FULL}
-	 * @param plugged  whether a charger is connected ({@code EXTRA_PLUGGED} is non-zero)
+	 * @param charging    whether the battery status is {@code BATTERY_STATUS_CHARGING}
+	 * @param full        whether the battery status is {@code BATTERY_STATUS_FULL}
+	 * @param notCharging whether the battery status is {@code BATTERY_STATUS_NOT_CHARGING} — the cable
+	 * is in but nothing is flowing, which is how a device parked at an OEM charge cap reports itself when it doesn't claim to be full
+	 * @param plugged     whether a charger is connected ({@code EXTRA_PLUGGED} is non-zero)
 	 */
-	record ChargeState(boolean charging, boolean full, boolean plugged) {
+	record ChargeState(boolean charging, boolean full, boolean notCharging, boolean plugged) {
 
 		/**
 		 * Charge complete <em>and</em> still on the charger — what actually bounds the full-battery
@@ -482,6 +493,37 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 		boolean fullOnCharger() {
 			return full && plugged;
 		}
+
+		/**
+		 * Whether this broadcast means "the charge you asked for is done" (#263): either a completed charge on the charger, or a battery still charging that
+		 * has climbed to the user's target.
+		 * <p>
+		 * The gate is on the battery being <em>fed</em>, not merely on the level. {@code decideChargingOrFull} is also reached on the "level unchanged while
+		 * discharging" path, where the old {@code full} status flag was harmless — {@code percentage >= target} is not, and sitting at 90% on the way
+		 * <em>down</em> would announce a charge that never happened.
+		 * <p>
+		 * {@code NOT_CHARGING} counts alongside {@code CHARGING}, because that is what a device holding at its own charge cap reports (Samsung "Protect
+		 * battery", Sony, Asus): cable in, nothing flowing, and never a {@code FULL} status to fire on. Requiring {@code CHARGING} left the feature silently
+		 * dead on exactly the devices whose owners care most about a charge target. {@code DISCHARGING} and {@code UNKNOWN} stay out — a battery going down is
+		 * not a charge finishing, whatever the cable says.
+		 * <p>
+		 * At the maximum target the level is deliberately <b>not</b> consulted: 100% means "wait for a genuinely complete charge", and the battery saying so is
+		 * the only trustworthy signal for that. Firing on the level there would alert a tick early on OEMs that reach 100% with the status still
+		 * {@code CHARGING} — a changed alert for someone who never touched the slider.
+		 *
+		 * @param percentage current battery percentage
+		 * @param target     the user's charge target in percent
+		 *
+		 * @return true when the full-battery alert may fire
+		 */
+		boolean reachedChargeTarget(int percentage, int target) {
+			if (fullOnCharger()) {
+				return true;
+			}
+			return !AppPrefs.targetIsAFullCharge(target)
+					&& plugged && (charging || notCharging)
+					&& percentage >= target;
+		}
 	}
 
 	/**
@@ -490,12 +532,18 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 	 *
 	 * @param criticalLevel     critical alert threshold in percent
 	 * @param warningLevel      warning alert threshold in percent
+	 * @param chargeTarget      the level the full-battery alert fires at while charging (#263)
 	 * @param warningEnabled    whether the warning alert is enabled
 	 * @param fullNotifyEnabled whether the full-battery alert is enabled
 	 * @param alertEveryTick    whether the critical alert repeats on every level tick
 	 */
-	record LevelAlertConfig(int criticalLevel, int warningLevel, boolean warningEnabled,
-	                        boolean fullNotifyEnabled, boolean alertEveryTick) {
+	record LevelAlertConfig(
+			int criticalLevel,
+			int warningLevel,
+			int chargeTarget,
+			boolean warningEnabled,
+			boolean fullNotifyEnabled,
+			boolean alertEveryTick) {
 	}
 
 	/**

@@ -48,7 +48,6 @@ import static java.util.Objects.nonNull;
 public final class NotificationService {
 	// Battery thresholds
 	public static final int RED_ALERT_LEVEL = 4;
-	public static final int FULL_PERCENTAGE = 95;
 	private static final String TAG = NotificationService.class.getSimpleName();
 
 	// Notification IDs — each alert gets its own so one can never replace another.
@@ -85,10 +84,13 @@ public final class NotificationService {
 	/**
 	 * Send a battery status notification
 	 *
-	 * @param context The application context
-	 * @param type    Which battery-level alert to send
+	 * @param context      The application context
+	 * @param type         Which battery-level alert to send
+	 * @param levelPercent The battery level this alert fired at. The full-battery alert's copy depends
+	 * on it (#263): a charge that completed below the user's charge target must not claim the target was reached. The critical/warning alerts word themselves
+	 * from their configured thresholds and ignore it.
 	 */
-	public static void sendNotification(Context context, AlertType type) {
+	public static void sendNotification(Context context, AlertType type, int levelPercent) {
 		if (isNull(type)) {
 			Log.w(TAG, "No alert type given, notification not sent");
 			return;
@@ -101,7 +103,7 @@ public final class NotificationService {
 		NotificationChannels.ensureChannels(context);
 
 		final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-		final NotificationConfig config = new NotificationConfig(context, prefs, type);
+		final NotificationConfig config = new NotificationConfig(context, prefs, type, levelPercent);
 
 		final String channelId = NotificationChannels.channelFor(context, config.alertsAllowed, config.channelId);
 		final NotificationCompat.Builder builder = alertBuilder(context, channelId, config.toAlertSpec(NOTIFICATION_ID));

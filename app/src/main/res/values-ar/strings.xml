@@ -104,6 +104,13 @@
     <string name="notify_for_full_level">التنبيه لاكتمال الشحن</string>
     <string name="notify_for_full_level_summary_on">تنبيه اكتمال الشحن مفعل</string>
     <string name="notify_for_full_level_summary_off">تنبيه اكتمال الشحن معطل</string>
+    <!-- #263: هدف الشحن — صياغة "شارف على الاكتمال" حين يكون الهدف أقل من الشحن الكامل -->
+    <string name="notify_when_almost_full">التنبيه عند مشارفة الاكتمال</string>
+    <string name="notify_when_almost_full_summary_on">تنبيه مشارفة الاكتمال مفعل</string>
+    <string name="notify_when_almost_full_summary_off">تنبيه مشارفة الاكتمال معطل</string>
+    <string name="charge_target">هدف الشحن</string>
+    <string name="charge_target_summary">تنبيه عند %1$s — شارف على الاكتمال، أفضل لعمر البطارية</string>
+    <string name="charge_target_summary_full">تنبيه عند %1$s — شحن كامل</string>
     <string name="notify_every_tick">التنبيه للمستوى الحرج كل (1%)</string>
     <string name="notify_every_tick_summary_on">التنبيه كل درجة (1%) للمستوى الحرج مفعل</string>
     <string name="notify_every_tick_summary_off">التنبيه كل درجة (1%) للمستوى الحرج معطل</string>
@@ -124,6 +131,11 @@
     <string name="notification_full_level_title">اكتمل شحن البطارية</string>
     <string name="notification_full_level_content">يمكنك فصل الشاحن الآن</string>
     <string name="notification_full_level_content_big" formatted="false">اكتمل الشحن — يمكنك فصل الشاحن الآن. تتقادم البطاريات أسرع ما يكون عند إبقائها على 100%، لذا فصل الشاحن قريباً (والبقاء تقريباً بين 20% و80% في الاستخدام اليومي) يساعد بطاريتك على أن تدوم أطول.</string>
+    <!-- #263: نسخة ما دون الشحن الكامل -->
+    <string name="notification_almost_full_ticker">البطارية شارفت على الاكتمال — بلغت %1$s، يمكنك فصل الشاحن الآن</string>
+    <string name="notification_almost_full_title">البطارية شارفت على الاكتمال</string>
+    <string name="notification_almost_full_content">بلغت هدف الشحن %1$s — يمكنك فصل الشاحن الآن</string>
+    <string name="notification_almost_full_content_big">بلغت هدف الشحن %1$s — يمكنك فصل الشاحن الآن. تتقادم البطاريات أسرع ما يكون عند إبقائها على 100%%، لذا التوقف قبل الشحن الكامل (والبقاء تقريباً بين 20%% و80%% في الاستخدام اليومي) يساعد بطاريتك على أن تدوم أطول.</string>
 
     <string name="notification_charge_started_title">بدأ الشحن</string>
 

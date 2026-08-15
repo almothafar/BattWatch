@@ -106,24 +106,70 @@ if(lacksPermission()) {  // No inversion needed
 
 **Guideline:** If your IDE warns "Calls to method X are always inverted", rename the method.
 
-### 4. Line Width
+### 4. Line Width & Wrapping
 
-- Maximum line width: **160 characters**
-- Don't over-wrap everything
+- Maximum line width: **160 characters** — this applies to comments and JavaDoc exactly as it does to code. Don't wrap a comment at 100 because the paragraph around it happens to be narrow; use the full width.
+- Don't over-wrap everything — **if it fits on one line, put it on one line**
 - Break long lines at logical points (method calls, operators)
+- **Markdown is never hard-wrapped.** In `.md` files — and in commit messages, PR bodies and issue bodies — let each paragraph run as one long line and let the editor soft-wrap it. Hard line breaks inside a paragraph make every later edit re-flow the whole block and turn a one-word change into a multi-line diff.
 
 ```java
 // ✅ GOOD - Reasonable line length
 final String value = prefs.getString(context.getString(R.string.key), defaultValue);
 
-// ✅ GOOD - Break at logical point when too long
-final String longValue = sharedPreferences.getString(
-		context.getString(R.string.very_long_preference_key_name),
-		context.getString(R.string.very_long_default_value)
-);
+// ❌ BAD - wrapped for no reason; this is 121 characters and fits
+private static LevelAlertDecision decideDischarging(LevelAlertState state, int percentage,
+                                                    LevelAlertConfig config) {
+
+// ✅ GOOD - one line, under 160
+private static LevelAlertDecision decideDischarging(LevelAlertState state, int percentage, LevelAlertConfig config) {
 ```
 
-### 5. No FQNs (Fully Qualified Names)
+### 5. More Than 4 Parameters — One Per Line
+
+**A signature, constructor or call with more than 4 parameters gets one per line — even when it would fit inside 160 characters.** Four or fewer stay on a single line whenever they fit.
+
+Past four, a run-on list stops being scannable: you can't tell at a glance how many arguments there are, and a wrong-order argument hides in the middle of it. The line-width rule is about *not* wrapping needlessly; this rule is about a count the eye can't parse, so it wins over "but it fits".
+
+```java
+// ❌ BAD - 6 components, packed onto two arbitrary lines
+record LevelAlertConfig(int criticalLevel, int warningLevel, int chargeTarget, boolean warningEnabled,
+                        boolean fullNotifyEnabled, boolean alertEveryTick) {
+
+// ✅ GOOD - more than 4, so one per line
+record LevelAlertConfig(
+		int criticalLevel,
+		int warningLevel,
+		int chargeTarget,
+		boolean warningEnabled,
+		boolean fullNotifyEnabled,
+		boolean alertEveryTick) {
+
+// ✅ GOOD - exactly 4 and it fits, so one line
+static boolean nextFullSeen(TemperatureStats previous, int levelPercent, boolean chargeComplete, int chargeTarget) {
+```
+
+### 6. Chained Calls — All On One Line, Or One Per Line
+
+**Builder chains and streams go on a single line if they fit. If they don't, every call in the chain gets its own line** — never a half-and-half split where some calls share a line and others don't.
+
+```java
+// ✅ GOOD - fits, so one line
+return prefs.edit().putInt(PREF_LEVEL, level).apply();
+
+// ❌ BAD - arbitrary grouping; where the breaks fall tells the reader nothing
+return prefs.edit().putInt(PREF_PREV_LEVEL, state.prevLevel())
+            .putInt(PREF_PREV_TYPE, id).putBoolean(PREF_FULL_NOTIFIED, state.fullNotified());
+
+// ✅ GOOD - doesn't fit, so one call per line
+return prefs.edit()
+            .putInt(PREF_PREV_LEVEL, state.prevLevel())
+            .putInt(PREF_PREV_TYPE, AlertType.persistedId(state.prevType()))
+            .putBoolean(PREF_FULL_NOTIFIED, state.fullNotified())
+            .putBoolean(PREF_FULL_ALERT_SHOWN, state.fullAlertShown());
+```
+
+### 7. No FQNs (Fully Qualified Names)
 
 **Never use fully qualified names in code - use imports instead.**
 
@@ -468,29 +514,44 @@ Identifiers are **not** copy — leave them out of `values-ar/`:
 - Use positional format args for dynamic content: `<string name="notification_status_content">%1$d%% · %2$s · %3$s</string>`.
 - Use `start`/`end` (not `left`/`right`) in layouts and test with an RTL language.
 
-### 5. Always Pass a `Locale` to `String.format`
+### 5. Numbers Are Always Western Digits
 
-**Never call `String.format` without a locale.** Which locale depends on *who reads the result*:
+**Every number a user sees renders in Western digits (`85`), never Eastern Arabic (`٨٥`) — in any locale.** The words around a number are translated; the number itself is not. This is a product decision, and `BatteryPercentFormatter` has enforced it since #96.
 
-| The text is… | Use | Because |
-|---|---|---|
-| saved to prefs, or parsed back by our code | `Locale.ROOT` | the parser needs plain Western digits |
-| read by a person (UI, content descriptions) | `Locale.getDefault()` | it should follow the user's language |
+That means `Locale.ROOT` for **all** numeric formatting — persisted *and* user-facing alike. `Locale.getDefault()` has no numeric use in this app.
 
 ```java
 // ❌ BAD - no locale: under a region-bearing Arabic locale this yields "٠٨:٣٠"
 String.format("%02d:%02d", hour, minute);
 
-// ✅ GOOD - persisted value, so Western digits regardless of language
+// ❌ BAD - getDefault() localizes the digits: "٤٠%" on an ar-EG device
+String.format(Locale.getDefault(), levelDescriptionFormat, level);
+
+// ✅ GOOD - Western digits regardless of language
 String.format(Locale.ROOT, "%02d:%02d", hour, minute);
 
-// ✅ GOOD - screen-reader text, so it follows the user's language
-String.format(Locale.getDefault(), levelDescriptionFormat, level);
+// ✅ GOOD - percentages go through the shared formatter
+BatteryPercentFormatter.formatWhole(level); // "85%"
 ```
 
-**Why?** CLDR selects the Eastern Arabic numbering system for region-bearing Arabic locales (`ar-SA`, `ar-EG`, `ar-JO`), so `%d` prints `٨` rather than `8` and a persisted value stops parsing. This shipped twice — issues #154 and #241.
+**`getString(id, someInt)` is the trap.** `Resources.getString` formats with the *resource* locale, so a `%1$d` placeholder produces Eastern digits on `ar-EG`/`ar-SA`/`ar-JO` even though no `String.format` appears in your code. Use a `%1$s` placeholder and pass an already-formatted string:
 
-> **Testing note:** a locale test *must* use a region tag. Bare `Locale.forLanguageTag("ar")` formats with Western digits, so a test written against it passes even when the bug is present — that is precisely how #241 survived the #154 fix. Use `ar-EG` and assert that plain `String.format` really does produce Eastern digits before asserting your code doesn't.
+```xml
+<!-- ❌ BAD - %1$d is formatted by the resource locale -->
+<string name="notification_almost_full_content">Reached your %1$d%% charge target</string>
+
+<!-- ✅ GOOD - %1$s takes the number exactly as we formatted it -->
+<string name="notification_almost_full_content">Reached your %1$s charge target</string>
+```
+
+```java
+// ✅ GOOD - the formatter owns the digits and the '%' sign
+context.getString(R.string.notification_almost_full_content, BatteryPercentFormatter.formatWhole(target));
+```
+
+**Locale tests must use a region tag.** Bare `"ar"` formats Western digits, so a test written against it passes even when the defect is present — that is exactly how #241 survived the #154 fix. Use `ar-rEG` (the Robolectric/resource-qualifier spelling of `ar-EG`) and assert the digits a real user would see.
+
+**Why?** CLDR selects the Eastern Arabic numbering system for region-bearing Arabic locales (`ar-SA`, `ar-EG`, `ar-JO`), so `%d` prints `٨` rather than `8`, a persisted value stops parsing, and a displayed one stops matching the rest of the app. This shipped twice — issues #154 and #241.
 
 ### 6. Don't Use `String.format` in Logs
 
@@ -701,14 +762,17 @@ When reviewing code, check:
 - [ ] All curly brackets present (even single-line)
 - [ ] Locals marked `final` where appropriate; parameters **not** marked `final`
 - [ ] No FQNs (uses imports)
-- [ ] Line width ≤ 160 characters
+- [ ] Line width ≤ 160 characters — comments and JavaDoc included — and nothing wrapped that would fit on one line
+- [ ] More than 4 parameters → one per line; chained calls all on one line or one per line
+- [ ] Markdown (and commit/PR/issue text) not hard-wrapped; no tooling metadata or generator footers
 - [ ] Early returns instead of deep nesting
 - [ ] No code duplication (DRY)
 - [ ] Methods ≤ 50 lines
 - [ ] All null checks in place
 - [ ] No silent/broad `catch`; expected failures validated, not caught
 - [ ] No hardcoded user-facing strings; `values-ar/` kept in parity
-- [ ] Every `String.format` passes a `Locale` — `ROOT` if persisted/parsed, `getDefault()` if a person reads it
+- [ ] Every number a user sees is Western digits — `Locale.ROOT` everywhere, `%1$s` not `%1$d` in resources
+- [ ] Locale tests use a region tag (`ar-rEG`), never bare `ar`
 - [ ] Log messages use `+` concatenation, not `String.format`
 - [ ] Permissions checked (Android 13+)
 - [ ] Modern APIs used (no deprecated)
