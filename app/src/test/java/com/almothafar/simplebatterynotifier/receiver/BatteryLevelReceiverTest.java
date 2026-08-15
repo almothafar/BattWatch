@@ -16,6 +16,7 @@ import com.almothafar.simplebatterynotifier.service.SystemService;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.InOrder;
 import org.mockito.MockedStatic;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
@@ -23,6 +24,7 @@ import org.robolectric.annotation.Config;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -114,7 +116,7 @@ public class BatteryLevelReceiverTest {
 	@Test
 	public void full_whileCharging_sendsFullAlertOnce() {
 		// Simulate the battery already sitting at 100% (unchanged) so the charging/full branch runs
-		saveLevelState(new LevelAlertState(100, null, false));
+		saveLevelState(new LevelAlertState(100, null, false, false));
 		publishBattery(BatteryManager.BATTERY_STATUS_FULL, 100, 100, BatteryManager.BATTERY_PLUGGED_AC);
 
 		try (MockedStatic<NotificationService> ns = mockStatic(NotificationService.class)) {
@@ -126,7 +128,7 @@ public class BatteryLevelReceiverTest {
 
 	@Test
 	public void unplug_reArmsFullAlert_forNextChargeSession() {
-		saveLevelState(new LevelAlertState(100, null, false));
+		saveLevelState(new LevelAlertState(100, null, false, false));
 		publishBattery(BatteryManager.BATTERY_STATUS_FULL, 100, 100, BatteryManager.BATTERY_PLUGGED_AC);
 
 		try (MockedStatic<NotificationService> ns = mockStatic(NotificationService.class)) {
@@ -136,6 +138,23 @@ public class BatteryLevelReceiverTest {
 			receive();
 
 			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.FULL)), times(2));
+		}
+	}
+
+	@Test
+	public void unplugAtFull_dismissesTheStaleAlertBeforePostingTheCriticalOne() {
+		// The level alerts share one notification ID, so the dismissal has to run first: cancelling
+		// after sending would wipe the critical alert this same broadcast just decided. Only the
+		// receiver can pin this — the decision record carries no ordering.
+		saveLevelState(new LevelAlertState(21, null, true, true));
+		publishBattery(BatteryManager.BATTERY_STATUS_DISCHARGING, 15, 100, 0);
+
+		try (MockedStatic<NotificationService> ns = mockStatic(NotificationService.class)) {
+			receive();
+
+			final InOrder ordered = inOrder(NotificationService.class);
+			ordered.verify(ns, () -> NotificationService.clearLevelAlert(any(Context.class)));
+			ordered.verify(ns, () -> NotificationService.sendNotification(any(Context.class), eq(AlertType.CRITICAL)));
 		}
 	}
 
