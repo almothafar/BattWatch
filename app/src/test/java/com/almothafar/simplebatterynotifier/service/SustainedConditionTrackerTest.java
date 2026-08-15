@@ -20,6 +20,11 @@ import org.robolectric.annotation.Config;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Answers.RETURNS_SELF;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for the shared sustained-condition engine {@link SustainedConditionTracker} (issue #163):
@@ -145,6 +150,63 @@ public class SustainedConditionTrackerTest {
 			store.clear(prefs);
 
 			assertEquals(CLEARED, store.load(prefs));
+		}
+
+		@Test
+		public void alertTransition_isWrittenSynchronously() {
+			// A real SharedPreferences can't tell commit() from apply() — both read back — so this asserts
+			// on the editor. The streak must reach disk before the notification posts (#268), or a process
+			// kill loses `alerted` while the notification survives, stranding an alert nothing dismisses.
+			final SharedPreferences.Editor editor = mock(SharedPreferences.Editor.class, RETURNS_SELF);
+			final SharedPreferences mockPrefs = mock(SharedPreferences.class);
+			when(mockPrefs.edit()).thenReturn(editor);
+			// Unstubbed getters return 0/false, so the stored streak is CLEARED — not alerted.
+
+			store().saveIfChanged(mockPrefs, new Streak(111, true, 222, 333));
+
+			verify(editor).commit();
+			verify(editor, never()).apply();
+		}
+
+		@Test
+		public void tickWithinAnActiveEpisode_staysAsynchronous() {
+			// The guard that keeps this cheap: lastSeen moves on every broadcast of a live episode, so if
+			// the durable write keyed on `alerted` being true rather than on the transition, every tick
+			// would block on disk. Only the transition may be synchronous.
+			final SharedPreferences.Editor editor = mock(SharedPreferences.Editor.class, RETURNS_SELF);
+			final SharedPreferences mockPrefs = mock(SharedPreferences.class);
+			when(mockPrefs.edit()).thenReturn(editor);
+			when(mockPrefs.getBoolean(KEY_ALERTED, false)).thenReturn(true);
+			when(mockPrefs.getLong(KEY_START, 0)).thenReturn(111L);
+			when(mockPrefs.getLong(KEY_LAST_SEEN, 0)).thenReturn(222L);
+			when(mockPrefs.getLong(KEY_LAST_REMINDER, 0)).thenReturn(333L);
+
+			store().saveIfChanged(mockPrefs, new Streak(111, true, 999, 333));
+
+			verify(editor).apply();
+			verify(editor, never()).commit();
+		}
+
+		@Test
+		public void reArm_staysAsynchronous() {
+			final SharedPreferences.Editor editor = mock(SharedPreferences.Editor.class, RETURNS_SELF);
+			final SharedPreferences mockPrefs = mock(SharedPreferences.class);
+			when(mockPrefs.edit()).thenReturn(editor);
+			when(mockPrefs.getBoolean(KEY_ALERTED, false)).thenReturn(true);
+			when(mockPrefs.getLong(KEY_START, 0)).thenReturn(111L);
+			when(mockPrefs.getLong(KEY_LAST_SEEN, 0)).thenReturn(222L);
+			when(mockPrefs.getLong(KEY_LAST_REMINDER, 0)).thenReturn(333L);
+
+			// Losing the re-arm write is self-healing: the next tick re-decides it and repeats a no-op
+			// cancel, so it must not pay for a synchronous disk write.
+			store().saveIfChanged(mockPrefs, CLEARED);
+
+			verify(editor).apply();
+			verify(editor, never()).commit();
+		}
+
+		private static StreakStore store() {
+			return new StreakStore(KEY_START, KEY_ALERTED, KEY_LAST_SEEN, KEY_LAST_REMINDER);
 		}
 
 		@Test

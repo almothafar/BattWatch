@@ -1,5 +1,6 @@
 package com.almothafar.simplebatterynotifier.receiver;
 
+import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -73,10 +74,7 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 	public static void onChargerDisconnected(Context context) {
 		final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
 		final LevelAlertState state = loadLevelState(prefs);
-		final LevelAlertState reset = reArmForNewDischarge(state);
-		if (!reset.equals(state)) {
-			saveLevelState(prefs, reset);
-		}
+		saveLevelStateIfChanged(prefs, state, reArmForNewDischarge(state));
 	}
 
 	/**
@@ -169,11 +167,9 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 		final LevelAlertState previous = loadLevelState(sharedPref);
 		final LevelAlertDecision decision = decideLevelAlert(previous, percentage, power, config);
 
-		// Persist only on change: most broadcasts (voltage/temperature deltas) re-decide an identical
-		// state, and rewriting it would churn SharedPreferences on every tick.
-		if (!decision.newState().equals(previous)) {
-			saveLevelState(sharedPref, decision.newState());
-		}
+		// Persisted before the notification is posted, so a kill in between can only leave the
+		// recoverable "flag says shown, nothing is" state — never the reverse (#268).
+		saveLevelStateIfChanged(sharedPref, previous, decision.newState());
 		if (decision.clearFullAlert()) {
 			NotificationService.clearLevelAlert(context);
 		}
@@ -209,7 +205,7 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 		final TemperatureDecision decision = decideTemperature(previouslyAlerted, enabled, rawTenthsC, thresholdCelsius);
 
 		if (decision.alerted() != previouslyAlerted) {
-			sharedPref.edit().putBoolean(PREF_TEMPERATURE_ALERTED, decision.alerted()).apply();
+			persistTemperatureAlerted(sharedPref, decision.alerted());
 		}
 		if (decision.shouldNotify()) {
 			NotificationService.sendTemperatureNotification(context, rawTenthsC);
@@ -217,6 +213,33 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 			// The spell just ended: cooled past the hysteresis, or the alert switched off while one was
 			// showing. Dismiss the stale warning (#259) — staying inside the band holds, so it can't flap.
 			NotificationService.clearTemperatureAlert(context);
+		}
+	}
+
+	/**
+	 * Persist the hot-spell flag, synchronously when it is being turned <em>on</em> (#268).
+	 * <p>
+	 * The flag is written before the notification is posted so that a process killed in between leaves
+	 * the recoverable state — a flag claiming an alert that isn't showing, which the next cool tick
+	 * resolves with a no-op cancel. {@code apply()} does not actually give that ordering: it returns
+	 * before the write reaches disk, so a hard kill can lose the flag while the notification, living in
+	 * system_server, survives. The alert is then stranded with nothing left to dismiss it. Turning the
+	 * flag <em>off</em> keeps {@code apply()} — losing that write is self-healing, because the next tick
+	 * re-decides the same transition and repeats the cancel.
+	 * <p>
+	 * Only a hot-spell transition reaches here (the caller compares against the stored value), so this
+	 * is roughly two synchronous writes per spell, never one per broadcast.
+	 *
+	 * @param sharedPref The shared preferences
+	 * @param alerted    the flag value to store; {@code true} means an alert is now on screen
+	 */
+	@SuppressLint("ApplySharedPref") // Durability is the point — see above; the write is per-spell, not per-tick
+	static void persistTemperatureAlerted(SharedPreferences sharedPref, boolean alerted) {
+		final SharedPreferences.Editor edit = sharedPref.edit().putBoolean(PREF_TEMPERATURE_ALERTED, alerted);
+		if (alerted) {
+			edit.commit();
+		} else {
+			edit.apply();
 		}
 	}
 
@@ -367,12 +390,57 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 	}
 
 	static void saveLevelState(SharedPreferences prefs, LevelAlertState state) {
-		prefs.edit()
-		     .putInt(PREF_PREV_LEVEL, state.prevLevel())
-		     .putInt(PREF_PREV_TYPE, AlertType.persistedId(state.prevType()))
-		     .putBoolean(PREF_FULL_NOTIFIED, state.fullNotified())
-		     .putBoolean(PREF_FULL_ALERT_SHOWN, state.fullAlertShown())
-		     .apply();
+		levelStateEditor(prefs, state).apply();
+	}
+
+	/**
+	 * Persists synchronously, for the write that records a full alert reaching the screen (#268).
+	 * <p>
+	 * {@code apply()} returns before the write lands, so a process killed between it and the notification
+	 * loses {@code fullAlertShown} while the notification, living in system_server, survives. The
+	 * state-driven dismissal in {@link #decideLevelAlert} keys on exactly that flag, so it would then read
+	 * "nothing on screen" and leave the alert up for good.
+	 *
+	 * @param prefs the shared preferences
+	 * @param state the episode state to persist
+	 */
+	@SuppressLint("ApplySharedPref") // Durability is the point — see above; only on the alert transition
+	private static void saveLevelStateDurably(SharedPreferences prefs, LevelAlertState state) {
+		levelStateEditor(prefs, state).commit();
+	}
+
+	private static SharedPreferences.Editor levelStateEditor(SharedPreferences prefs, LevelAlertState state) {
+		return prefs.edit()
+		            .putInt(PREF_PREV_LEVEL, state.prevLevel())
+		            .putInt(PREF_PREV_TYPE, AlertType.persistedId(state.prevType()))
+		            .putBoolean(PREF_FULL_NOTIFIED, state.fullNotified())
+		            .putBoolean(PREF_FULL_ALERT_SHOWN, state.fullAlertShown());
+	}
+
+	/**
+	 * Persist the episode state only when it differs from what was loaded — most broadcasts
+	 * (voltage/temperature deltas) re-decide an identical state, and rewriting it would churn
+	 * SharedPreferences on every tick.
+	 * <p>
+	 * The transition that puts a full alert on screen goes through {@link #saveLevelStateDurably};
+	 * everything else, the re-arm included, stays asynchronous. Losing a re-arm write is self-healing —
+	 * the next tick re-decides it — so only the one unrecoverable write pays for the disk wait.
+	 *
+	 * @param prefs    the shared preferences
+	 * @param previous the state loaded at the start of this tick
+	 * @param state    the state to persist
+	 */
+	static void saveLevelStateIfChanged(SharedPreferences prefs,
+	                                    LevelAlertState previous,
+	                                    LevelAlertState state) {
+		if (state.equals(previous)) {
+			return;
+		}
+		if (!previous.fullAlertShown() && state.fullAlertShown()) {
+			saveLevelStateDurably(prefs, state);
+		} else {
+			saveLevelState(prefs, state);
+		}
 	}
 
 	/**

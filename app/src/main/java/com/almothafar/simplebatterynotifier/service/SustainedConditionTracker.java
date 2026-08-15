@@ -1,5 +1,6 @@
 package com.almothafar.simplebatterynotifier.service;
 
+import android.annotation.SuppressLint;
 import android.content.SharedPreferences;
 
 /**
@@ -159,6 +160,28 @@ final class SustainedConditionTracker {
         }
 
         void save(SharedPreferences prefs, Streak state) {
+            editorFor(prefs, state).apply();
+        }
+
+        /**
+         * Persists synchronously, for the one write that records an alert the user can now see (#268).
+         * <p>
+         * The streak is written before the notification is posted so a process killed in between leaves
+         * the recoverable state: a streak claiming an alert that isn't showing, which the next tick
+         * resolves with a no-op cancel. {@code apply()} does not actually give that ordering — it returns
+         * before the write reaches disk, so a hard kill can lose the streak while the notification, living
+         * in system_server, survives. The alert is then stranded with no {@code alerted} flag left to
+         * dismiss it.
+         *
+         * @param prefs the shared preferences
+         * @param state the state to persist
+         */
+        @SuppressLint("ApplySharedPref") // Durability is the point — see above; only on the alert transition
+        void saveDurably(SharedPreferences prefs, Streak state) {
+            editorFor(prefs, state).commit();
+        }
+
+        private SharedPreferences.Editor editorFor(SharedPreferences prefs, Streak state) {
             final SharedPreferences.Editor editor = prefs.edit()
                     .putLong(keyStart, state.start())
                     .putBoolean(keyAlerted, state.alerted())
@@ -166,18 +189,29 @@ final class SustainedConditionTracker {
             if (keyLastReminder != null) {
                 editor.putLong(keyLastReminder, state.lastReminder());
             }
-            editor.apply();
+            return editor;
         }
 
         /**
          * Persists the new state only when it differs from what's stored — the common healthy-tick case
          * re-decides the same state on every broadcast, and rewriting it would churn SharedPreferences.
+         * <p>
+         * The transition that turns {@code alerted} on goes through {@link #saveDurably}; everything else,
+         * the re-arm included, stays asynchronous. {@code lastSeen} moves on every tick of an active
+         * episode, so keying the durable write on the transition rather than on {@code alerted} being true
+         * is what keeps it to one synchronous write per episode.
          *
          * @param prefs the shared preferences
          * @param state the state to persist
          */
         void saveIfChanged(SharedPreferences prefs, Streak state) {
-            if (!load(prefs).equals(state)) {
+            final Streak stored = load(prefs);
+            if (stored.equals(state)) {
+                return;
+            }
+            if (!stored.alerted() && state.alerted()) {
+                saveDurably(prefs, state);
+            } else {
                 save(prefs, state);
             }
         }
