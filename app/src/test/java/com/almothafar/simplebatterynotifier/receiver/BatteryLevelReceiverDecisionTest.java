@@ -381,6 +381,48 @@ public class BatteryLevelReceiverDecisionTest {
 	}
 
 	@Test
+	public void levelState_whenTheFullAlertReachesTheScreen_isWrittenSynchronously() {
+		final SharedPreferences.Editor editor = mock(SharedPreferences.Editor.class, RETURNS_SELF);
+		final SharedPreferences prefs = mock(SharedPreferences.class);
+		when(prefs.edit()).thenReturn(editor);
+
+		// The dismissal in decideLevelAlert keys on fullAlertShown, so losing this write leaves the
+		// "Battery fully charged" notification up with nothing able to take it down.
+		BatteryLevelReceiver.saveLevelStateIfChanged(prefs,
+				new LevelAlertState(100, null, false, false),
+				new LevelAlertState(100, null, true, true));
+
+		verify(editor).commit();
+		verify(editor, never()).apply();
+	}
+
+	@Test
+	public void levelState_whenTheEpisodeReArms_staysAsynchronous() {
+		final SharedPreferences.Editor editor = mock(SharedPreferences.Editor.class, RETURNS_SELF);
+		final SharedPreferences prefs = mock(SharedPreferences.class);
+		when(prefs.edit()).thenReturn(editor);
+
+		BatteryLevelReceiver.saveLevelStateIfChanged(prefs,
+				new LevelAlertState(100, null, true, true),
+				new LevelAlertState(100, null, false, false));
+
+		verify(editor).apply();
+		verify(editor, never()).commit();
+	}
+
+	@Test
+	public void levelState_unchanged_isNotWrittenAtAll() {
+		// The churn guard: ACTION_BATTERY_CHANGED fires every few seconds and re-decides an identical
+		// state, so the common tick must not touch the preferences file at all.
+		final SharedPreferences prefs = mock(SharedPreferences.class);
+		final LevelAlertState same = new LevelAlertState(100, null, true, true);
+
+		BatteryLevelReceiver.saveLevelStateIfChanged(prefs, same, same);
+
+		verify(prefs, never()).edit();
+	}
+
+	@Test
 	public void temperatureFlag_whenTheSpellEnds_staysAsynchronous() {
 		final SharedPreferences.Editor editor = mock(SharedPreferences.Editor.class, RETURNS_SELF);
 		final SharedPreferences prefs = mock(SharedPreferences.class);
