@@ -62,6 +62,9 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 	 *   <li>the temperature flag — a hot spell doesn't end at unplug; cooling below the threshold
 	 *       (the hysteresis in {@link #decideTemperature}) is its only re-arm.</li>
 	 * </ul>
+	 * This is the prompt path, driven by the unplug transition. It is not the only one:
+	 * {@link #decideLevelAlert} re-arms (and dismisses a stale full alert) from the plugged state on
+	 * any later broadcast, so a transition missed while the process was dead still resolves.
 	 *
 	 * @param context The application context
 	 */
@@ -86,6 +89,10 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 		final int status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
 		final boolean isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING;
 		final boolean isFull = status == BatteryManager.BATTERY_STATUS_FULL;
+		// The cable, not the status, is what bounds the full-battery alert: plenty of devices keep
+		// reporting BATTERY_STATUS_FULL while sitting at 100% with the charger already out. See
+		// decideLevelAlert.
+		final boolean isPlugged = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) > 0;
 
 		// Build the reading from the delivered intent; with a non-null intent this never returns null.
 		final BatteryDO batteryDO = SystemService.getBatteryInfo(context, intent);
@@ -118,12 +125,17 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 				sharedPref.getBoolean(context.getString(R.string._pref_key_notify_every_tick), false));
 
 		final LevelAlertState previous = loadLevelState(sharedPref);
-		final LevelAlertDecision decision = decideLevelAlert(previous, percentage, isCharging, isFull, config);
+		final LevelAlertDecision decision = decideLevelAlert(previous, percentage, isCharging, isFull, isPlugged, config);
 
 		// Persist only on change: most broadcasts (voltage/temperature deltas) re-decide an identical
 		// state, and rewriting it would churn SharedPreferences on every tick.
 		if (!decision.newState().equals(previous)) {
 			saveLevelState(sharedPref, decision.newState());
+		}
+		// Dismiss before sending, never after: level alerts share one notification ID, so a new alert
+		// decided on this same broadcast replaces the stale full one and must not then be cancelled.
+		if (decision.clearFullAlert()) {
+			NotificationService.clearLevelAlert(context);
 		}
 		if (nonNull(decision.notifyType())) {
 			NotificationService.sendNotification(context, decision.notifyType());
@@ -182,23 +194,42 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 	 * dependencies (#164). A changed level while discharging is judged against the thresholds; an
 	 * unchanged level or a charging/full state runs the full-battery logic instead — the same split
 	 * the receiver has always used, now explicit.
+	 * <p>
+	 * The full-battery alert is bounded by the <em>charger</em>, not by the status: a battery sitting
+	 * at 100% keeps reporting {@code BATTERY_STATUS_FULL} on many devices long after the cable is out.
+	 * Unplugged, therefore, the alert can neither fire (it would re-post itself the instant the unplug
+	 * dismissal cleared it, reading as a notification that refuses to go away) nor stay shown — "you
+	 * can unplug now" is answered once the charger is out, so a displayed one is dismissed here. That
+	 * dismissal is deliberately state-driven rather than left to the unplug broadcast alone: when the
+	 * process is killed mid-charge (doze, OEM task killers) nobody sees that transition, and the alert
+	 * would otherwise linger — un-swipeable, when the user has the sticky-notification preference on.
 	 *
 	 * @param state      current persisted episode state
 	 * @param percentage current battery percentage (whole, via the single rounding policy #158)
 	 * @param charging   whether the battery status is {@code BATTERY_STATUS_CHARGING}
 	 * @param full       whether the battery status is {@code BATTERY_STATUS_FULL}
+	 * @param plugged    whether a charger is connected ({@code EXTRA_PLUGGED} is non-zero)
 	 * @param config     the user's alert thresholds and toggles
 	 *
-	 * @return which alert to send now ({@code null} for none) and the new state to persist
+	 * @return which alert to send now ({@code null} for none), whether to dismiss a stale full alert,
+	 * and the new state to persist
 	 */
 	static LevelAlertDecision decideLevelAlert(final LevelAlertState state, final int percentage,
 	                                           final boolean charging, final boolean full,
-	                                           final LevelAlertConfig config) {
-		final boolean levelChanged = state.prevLevel() != percentage;
-		if (levelChanged && !charging) {
-			return decideDischarging(state, percentage, config);
-		}
-		return decideChargingOrFull(state, percentage, full, config);
+	                                           final boolean plugged, final LevelAlertConfig config) {
+		// Off the charger a shown full alert is stale, and the episode re-arms for the next charge —
+		// the same re-arm PowerConnectionReceiver applies on the unplug broadcast it did see.
+		final boolean staleFullAlert = !plugged && state.fullNotified();
+		final LevelAlertState current = staleFullAlert
+		                                ? new LevelAlertState(state.prevLevel(), state.prevType(), false)
+		                                : state;
+
+		final boolean levelChanged = current.prevLevel() != percentage;
+		final LevelAlertDecision decision = levelChanged && !charging
+		                                    ? decideDischarging(current, percentage, config)
+		                                    : decideChargingOrFull(current, percentage, full && plugged, config);
+
+		return new LevelAlertDecision(decision.notifyType(), decision.newState(), staleFullAlert);
 	}
 
 	/**
@@ -222,26 +253,32 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 			}
 			prevType = AlertType.WARNING;
 		}
-		return new LevelAlertDecision(notifyType, new LevelAlertState(percentage, prevType, state.fullNotified()));
+		return new LevelAlertDecision(notifyType, new LevelAlertState(percentage, prevType, state.fullNotified()), false);
 	}
 
 	/**
 	 * The charging-or-unchanged side: the full alert fires once per charge session, re-armed once
 	 * the level has genuinely dropped out of the full band while staying above the warning band.
+	 *
+	 * @param state         current persisted episode state
+	 * @param percentage    current battery percentage
+	 * @param fullOnCharger charge complete <em>and</em> still on the charger — the status alone is not
+	 *                      enough, see {@link #decideLevelAlert}
+	 * @param config        the user's alert thresholds and toggles
 	 */
 	private static LevelAlertDecision decideChargingOrFull(final LevelAlertState state, final int percentage,
-	                                                       final boolean full, final LevelAlertConfig config) {
+	                                                       final boolean fullOnCharger, final LevelAlertConfig config) {
 		boolean fullNotified = state.fullNotified();
 		AlertType notifyType = null;
 
-		if (!fullNotified && full && config.fullNotifyEnabled()) {
+		if (!fullNotified && fullOnCharger && config.fullNotifyEnabled()) {
 			notifyType = AlertType.FULL;
 			fullNotified = true;
 		}
 		if (percentage <= NotificationService.FULL_PERCENTAGE && percentage > config.warningLevel()) {
 			fullNotified = false;
 		}
-		return new LevelAlertDecision(notifyType, new LevelAlertState(percentage, state.prevType(), fullNotified));
+		return new LevelAlertDecision(notifyType, new LevelAlertState(percentage, state.prevType(), fullNotified), false);
 	}
 
 	/**
@@ -318,12 +355,15 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 	}
 
 	/**
-	 * Result of {@link #decideLevelAlert}: which alert to send now, and the state to persist.
+	 * Result of {@link #decideLevelAlert}: which alert to send now, whether a stale full alert is
+	 * still on screen, and the state to persist.
 	 *
-	 * @param notifyType the alert to send, or {@code null} for none
-	 * @param newState   the state to persist
+	 * @param notifyType     the alert to send, or {@code null} for none
+	 * @param newState       the state to persist
+	 * @param clearFullAlert whether a full-battery alert shown from a finished charge session must be
+	 *                       dismissed (the charger is out)
 	 */
-	record LevelAlertDecision(AlertType notifyType, LevelAlertState newState) {
+	record LevelAlertDecision(AlertType notifyType, LevelAlertState newState, boolean clearFullAlert) {
 	}
 
 	/**
