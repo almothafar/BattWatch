@@ -472,9 +472,13 @@ public class BatteryInsightsActivity extends BaseActivity {
 	 * Shows the accepted design-capacity range as a Toast.
 	 */
 	private void showCapacityRangeError() {
-		Toast.makeText(this, getString(R.string.error_design_capacity_range,
-				BatteryHealthTracker.MIN_DESIGN_CAPACITY_MAH,
-				BatteryHealthTracker.MAX_DESIGN_CAPACITY_MAH), Toast.LENGTH_LONG).show();
+		// Western digits in every locale (#96/#273) via String.valueOf: getString formats with the configuration locale, so passing the
+		// bounds through %1$d/%2$d placeholders would render ١٠٠٠ and ٣٠٠٠٠ under ar-EG/ar-SA/ar-JO — digits the capacity field, which
+		// accepts Western input only, would then reject.
+		final String message = getString(R.string.error_design_capacity_range,
+				String.valueOf(BatteryHealthTracker.MIN_DESIGN_CAPACITY_MAH),
+				String.valueOf(BatteryHealthTracker.MAX_DESIGN_CAPACITY_MAH));
+		Toast.makeText(this, message, Toast.LENGTH_LONG).show();
 	}
 
 	/**

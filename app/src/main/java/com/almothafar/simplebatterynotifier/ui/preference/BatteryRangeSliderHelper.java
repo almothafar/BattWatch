@@ -1,7 +1,10 @@
 package com.almothafar.simplebatterynotifier.ui.preference;
 
+import android.content.Context;
+
 import com.almothafar.simplebatterynotifier.R;
 import com.almothafar.simplebatterynotifier.model.LevelThresholds;
+import com.almothafar.simplebatterynotifier.util.BatteryPercentFormatter;
 import com.google.android.material.slider.RangeSlider;
 
 /**
@@ -41,9 +44,24 @@ public final class BatteryRangeSliderHelper {
 		slider.setValueTo(to);
 		slider.setStepSize(1f);
 		slider.setMinSeparationValue(minSeparation);
-		// Show the dragged thumb's value as a whole percentage (e.g. "20%") instead of "20.0".
-		slider.setLabelFormatter(value ->
-				slider.getContext().getString(R.string.battery_level_percent, Math.round(value)));
+		slider.setLabelFormatter(value -> labelFor(slider.getContext(), value));
+	}
+
+	/**
+	 * The dragged thumb's label: the value as a whole percentage (e.g. {@code "20%"}) rather than the raw {@code "20.0"}.
+	 * <p>
+	 * The level is formatted by {@link BatteryPercentFormatter} rather than handed to {@code getString} as an int, and that is the whole point of this method
+	 * existing rather than being an inline lambda: {@code getString} formats with the <b>configuration</b> locale, so a {@code %1$d} placeholder renders
+	 * {@code ٢٠} under {@code ar-EG}/{@code ar-SA}/{@code ar-JO} with no {@code String.format} call in sight (#273). Named and package-visible so that
+	 * property is testable without standing up a Material slider.
+	 *
+	 * @param context context to resolve the label string against
+	 * @param value   the thumb's value
+	 *
+	 * @return the label, in Western digits whatever the app language
+	 */
+	static String labelFor(Context context, float value) {
+		return context.getString(R.string.battery_level_percent, BatteryPercentFormatter.formatWhole(Math.round(value)));
 	}
 
 	/**

@@ -425,13 +425,14 @@ public class MainActivity extends BaseActivity {
 				findViewById(R.id.thresholdWarningCaption), pair.critical(), pair.warning());
 	}
 
-	private void updateThresholdCaptions(final TextView criticalCaption, final TextView warningCaption,
-	                                     final int critical, final int warning) {
+	private void updateThresholdCaptions(TextView criticalCaption, TextView warningCaption, int critical, int warning) {
+		// Formatted, not handed to getString as an int: getString formats with the configuration locale, so a %1$d placeholder renders ٢٠
+		// under ar-EG/ar-SA/ar-JO (#273). formatWhole brings the '%' sign with it.
 		if (nonNull(criticalCaption)) {
-			criticalCaption.setText(getString(R.string.battery_range_caption_critical, critical));
+			criticalCaption.setText(getString(R.string.battery_range_caption_critical, BatteryPercentFormatter.formatWhole(critical)));
 		}
 		if (nonNull(warningCaption)) {
-			warningCaption.setText(getString(R.string.battery_range_caption_warning, warning));
+			warningCaption.setText(getString(R.string.battery_range_caption_warning, BatteryPercentFormatter.formatWhole(warning)));
 		}
 	}
 

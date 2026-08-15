@@ -75,8 +75,8 @@
 
 
     <!-- Combined critical/warning battery range slider -->
-    <string name="battery_range_caption_critical">حرج %1$d%%</string>
-    <string name="battery_range_caption_warning">تحذير %1$d%%</string>
+    <string name="battery_range_caption_critical">حرج %1$s</string>
+    <string name="battery_range_caption_warning">تحذير %1$s</string>
     <string name="temperature_unit">وحدة الحرارة</string>
     <string name="off">إطفاء</string>
     <string name="on">تشغيل</string>
@@ -119,14 +119,14 @@
     <string name="critical_ignore_quiet_hours_summary_off">التنبيهات الحرجة تبقى صامتة أثناء ساعات الهدوء</string>
 
     <!-- Alert copy reworked in #114: neutral titles and 20-80% guidance -->
-    <string name="notification_critical_ticker">البطارية منخفضة جداً — أقل من %1$d%%</string>
+    <string name="notification_critical_ticker">البطارية منخفضة جداً — أقل من %1$s</string>
     <string name="notification_critical_title">البطارية منخفضة جداً</string>
-    <string name="notification_critical_content">البطارية على وشك النفاد (%1$d%%)</string>
-    <string name="notification_critical_content_big">مستوى البطارية أقل من المستوى الحرج (%1$d%%) — حان وقت الشحن.</string>
-    <string name="notification_warning_ticker">البطارية أقل من %1$d%%</string>
+    <string name="notification_critical_content">البطارية على وشك النفاد (%1$s)</string>
+    <string name="notification_critical_content_big">مستوى البطارية أقل من المستوى الحرج (%1$s) — حان وقت الشحن.</string>
+    <string name="notification_warning_ticker">البطارية أقل من %1$s</string>
     <string name="notification_warning_title">البطارية بدأت تنخفض</string>
-    <string name="notification_warning_content">البطارية عند %1$d%% — انتبه لاستهلاكك</string>
-    <string name="notification_warning_content_big">مستوى البطارية %1$d%%. لا حاجة للشحن الآن — لكن حين يتيسّر لك، الشحن قبل أن تنخفض البطارية كثيراً أرفق بها.</string>
+    <string name="notification_warning_content">البطارية عند %1$s — انتبه لاستهلاكك</string>
+    <string name="notification_warning_content_big">مستوى البطارية %1$s. لا حاجة للشحن الآن — لكن حين يتيسّر لك، الشحن قبل أن تنخفض البطارية كثيراً أرفق بها.</string>
     <string name="notification_full_level_ticker">اكتمل شحن البطارية — يمكنك فصل الشاحن الآن</string>
     <string name="notification_full_level_title">اكتمل شحن البطارية</string>
     <string name="notification_full_level_content">يمكنك فصل الشاحن الآن</string>
@@ -147,7 +147,7 @@
     <string name="charge_tier_fast">شحن سريع</string>
     <string name="charge_tier_super_fast">شحن فائق السرعة</string>
     <string name="charge_tier_super_fast_plus">شحن فائق السرعة+</string>
-    <string name="charge_connected_power">%1$s · %2$s · ~%3$d واط</string>
+    <string name="charge_connected_power">%1$s · %2$s · ~%3$s واط</string>
     <string name="charge_connected_tier">%1$s · %2$s</string>
     <string name="charge_connected_plain">شحن %1$s</string>
 
@@ -158,7 +158,7 @@
     <string name="charge_notification_style_none">بدون</string>
 
     <!-- Accessibility -->
-    <string name="battery_progress_description">البطارية عند %1$d بالمئة</string>
+    <string name="battery_progress_description">البطارية عند %1$s بالمئة</string>
     <string name="battery_details_separator">:</string>
 
     <!-- ==== Added for localization pass #42 (drafted by Claude — pending maintainer review) ==== -->
@@ -274,7 +274,7 @@
     <string name="look_up_my_model">ابحث عن طرازي</string>
     <string name="no_browser_found">لا يوجد متصفح لفتح البحث</string>
     <string name="save">حفظ</string>
-    <string name="error_design_capacity_range">أدخل سعة بين %1$d و %2$d mAh</string>
+    <string name="error_design_capacity_range">أدخل سعة بين %1$s و %2$s mAh</string>
     <string name="health_basis_measured">متوسط السعة المقاسة مقابل التصميمية</string>
     <!-- #114: cycle-based estimate labelled by its source -->
     <string name="health_basis_estimated_os">مقدّرة من دورات الشحن (كما يبلغ عنها أندرويد)</string>

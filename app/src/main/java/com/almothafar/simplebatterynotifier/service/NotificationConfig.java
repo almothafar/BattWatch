@@ -54,6 +54,11 @@ final class NotificationConfig {
 
 		final String defaultSound = context.getString(R.string._default_notification_sound_uri);
 
+		// Formatted here rather than handed to getString as ints: getString formats with the configuration locale, so a %1$d placeholder
+		// renders ٢٠ under ar-EG/ar-SA/ar-JO with no String.format anywhere in our code (#273). formatWhole brings the '%' sign with it.
+		final String criticalText = BatteryPercentFormatter.formatWhole(criticalLevel);
+		final String warningText = BatteryPercentFormatter.formatWhole(warningLevel);
+
 		// A switch EXPRESSION over the enum is exhaustive at compile time — the old int switch
 		// needed a default branch, which posted a completely blank notification on any invalid
 		// type value (issue #160). That branch can no longer exist.
@@ -62,18 +67,18 @@ final class NotificationConfig {
 					NotificationChannels.CHANNEL_ID_CRITICAL,
 					R.drawable.ic_stat_battery_alert,
 					prefs.getString(context.getString(R.string._pref_key_notifications_alert_sound_ringtone), defaultSound),
-					context.getString(R.string.notification_critical_ticker, criticalLevel),
+					context.getString(R.string.notification_critical_ticker, criticalText),
 					context.getString(R.string.notification_critical_title),
-					context.getString(R.string.notification_critical_content, criticalLevel),
-					context.getString(R.string.notification_critical_content_big, criticalLevel));
+					context.getString(R.string.notification_critical_content, criticalText),
+					context.getString(R.string.notification_critical_content_big, criticalText));
 			case WARNING -> new AlertStyle(
 					NotificationChannels.CHANNEL_ID_WARNING,
 					R.drawable.ic_stat_battery_low,
 					prefs.getString(context.getString(R.string._pref_key_notifications_warning_sound_ringtone), defaultSound),
-					context.getString(R.string.notification_warning_ticker, warningLevel),
+					context.getString(R.string.notification_warning_ticker, warningText),
 					context.getString(R.string.notification_warning_title),
-					context.getString(R.string.notification_warning_content, warningLevel),
-					context.getString(R.string.notification_warning_content_big, warningLevel));
+					context.getString(R.string.notification_warning_content, warningText),
+					context.getString(R.string.notification_warning_content_big, warningText));
 			case FULL -> fullAlertStyle(context, prefs, defaultSound, levelPercent);
 		};
 		this.channelId = style.channelId();

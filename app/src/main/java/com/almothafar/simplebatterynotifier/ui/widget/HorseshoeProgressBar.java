@@ -112,7 +112,9 @@ public class HorseshoeProgressBar extends View {
 	private static final int DEFAULT_ALERT_COLOR = 0xFFE23A2E;
 	private static final int DEFAULT_TRACK_COLOR = 0x338A8A8A;
 	private static final int DEFAULT_TEXT_COLOR = 0xFFFFFFFF;
-	private static final String DEFAULT_LEVEL_DESCRIPTION = "Level at %1$d percent";
+	// %1$s, matching battery_progress_description: announceLevel passes an already-formatted number so the digits stay Western in every
+	// locale (#273). A %1$d here would not just localise the digits, it would throw — the argument is a String.
+	private static final String DEFAULT_LEVEL_DESCRIPTION = "Level at %1$s percent";
 
 	/** The track ring is drawn slightly wider than the level ring, framing it. */
 	private static final float TRACK_EXTRA_STROKE_DP = 4f;
@@ -565,7 +567,7 @@ public class HorseshoeProgressBar extends View {
 			titlePaint.setColor(a.getColor(R.styleable.HorseshoeProgressBar_gaugeTitleColor, DEFAULT_TEXT_COLOR));
 			statusPaint.setColor(a.getColor(R.styleable.HorseshoeProgressBar_gaugeStatusColor, DEFAULT_TEXT_COLOR));
 
-			// Localizable "Level at %1$d percent" template for screen readers.
+			// Localizable "Level at %1$s percent" template for screen readers. %1$s, not %1$d: announceLevel passes the number already formatted (#273).
 			final String description = a.getString(R.styleable.HorseshoeProgressBar_gaugeLevelDescription);
 			levelDescriptionFormat = nonNull(description) && !description.isEmpty() ? description : DEFAULT_LEVEL_DESCRIPTION;
 
@@ -608,7 +610,10 @@ public class HorseshoeProgressBar extends View {
 	}
 
 	private void announceLevel() {
-		setContentDescription(String.format(Locale.getDefault(), levelDescriptionFormat, level));
+		// Locale.ROOT and a pre-formatted argument, both deliberate (#273): the default locale renders ٤٠ for a %d under ar-EG/ar-SA/ar-JO,
+		// and the format string now carries a %1$s so the number is Western before it ever reaches the formatter. TalkBack reads the
+		// surrounding Arabic and the Western digits, which is what the rest of the app shows.
+		setContentDescription(String.format(Locale.ROOT, levelDescriptionFormat, String.valueOf(level)));
 	}
 
 	private static int clampLevel(final int value) {
