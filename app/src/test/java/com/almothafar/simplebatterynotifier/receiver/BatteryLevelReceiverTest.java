@@ -164,6 +164,23 @@ public class BatteryLevelReceiverTest {
 	}
 
 	@Test
+	public void chargeTarget_atAnOemChargeCap_alertsFromTheNotChargingStatus() {
+		// End-to-end for the cap case: the device holds at 88% reporting NOT_CHARGING with the cable in,
+		// and never reports FULL. Pins the intent → ChargeState wiring, which is the half the decision
+		// tests can't see.
+		setChargeTarget(85);
+		saveLevelState(new LevelAlertState(88, null, false, false));
+
+		try (MockedStatic<NotificationService> ns = mockStatic(NotificationService.class)) {
+			publishBattery(BatteryManager.BATTERY_STATUS_NOT_CHARGING, 88, 100, BatteryManager.BATTERY_PLUGGED_AC);
+			receive();
+			receive(); // it sits there for hours; only the first tick may alert
+
+			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.FULL), eq(88)), times(1));
+		}
+	}
+
+	@Test
 	public void chargeTarget_whileDischarging_neverAlerts() {
 		setChargeTarget(85);
 

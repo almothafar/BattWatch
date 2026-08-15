@@ -140,7 +140,7 @@
     <string name="notification_full_level_content_big" formatted="false">Charge complete — you can unplug now. Batteries age fastest when kept at 100%, so unplugging soon (and staying roughly between 20% and 80% day to day) helps the battery last longer.</string>
     <!-- #263: the below-100 variant. Its own string set rather than a parameterised one — the battery
          is not full here, so every line says something different from the "charge complete" copy. -->
-    <string name="notification_almost_full_ticker">Battery almost full — you can unplug now</string>
+    <string name="notification_almost_full_ticker">Battery almost full — %1$d%% reached, you can unplug now</string>
     <string name="notification_almost_full_title">Battery almost full</string>
     <string name="notification_almost_full_content">Reached your %1$d%% charge target — you can unplug now</string>
     <string name="notification_almost_full_content_big">Reached your %1$d%% charge target — you can unplug now. Batteries age fastest when kept at 100%%, so stopping short of a full charge (and staying roughly between 20%% and 80%% day to day) helps the battery last longer.</string>

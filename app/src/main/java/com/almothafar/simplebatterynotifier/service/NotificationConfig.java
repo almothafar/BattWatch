@@ -113,20 +113,30 @@ final class NotificationConfig {
 		// Below the target the only way here is a charge the battery reported as complete.
 		final boolean chargeIsComplete = AppPrefs.targetIsAFullCharge(target) || levelPercent < target;
 
-		final int ticker = chargeIsComplete ? R.string.notification_full_level_ticker : R.string.notification_almost_full_ticker;
-		final int title = chargeIsComplete ? R.string.notification_full_level_title : R.string.notification_almost_full_title;
-		final int content = chargeIsComplete ? R.string.notification_full_level_content : R.string.notification_almost_full_content;
-		final int bigContent = chargeIsComplete ? R.string.notification_full_level_content_big : R.string.notification_almost_full_content_big;
+		final String ticker;
+		final String title;
+		final String content;
+		final String bigContent;
+		if (chargeIsComplete) {
+			ticker = context.getString(R.string.notification_full_level_ticker);
+			title = context.getString(R.string.notification_full_level_title);
+			content = context.getString(R.string.notification_full_level_content);
+			bigContent = context.getString(R.string.notification_full_level_content_big);
+		} else {
+			// Two different numbers, deliberately: the ticker reports the level the battery actually
+			// reached, the body names the target that level crossed. Plugging in at 95% with a target of
+			// 90 is "95% reached" against "your 90% charge target", and both are true.
+			ticker = context.getString(R.string.notification_almost_full_ticker, levelPercent);
+			title = context.getString(R.string.notification_almost_full_title);
+			content = context.getString(R.string.notification_almost_full_content, target);
+			bigContent = context.getString(R.string.notification_almost_full_content_big, target);
+		}
 
 		return new AlertStyle(
 				NotificationChannels.CHANNEL_ID_FULL,
 				R.drawable.ic_stat_battery_full,
 				prefs.getString(context.getString(R.string._pref_key_notifications_full_sound_ringtone), defaultSound),
-				context.getString(ticker),
-				context.getString(title),
-				// The "charge complete" strings take no argument; the target-reached ones name the target.
-				chargeIsComplete ? context.getString(content) : context.getString(content, target),
-				chargeIsComplete ? context.getString(bigContent) : context.getString(bigContent, target));
+				ticker, title, content, bigContent);
 	}
 
 	/**

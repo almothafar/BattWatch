@@ -107,6 +107,7 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 		final ChargeState power = new ChargeState(
 				status == BatteryManager.BATTERY_STATUS_CHARGING,
 				status == BatteryManager.BATTERY_STATUS_FULL,
+				status == BatteryManager.BATTERY_STATUS_NOT_CHARGING,
 				intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) > 0);
 
 		// Build the reading from the delivered intent; with a non-null intent this never returns null.
@@ -487,11 +488,14 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 	 * always travel together and are all read from the same intent, so they are one value rather
 	 * than three adjacent booleans at every call site.
 	 *
-	 * @param charging whether the battery status is {@code BATTERY_STATUS_CHARGING}
-	 * @param full     whether the battery status is {@code BATTERY_STATUS_FULL}
-	 * @param plugged  whether a charger is connected ({@code EXTRA_PLUGGED} is non-zero)
+	 * @param charging    whether the battery status is {@code BATTERY_STATUS_CHARGING}
+	 * @param full        whether the battery status is {@code BATTERY_STATUS_FULL}
+	 * @param notCharging whether the battery status is {@code BATTERY_STATUS_NOT_CHARGING} — the cable
+	 *                    is in but nothing is flowing, which is how a device parked at an OEM charge cap
+	 *                    reports itself when it doesn't claim to be full
+	 * @param plugged     whether a charger is connected ({@code EXTRA_PLUGGED} is non-zero)
 	 */
-	record ChargeState(boolean charging, boolean full, boolean plugged) {
+	record ChargeState(boolean charging, boolean full, boolean notCharging, boolean plugged) {
 
 		/**
 		 * Charge complete <em>and</em> still on the charger — what actually bounds the full-battery
@@ -508,10 +512,17 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 		 * Whether this broadcast means "the charge you asked for is done" (#263): either a completed
 		 * charge on the charger, or a battery still charging that has climbed to the user's target.
 		 * <p>
-		 * The charging gate is not optional. {@code decideChargingOrFull} is also reached on the
-		 * "level unchanged while discharging" path, where the old {@code full} status flag was
-		 * harmless — {@code percentage >= target} is not, and sitting at 90% on the way <em>down</em>
-		 * would announce a charge that never happened.
+		 * The gate is on the battery being <em>fed</em>, not merely on the level. {@code
+		 * decideChargingOrFull} is also reached on the "level unchanged while discharging" path, where
+		 * the old {@code full} status flag was harmless — {@code percentage >= target} is not, and
+		 * sitting at 90% on the way <em>down</em> would announce a charge that never happened.
+		 * <p>
+		 * {@code NOT_CHARGING} counts alongside {@code CHARGING}, because that is what a device holding
+		 * at its own charge cap reports (Samsung "Protect battery", Sony, Asus): cable in, nothing
+		 * flowing, and never a {@code FULL} status to fire on. Requiring {@code CHARGING} left the
+		 * feature silently dead on exactly the devices whose owners care most about a charge target.
+		 * {@code DISCHARGING} and {@code UNKNOWN} stay out — a battery going down is not a charge
+		 * finishing, whatever the cable says.
 		 * <p>
 		 * At the maximum target the level is deliberately <b>not</b> consulted: 100% means "wait for a
 		 * genuinely complete charge", and the battery saying so is the only trustworthy signal for that.
@@ -527,7 +538,9 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 			if (fullOnCharger()) {
 				return true;
 			}
-			return !AppPrefs.targetIsAFullCharge(target) && charging && plugged && percentage >= target;
+			return !AppPrefs.targetIsAFullCharge(target)
+					&& plugged && (charging || notCharging)
+					&& percentage >= target;
 		}
 	}
 

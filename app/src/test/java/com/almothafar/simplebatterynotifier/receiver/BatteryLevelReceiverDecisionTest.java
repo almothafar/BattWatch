@@ -49,14 +49,14 @@ public class BatteryLevelReceiverDecisionTest {
 
 	// The charge side of a broadcast. A completed charge reports BATTERY_STATUS_FULL rather than
 	// CHARGING, so the full cases are "not charging" without being a discharge.
-	private static final ChargeState DISCHARGING = new ChargeState(false, false, false);
-	private static final ChargeState UNPLUGGED_STILL_FULL = new ChargeState(false, true, false);
-	private static final ChargeState CHARGING = new ChargeState(true, false, true);
-	private static final ChargeState FULL_ON_CHARGER = new ChargeState(false, true, true);
+	private static final ChargeState DISCHARGING = new ChargeState(false, false, false, false);
+	private static final ChargeState UNPLUGGED_STILL_FULL = new ChargeState(false, true, false, false);
+	private static final ChargeState CHARGING = new ChargeState(true, false, false, true);
+	private static final ChargeState FULL_ON_CHARGER = new ChargeState(false, true, false, true);
 	// Plugged in but neither charging nor full: BATTERY_STATUS_NOT_CHARGING, what a device parked at an
 	// OEM charge cap reports. Distinguishes the charging gate from the cable gate, which every other
 	// case here has moving together.
-	private static final ChargeState PLUGGED_NOT_CHARGING = new ChargeState(false, false, true);
+	private static final ChargeState PLUGGED_NOT_CHARGING = new ChargeState(false, false, true, true);
 
 	// Episode state shorthands: nothing alerted yet, and "the full alert fired and is on screen".
 	private static LevelAlertState fresh(int prevLevel, AlertType prevType) {
@@ -273,13 +273,41 @@ public class BatteryLevelReceiverDecisionTest {
 	}
 
 	@Test
-	public void pluggedButNotCharging_doesNotFireOnTheLevelAlone() {
-		// Pins the charging half of the gate independently of the cable half, which every other case has
-		// moving with it. A device holding at an OEM cap reports NOT_CHARGING while plugged: nothing is
-		// flowing into the battery, so the level being past the target is not a charge finishing now.
-		// The completed-charge path (BATTERY_STATUS_FULL) is what alerts on those devices.
+	public void pluggedAndHoldingAtACap_firesOnTheTarget() {
+		// A device parked at its own charge cap reports NOT_CHARGING, not FULL: cable in, nothing
+		// flowing, no completed-charge status ever coming. Requiring CHARGING left the whole feature
+		// silently dead there — on exactly the phones whose owners went looking for a charge target.
 		final LevelAlertDecision d = BatteryLevelReceiver.decideLevelAlert(
 				fresh(95, null), 95, PLUGGED_NOT_CHARGING, TARGET_AT_90);
+
+		assertEquals(AlertType.FULL, d.notifyType());
+		assertTrue(d.newState().fullNotified());
+	}
+
+	@Test
+	public void pluggedAndHoldingAtACap_doesNotRepeatWhileItSitsThere() {
+		// The cap holds the level steady for hours, so this broadcast repeats unchanged. Only the first
+		// may alert — the re-arm has to see the charge left behind, not just a level inside the band.
+		LevelAlertState state = fresh(95, null);
+		int fired = 0;
+
+		for (int tick = 0; tick < 5; tick++) {
+			final LevelAlertDecision d = BatteryLevelReceiver.decideLevelAlert(state, 95, PLUGGED_NOT_CHARGING, TARGET_AT_90);
+			state = d.newState();
+			if (d.notifyType() == AlertType.FULL) {
+				fired++;
+			}
+		}
+		assertEquals(1, fired);
+	}
+
+	@Test
+	public void pluggedButDischarging_neverFiresOnTheLevel() {
+		// The cable alone is not enough: a phone drawing more than the charger supplies reports
+		// DISCHARGING with the cable in. The battery is going down, so no charge is finishing.
+		final ChargeState pluggedButDraining = new ChargeState(false, false, false, true);
+		final LevelAlertDecision d = BatteryLevelReceiver.decideLevelAlert(
+				fresh(95, null), 95, pluggedButDraining, TARGET_AT_90);
 
 		assertNull(d.notifyType());
 		assertFalse(d.newState().fullNotified());

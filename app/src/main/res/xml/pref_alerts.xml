@@ -92,13 +92,19 @@
 
         <!-- #263: the level the alert fires at while charging. defaultValue/min/max must match
              AppPrefs.DEFAULT/MIN/MAX_CHARGE_TARGET, which clamp the stored value when it is read;
-             AppPrefsTest guards the pair against drift. At the maximum the alert waits for a
-             completed charge, which is what the app did before this slider existed. This slider's
-             summary and the switch title above it are set from the value in
-             GenericPreferenceFragment: below a full charge the alert is about being almost full. -->
+             AppPrefsTest guards the pair against drift by inflating this preference — note the
+             minimum is app:min, since androidx SeekBarPreference reads `min` from its own namespace
+             and ignores android:min entirely. At the maximum the alert waits for a completed charge,
+             which is what the app did before this slider existed. This slider's summary and the
+             switch title above it are set from the value in GenericPreferenceFragment: below a full
+             charge the alert is about being almost full.
+
+             Deliberately NOT gated by the alert switch above (the same call the drain limit makes
+             below, for the same reason): the target also defines "this charge is done" for the
+             Insights temperature range (#260), so switching the alert off must not lock a control
+             that still governs a feature the user did not disable. -->
         <SeekBarPreference
             android:defaultValue="90"
-            android:dependency="@string/_pref_key_notify_for_full_level"
             android:key="@string/_pref_key_charge_target"
             app:min="80"
             android:max="100"

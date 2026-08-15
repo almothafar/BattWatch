@@ -85,6 +85,19 @@ public class NotificationConfigTest {
 	}
 
 	@Test
+	public void theTickerReportsTheLevelReachedNotTheTarget() {
+		// The two numbers are deliberately different: 95% is where the battery got to, 90% is the target
+		// it crossed. Interpolating the target into both would claim the level was 90.
+		setChargeTarget(90);
+
+		final NotificationConfig config = fullAlertAt(95);
+
+		assertTrue(config.ticker, config.ticker.contains("95%"));
+		assertTrue(config.ticker, !config.ticker.contains("90%"));
+		assertTrue(config.content, config.content.contains("90%"));
+	}
+
+	@Test
 	public void chargeCompletedBelowTheTarget_reportsACompletedChargeNotTheTarget() {
 		// A charge-capped device (Samsung "Protect battery" at 85%) reports the charge finished short of
 		// the target. Saying "reached your 90% charge target" at 85% would state something that did not

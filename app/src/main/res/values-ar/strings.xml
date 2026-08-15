@@ -132,7 +132,7 @@
     <string name="notification_full_level_content">يمكنك فصل الشاحن الآن</string>
     <string name="notification_full_level_content_big" formatted="false">اكتمل الشحن — يمكنك فصل الشاحن الآن. تتقادم البطاريات أسرع ما يكون عند إبقائها على 100%، لذا فصل الشاحن قريباً (والبقاء تقريباً بين 20% و80% في الاستخدام اليومي) يساعد بطاريتك على أن تدوم أطول.</string>
     <!-- #263: نسخة ما دون الشحن الكامل -->
-    <string name="notification_almost_full_ticker">البطارية شارفت على الاكتمال — يمكنك فصل الشاحن الآن</string>
+    <string name="notification_almost_full_ticker">البطارية شارفت على الاكتمال — بلغت %1$d%%، يمكنك فصل الشاحن الآن</string>
     <string name="notification_almost_full_title">البطارية شارفت على الاكتمال</string>
     <string name="notification_almost_full_content">بلغت هدف الشحن %1$d%% — يمكنك فصل الشاحن الآن</string>
     <string name="notification_almost_full_content_big">بلغت هدف الشحن %1$d%% — يمكنك فصل الشاحن الآن. تتقادم البطاريات أسرع ما يكون عند إبقائها على 100%%، لذا التوقف قبل الشحن الكامل (والبقاء تقريباً بين 20%% و80%% في الاستخدام اليومي) يساعد بطاريتك على أن تدوم أطول.</string>
