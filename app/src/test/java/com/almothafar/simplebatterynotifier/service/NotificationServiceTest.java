@@ -2,6 +2,7 @@ package com.almothafar.simplebatterynotifier.service;
 
 import android.Manifest;
 import android.app.Application;
+import android.app.Notification;
 import android.app.NotificationManager;
 import android.content.Context;
 
@@ -23,8 +24,10 @@ import org.robolectric.annotation.Config;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Locale;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
 /**
@@ -124,6 +127,42 @@ public class NotificationServiceTest {
 			NotificationService.sendNotification(context, null, 50);
 
 			assertEquals(0, shadowOf(manager).size());
+		}
+	}
+
+	/**
+	 * The wattage in the charge-connected message stays in Western digits (#96/#273).
+	 * <p>
+	 * {@code charge_connected_power} carried a {@code %3$d} until #273, and {@code getString} formats with the configuration locale — so "~18 W" became
+	 * "~١٨ واط" on any Arabic device whose language carries a region, which is all of them, without a {@code String.format} call anywhere in our code.
+	 */
+	@RunWith(RobolectricTestRunner.class)
+	@Config(sdk = 34, qualifiers = "ar-rEG")
+	public static class ChargeConnectedDigits {
+
+		@Test
+		public void chargeConnectedMessage_keepsWesternDigitsUnderARegionBearingArabicLocale() {
+			// Premise: this locale really does localise digits, so the assertions below are not vacuous.
+			assertEquals("ar-rEG should select Eastern Arabic digits", "١٨", String.format(Locale.getDefault(), "%d", 18));
+
+			final Context context = ApplicationProvider.getApplicationContext();
+			shadowOf((Application) context).grantPermissions(Manifest.permission.POST_NOTIFICATIONS);
+			PreferenceManager.getDefaultSharedPreferences(context).edit()
+					.putString(context.getString(R.string._pref_key_charge_notification_style),
+							NotificationService.CHARGE_STYLE_NOTIFICATION)
+					.commit();
+
+			// 4 A at 4.5 V — 18 W, comfortably inside the "fast charging" tier so the message takes the wattage branch.
+			NotificationService.notifyChargeConnected(context, ChargeSpeed.fromMeasurements(4_000_000, 4_500), true);
+
+			final NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+			final Notification posted = shadowOf(manager).getAllNotifications().get(0);
+			final String text = String.valueOf(posted.extras.getCharSequence(Notification.EXTRA_TEXT));
+
+			// values-ar was actually loaded, so this is the Arabic message and not an English fallback.
+			assertTrue(text, text.contains("واط"));
+			assertTrue(text, text.contains("18"));
+			assertTrue("Eastern digits leaked into the charge-connected message: " + text, !text.contains("١٨"));
 		}
 	}
 
