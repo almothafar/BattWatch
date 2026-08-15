@@ -3,8 +3,10 @@ package com.almothafar.simplebatterynotifier.util;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.XmlResourceParser;
+import android.util.Xml;
 
 import androidx.preference.PreferenceManager;
+import androidx.preference.SeekBarPreference;
 import androidx.test.core.app.ApplicationProvider;
 
 import com.almothafar.simplebatterynotifier.R;
@@ -166,44 +168,78 @@ public class AppPrefsTest {
 		}
 
 		/**
-		 * The same drift guard for the charge-target slider (#263): its XML default and bounds must equal
-		 * the {@link AppPrefs} constants, which are what clamp the stored value on read. A slider that
-		 * could reach a value the clamp rejects would silently move the alert somewhere else.
+		 * The same drift guard for the charge-target slider (#263), but asserted against a real
+		 * {@link SeekBarPreference} built from the XML rather than against the attribute text.
+		 * <p>
+		 * Reading the attributes would not have caught the bug it exists to catch. AndroidX declares
+		 * {@code min} in its <em>own</em> namespace — only {@code max} and {@code layout} come from
+		 * {@code android:} — so an {@code android:min="80"} is parsed by nobody and the slider silently
+		 * runs from 0. The screen then offers 80 positions the clamp rejects, and a user who picks one
+		 * sees a target the alert engine will never act on. Inflating the preference is the only
+		 * assertion that can tell the two apart.
 		 */
 		@Test
-		public void xmlChargeTargetSlider_matchesTheFacadeConstants() throws Exception {
+		public void chargeTargetSlider_boundsAreTheFacadeConstantsAtRuntime() throws Exception {
+			final SeekBarPreference slider = inflateChargeTargetSlider();
+
+			assertNotNull("charge-target slider missing from pref_alerts.xml", slider);
+			assertEquals(AppPrefs.MIN_CHARGE_TARGET, slider.getMin());
+			assertEquals(AppPrefs.MAX_CHARGE_TARGET, slider.getMax());
+		}
+
+		/**
+		 * The XML-declared default is the one value the framework owns rather than {@link AppPrefs}, so it
+		 * is still read from the attribute — that <em>is</em> where the framework reads it from.
+		 */
+		@Test
+		public void xmlChargeTargetDefault_matchesTheFacadeConstant() throws Exception {
 			final XmlResourceParser parser = context.getResources().getXml(R.xml.pref_alerts);
 			Integer xmlDefault = null;
-			Integer xmlMin = null;
-			Integer xmlMax = null;
 
-			for (int event = parser.getEventType(); event != XmlPullParser.END_DOCUMENT; event = parser.next()) {
-				if (event != XmlPullParser.START_TAG || !isChargeTargetSlider(parser)) {
-					continue;
-				}
-				for (int i = 0; i < parser.getAttributeCount(); i++) {
-					final int attrRes = parser.getAttributeNameResource(i);
-					if (attrRes == android.R.attr.defaultValue) {
-						xmlDefault = parser.getAttributeIntValue(i, Integer.MIN_VALUE);
-					} else if (attrRes == android.R.attr.min) {
-						xmlMin = parser.getAttributeIntValue(i, Integer.MIN_VALUE);
-					} else if (attrRes == android.R.attr.max) {
-						xmlMax = parser.getAttributeIntValue(i, Integer.MIN_VALUE);
+			try {
+				for (int event = parser.getEventType(); event != XmlPullParser.END_DOCUMENT; event = parser.next()) {
+					if (event != XmlPullParser.START_TAG || !isChargeTargetSlider(parser)) {
+						continue;
+					}
+					for (int i = 0; i < parser.getAttributeCount(); i++) {
+						if (parser.getAttributeNameResource(i) == android.R.attr.defaultValue) {
+							xmlDefault = parser.getAttributeIntValue(i, Integer.MIN_VALUE);
+						}
 					}
 				}
+			} finally {
+				parser.close();
 			}
 
-			assertNotNull("charge-target slider missing from pref_alerts.xml", xmlDefault);
+			assertNotNull("defaultValue attr missing from the charge-target slider", xmlDefault);
 			assertEquals(AppPrefs.DEFAULT_CHARGE_TARGET, (int) xmlDefault);
-			assertEquals(AppPrefs.MIN_CHARGE_TARGET, (int) xmlMin);
-			assertEquals(AppPrefs.MAX_CHARGE_TARGET, (int) xmlMax);
+		}
+
+		/**
+		 * Builds the charge-target slider from {@code pref_alerts.xml} exactly as the preference framework
+		 * would, so its bounds are the ones a user's finger actually meets.
+		 *
+		 * @return the inflated slider, or {@code null} when the screen no longer declares one
+		 */
+		private SeekBarPreference inflateChargeTargetSlider() throws Exception {
+			final XmlResourceParser parser = context.getResources().getXml(R.xml.pref_alerts);
+			try {
+				for (int event = parser.getEventType(); event != XmlPullParser.END_DOCUMENT; event = parser.next()) {
+					if (event == XmlPullParser.START_TAG && isChargeTargetSlider(parser)) {
+						return new SeekBarPreference(context, Xml.asAttributeSet(parser));
+					}
+				}
+			} finally {
+				parser.close();
+			}
+			return null;
 		}
 
 		/**
 		 * Whether the tag the parser is on is the charge-target slider, identified by its preference key
 		 * rather than its position — the screen grows and the categories get reordered.
 		 */
-		private boolean isChargeTargetSlider(final XmlResourceParser parser) {
+		private boolean isChargeTargetSlider(XmlResourceParser parser) {
 			for (int i = 0; i < parser.getAttributeCount(); i++) {
 				if (parser.getAttributeNameResource(i) == android.R.attr.key
 						&& parser.getAttributeResourceValue(i, 0) == R.string._pref_key_charge_target) {
@@ -211,6 +247,58 @@ public class AppPrefsTest {
 				}
 			}
 			return false;
+		}
+	}
+
+	/**
+	 * {@link AppPrefs#clampChargeTarget}: the same guarantee for the charge target (#263). Both
+	 * directions matter — a stored 0 is what a downgraded or restored preferences file yields, and
+	 * without the lower clamp it would fire the "almost full" alert at empty.
+	 */
+	@RunWith(Parameterized.class)
+	public static class ClampChargeTarget {
+
+		@Parameter(0) public int stored;
+		@Parameter(1) public int expected;
+
+		@Parameters(name = "clampChargeTarget({0}) = {1}")
+		public static Collection<Object[]> data() {
+			return Arrays.asList(new Object[][]{
+					{90, 90},                                     // in range: unchanged
+					{AppPrefs.MIN_CHARGE_TARGET, 80},             // boundaries kept
+					{AppPrefs.MAX_CHARGE_TARGET, 100},
+					{79, 80},                                     // below min: clamped up
+					{0, 80},
+					{-5, 80},
+					{101, 100},                                   // above max: clamped down
+					{999, 100},
+			});
+		}
+
+		@Test
+		public void matchesExpected() {
+			assertEquals(expected, AppPrefs.clampChargeTarget(stored));
+		}
+	}
+
+	/**
+	 * {@link AppPrefs#reArmLevel} and {@link AppPrefs#targetIsAFullCharge}: the two derivations the alert
+	 * engine, the notification copy and the temperature range all share (#263).
+	 */
+	public static class TargetDerivations {
+
+		@Test
+		public void reArmLevel_sitsAFixedMarginBelowTheTarget() {
+			assertEquals(85, AppPrefs.reArmLevel(90));
+			// At the maximum this is the ≤95 band the full alert re-armed on before the target existed.
+			assertEquals(95, AppPrefs.reArmLevel(AppPrefs.MAX_CHARGE_TARGET));
+		}
+
+		@Test
+		public void targetIsAFullCharge_onlyAtTheMaximum() {
+			assertTrue(AppPrefs.targetIsAFullCharge(AppPrefs.MAX_CHARGE_TARGET));
+			assertFalse(AppPrefs.targetIsAFullCharge(AppPrefs.DEFAULT_CHARGE_TARGET));
+			assertFalse(AppPrefs.targetIsAFullCharge(99));
 		}
 	}
 

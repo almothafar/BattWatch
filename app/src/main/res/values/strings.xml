@@ -112,6 +112,8 @@
     <!-- #263: with a charge target below a full charge the alert is not about a full battery, so the
          switch says what it will actually do. -->
     <string name="notify_when_almost_full">Notify when almost full</string>
+    <string name="notify_when_almost_full_summary_on">Almost-full alert enabled</string>
+    <string name="notify_when_almost_full_summary_off">Almost-full alert disabled</string>
     <string name="charge_target">Charge target</string>
     <string name="charge_target_summary">Alert at %1$d%% — almost full, better for battery life</string>
     <string name="charge_target_summary_full">Alert at %1$d%% — a full charge</string>
@@ -138,7 +140,7 @@
     <string name="notification_full_level_content_big" formatted="false">Charge complete — you can unplug now. Batteries age fastest when kept at 100%, so unplugging soon (and staying roughly between 20% and 80% day to day) helps the battery last longer.</string>
     <!-- #263: the below-100 variant. Its own string set rather than a parameterised one — the battery
          is not full here, so every line says something different from the "charge complete" copy. -->
-    <string name="notification_almost_full_ticker">Battery almost full — %1$d%% reached, you can unplug now</string>
+    <string name="notification_almost_full_ticker">Battery almost full — you can unplug now</string>
     <string name="notification_almost_full_title">Battery almost full</string>
     <string name="notification_almost_full_content">Reached your %1$d%% charge target — you can unplug now</string>
     <string name="notification_almost_full_content_big">Reached your %1$d%% charge target — you can unplug now. Batteries age fastest when kept at 100%%, so stopping short of a full charge (and staying roughly between 20%% and 80%% day to day) helps the battery last longer.</string>

@@ -38,8 +38,10 @@ public class BatteryLevelReceiverDecisionTest {
 	private static final int TARGET_90 = 90;
 
 	// Every pre-#263 case runs at the maximum charge target, where the alert waits for a genuinely
-	// complete charge — so this whole suite doubles as the proof that a user who never touches the
-	// slider sees exactly the behaviour they saw before it existed.
+	// complete charge — so this suite doubles as the proof that setting the slider to 100% restores the
+	// pre-#263 behaviour exactly. It is deliberately NOT the shipped default: an install that never
+	// touches the slider gets DEFAULT_CHARGE_TARGET (90) and is meant to start alerting there, which is
+	// the whole point of #263. The target-driven cases below cover that path.
 	private static final LevelAlertConfig DEFAULTS =
 			new LevelAlertConfig(CRITICAL, WARNING, AppPrefs.MAX_CHARGE_TARGET, true, true, false);
 	private static final LevelAlertConfig TARGET_AT_90 =
@@ -51,6 +53,10 @@ public class BatteryLevelReceiverDecisionTest {
 	private static final ChargeState UNPLUGGED_STILL_FULL = new ChargeState(false, true, false);
 	private static final ChargeState CHARGING = new ChargeState(true, false, true);
 	private static final ChargeState FULL_ON_CHARGER = new ChargeState(false, true, true);
+	// Plugged in but neither charging nor full: BATTERY_STATUS_NOT_CHARGING, what a device parked at an
+	// OEM charge cap reports. Distinguishes the charging gate from the cable gate, which every other
+	// case here has moving together.
+	private static final ChargeState PLUGGED_NOT_CHARGING = new ChargeState(false, false, true);
 
 	// Episode state shorthands: nothing alerted yet, and "the full alert fired and is on screen".
 	private static LevelAlertState fresh(int prevLevel, AlertType prevType) {
@@ -267,6 +273,19 @@ public class BatteryLevelReceiverDecisionTest {
 	}
 
 	@Test
+	public void pluggedButNotCharging_doesNotFireOnTheLevelAlone() {
+		// Pins the charging half of the gate independently of the cable half, which every other case has
+		// moving with it. A device holding at an OEM cap reports NOT_CHARGING while plugged: nothing is
+		// flowing into the battery, so the level being past the target is not a charge finishing now.
+		// The completed-charge path (BATTERY_STATUS_FULL) is what alerts on those devices.
+		final LevelAlertDecision d = BatteryLevelReceiver.decideLevelAlert(
+				fresh(95, null), 95, PLUGGED_NOT_CHARGING, TARGET_AT_90);
+
+		assertNull(d.notifyType());
+		assertFalse(d.newState().fullNotified());
+	}
+
+	@Test
 	public void pluggedInAboveTheTarget_firesTheAlert() {
 		// Connecting a charger at 95% with a target of 90 has nothing left to reach, so the alert has to
 		// come from the level already being there. It rides on the unplug re-arm, which is why removing
@@ -313,6 +332,28 @@ public class BatteryLevelReceiverDecisionTest {
 				fresh(80, null), 80, FULL_ON_CHARGER, TARGET_AT_90);
 
 		assertEquals(AlertType.FULL, d.notifyType());
+
+		// ...and having fired, it must stay fired. 80 is inside the re-arm band of a 90 target, so
+		// without the "a tick that fired never re-arms" guard the flag cleared on this very tick and the
+		// next identical broadcast alerted again — for as long as the phone sat on the charger.
+		assertTrue(d.newState().fullNotified());
+	}
+
+	@Test
+	public void chargeCappedBelowTheReArmLevel_doesNotRepeatOnEveryBroadcast() {
+		// The user-visible half of the assertion above: a device parked at its 80% cap re-decides the
+		// same broadcast every few seconds, and only the first one may alert.
+		LevelAlertState state = fresh(80, null);
+		int fired = 0;
+
+		for (int tick = 0; tick < 5; tick++) {
+			final LevelAlertDecision d = BatteryLevelReceiver.decideLevelAlert(state, 80, FULL_ON_CHARGER, TARGET_AT_90);
+			state = d.newState();
+			if (d.notifyType() == AlertType.FULL) {
+				fired++;
+			}
+		}
+		assertEquals(1, fired);
 	}
 
 	// --- unplugged: the full alert is bounded by the charger, not by the status --------------------

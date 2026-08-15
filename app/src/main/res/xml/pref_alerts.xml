@@ -100,7 +100,7 @@
             android:defaultValue="90"
             android:dependency="@string/_pref_key_notify_for_full_level"
             android:key="@string/_pref_key_charge_target"
-            android:min="80"
+            app:min="80"
             android:max="100"
             android:title="@string/charge_target"
             style="@style/PreferenceSeekBar"

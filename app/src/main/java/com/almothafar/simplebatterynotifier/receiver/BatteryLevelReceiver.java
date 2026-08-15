@@ -175,7 +175,7 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 			NotificationService.clearLevelAlert(context);
 		}
 		if (nonNull(decision.notifyType())) {
-			NotificationService.sendNotification(context, decision.notifyType());
+			NotificationService.sendNotification(context, decision.notifyType(), percentage);
 		}
 	}
 
@@ -353,7 +353,17 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 		// Only the once-per-charge flag re-arms here. Whether the alert is still on screen is a
 		// separate fact: the battery drifting down out of the band doesn't take the notification
 		// away, and conflating the two left stale full alerts undismissable after a missed unplug.
-		if (percentage <= AppPrefs.reArmLevel(config.chargeTarget()) && percentage > config.warningLevel()) {
+		//
+		// A broadcast that still reports the charge done never re-arms, whatever the level says. A device
+		// whose charge cap completes the charge below the re-arm level — Samsung's "Protect battery" at
+		// 85%, Sony and Asus at 80 — otherwise satisfies the fire condition and the re-arm band at the
+		// same time, so the flag cleared as fast as it was set and the alert re-posted for as long as the
+		// cable was in: undismissable, and audible on every tick for anyone using the silent-mode
+		// override. Leaving the charge behind is what re-arms, so "still there" must not.
+		// BatteryTemperatureTracker.nextFullSeen guards the identical hazard the same way.
+		if (!power.reachedChargeTarget(percentage, config.chargeTarget())
+				&& percentage <= AppPrefs.reArmLevel(config.chargeTarget())
+				&& percentage > config.warningLevel()) {
 			fullNotified = false;
 		}
 		return new LevelAlertDecision(notifyType,

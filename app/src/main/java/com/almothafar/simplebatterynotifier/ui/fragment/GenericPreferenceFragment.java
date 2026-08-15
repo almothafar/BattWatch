@@ -24,6 +24,7 @@ import androidx.preference.Preference;
 import androidx.preference.PreferenceCategory;
 import androidx.preference.PreferenceScreen;
 import androidx.preference.SeekBarPreference;
+import androidx.preference.TwoStatePreference;
 
 import com.almothafar.simplebatterynotifier.R;
 import com.almothafar.simplebatterynotifier.service.NotificationService;
@@ -355,28 +356,44 @@ public class GenericPreferenceFragment extends CardPreferenceFragment
 		if (key.equals(getString(R.string._pref_key_high_temperature_threshold))) {
 			seekBarPref.setSummary(seekBarPref.getValue() + temperatureUnitSuffix(TemperatureUtils.isFahrenheit(requireContext())));
 		} else if (key.equals(getString(R.string._pref_key_charge_target))) {
-			applyChargeTargetWording(seekBarPref, seekBarPref.getValue());
+			applyChargeTargetWording(seekBarPref);
 		}
 	}
 
 	/**
 	 * Say what the chosen charge target will actually do (#263).
 	 * <p>
-	 * Below a full charge the alert is not about a full battery, so the switch above the slider stops
-	 * claiming it is: it becomes "Notify when almost full", and the slider spells out the level it will
-	 * alert at. At the maximum both read exactly as they did before the target was configurable.
+	 * Below a full charge the alert is not about a full battery, so the whole row above the slider stops
+	 * claiming it is — title and summary both — and the slider spells out the level it will alert at. At
+	 * the maximum every line reads exactly as it did before the target was configurable.
+	 * <p>
+	 * The level shown is {@link AppPrefs#chargeTarget}, not the raw slider value: that accessor's clamp
+	 * is what the alert engine and the temperature range act on, so reading anything else here would let
+	 * the screen advertise a target nothing else honours.
+	 * <p>
+	 * Called from the slider's summary update, which {@link #initSummary()} runs on every resume — so
+	 * the wording is re-applied on screen open, rotation and locale change, not only when the value
+	 * moves.
 	 *
 	 * @param slider the charge-target slider
-	 * @param target the selected charge target in percent
 	 */
-	private void applyChargeTargetWording(final SeekBarPreference slider, final int target) {
+	private void applyChargeTargetWording(SeekBarPreference slider) {
+		final int target = AppPrefs.chargeTarget(requireContext());
 		final boolean fullCharge = AppPrefs.targetIsAFullCharge(target);
 		slider.setSummary(getString(
 				fullCharge ? R.string.charge_target_summary_full : R.string.charge_target_summary, target));
 
 		final Preference alertSwitch = findPreference(getString(R.string._pref_key_notify_for_full_level));
-		if (nonNull(alertSwitch)) {
-			alertSwitch.setTitle(fullCharge ? R.string.notify_for_full_level : R.string.notify_when_almost_full);
+		if (alertSwitch instanceof final TwoStatePreference toggle) {
+			toggle.setTitle(fullCharge ? R.string.notify_for_full_level : R.string.notify_when_almost_full);
+			// The summary sits directly under the title, so leaving it saying "Full Level" while the
+			// title says "almost full" makes one row describe itself two ways.
+			toggle.setSummaryOn(getString(fullCharge
+					? R.string.notify_for_full_level_summary_on
+					: R.string.notify_when_almost_full_summary_on));
+			toggle.setSummaryOff(getString(fullCharge
+					? R.string.notify_for_full_level_summary_off
+					: R.string.notify_when_almost_full_summary_off));
 		}
 	}
 

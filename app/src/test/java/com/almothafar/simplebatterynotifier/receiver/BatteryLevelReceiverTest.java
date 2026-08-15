@@ -61,7 +61,7 @@ public class BatteryLevelReceiverTest {
 
 		try (MockedStatic<NotificationService> ns = mockStatic(NotificationService.class)) {
 			receive();
-			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.CRITICAL)));
+			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.CRITICAL), anyInt()));
 		}
 	}
 
@@ -71,7 +71,7 @@ public class BatteryLevelReceiverTest {
 
 		try (MockedStatic<NotificationService> ns = mockStatic(NotificationService.class)) {
 			receive();
-			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.WARNING)));
+			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.WARNING), anyInt()));
 		}
 	}
 
@@ -81,8 +81,8 @@ public class BatteryLevelReceiverTest {
 
 		try (MockedStatic<NotificationService> ns = mockStatic(NotificationService.class)) {
 			receive();
-			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.WARNING)), never());
-			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.CRITICAL)), never());
+			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.WARNING), anyInt()), never());
+			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.CRITICAL), anyInt()), never());
 		}
 	}
 
@@ -95,7 +95,7 @@ public class BatteryLevelReceiverTest {
 			publishBattery(BatteryManager.BATTERY_STATUS_DISCHARGING, 35, 100, 0);
 			receive();
 
-			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.WARNING)), times(1));
+			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.WARNING), anyInt()), times(1));
 		}
 	}
 
@@ -109,7 +109,7 @@ public class BatteryLevelReceiverTest {
 			publishBattery(BatteryManager.BATTERY_STATUS_DISCHARGING, 14, 100, 0);
 			receive();
 
-			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.CRITICAL)), times(2));
+			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.CRITICAL), anyInt()), times(2));
 		}
 	}
 
@@ -122,7 +122,7 @@ public class BatteryLevelReceiverTest {
 		try (MockedStatic<NotificationService> ns = mockStatic(NotificationService.class)) {
 			receive();
 			receive(); // second identical tick must not re-send
-			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.FULL)), times(1));
+			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.FULL), anyInt()), times(1));
 		}
 	}
 
@@ -137,42 +137,45 @@ public class BatteryLevelReceiverTest {
 			BatteryLevelReceiver.onChargerDisconnected(context);
 			receive();
 
-			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.FULL)), times(2));
+			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.FULL), anyInt()), times(2));
 		}
 	}
 
 	@Test
 	public void chargeTarget_alertsOnTheWayUpAndOnlyOnce() {
 		// End-to-end for #263: the stored target, not a constant, is what the alert fires at — and the
-		// rest of the climb to a full charge stays quiet.
-		setChargeTarget(90);
-		saveLevelState(new LevelAlertState(89, null, false, false));
+		// rest of the climb to a full charge stays quiet. The target is deliberately NOT the default 90,
+		// so a hardcoded default (or a mistyped preference key) fails this instead of sliding through.
+		setChargeTarget(85);
+		saveLevelState(new LevelAlertState(84, null, false, false));
 
 		try (MockedStatic<NotificationService> ns = mockStatic(NotificationService.class)) {
-			publishBattery(BatteryManager.BATTERY_STATUS_CHARGING, 90, 100, BatteryManager.BATTERY_PLUGGED_AC);
+			publishBattery(BatteryManager.BATTERY_STATUS_CHARGING, 85, 100, BatteryManager.BATTERY_PLUGGED_AC);
 			receive();
 			publishBattery(BatteryManager.BATTERY_STATUS_CHARGING, 95, 100, BatteryManager.BATTERY_PLUGGED_AC);
 			receive();
 			publishBattery(BatteryManager.BATTERY_STATUS_FULL, 100, 100, BatteryManager.BATTERY_PLUGGED_AC);
 			receive();
 
-			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.FULL)), times(1));
+			// Once, and carrying the level it actually fired at — that level is what keeps the copy honest.
+			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.FULL), eq(85)), times(1));
+			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.FULL), anyInt()), times(1));
 		}
 	}
 
 	@Test
 	public void chargeTarget_whileDischarging_neverAlerts() {
-		setChargeTarget(90);
+		setChargeTarget(85);
 
 		try (MockedStatic<NotificationService> ns = mockStatic(NotificationService.class)) {
 			// The second broadcast repeats the level, which is the path that reaches the full-battery
 			// branch while discharging — the one place a bare "level ≥ target" would announce a charge
 			// that never happened.
-			publishBattery(BatteryManager.BATTERY_STATUS_DISCHARGING, 90, 100, 0);
+			publishBattery(BatteryManager.BATTERY_STATUS_DISCHARGING, 85, 100, 0);
 			receive();
 			receive();
 
-			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.FULL)), never());
+			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.FULL), anyInt()), never());
 		}
 	}
 
@@ -189,7 +192,7 @@ public class BatteryLevelReceiverTest {
 
 			final InOrder ordered = inOrder(NotificationService.class);
 			ordered.verify(ns, () -> NotificationService.clearLevelAlert(any(Context.class)));
-			ordered.verify(ns, () -> NotificationService.sendNotification(any(Context.class), eq(AlertType.CRITICAL)));
+			ordered.verify(ns, () -> NotificationService.sendNotification(any(Context.class), eq(AlertType.CRITICAL), anyInt()));
 		}
 	}
 
