@@ -11,6 +11,7 @@ import com.almothafar.simplebatterynotifier.model.BatteryDO;
 import com.almothafar.simplebatterynotifier.service.AlertType;
 import com.almothafar.simplebatterynotifier.service.BatteryHealthTracker;
 import com.almothafar.simplebatterynotifier.service.BatteryRateTracker;
+import com.almothafar.simplebatterynotifier.service.BatteryTemperatureTracker;
 import com.almothafar.simplebatterynotifier.service.FastDrainDetector;
 import com.almothafar.simplebatterynotifier.service.NotificationService;
 import com.almothafar.simplebatterynotifier.service.SlowChargeDetector;
@@ -102,6 +103,11 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 
 		// Track battery health and charge cycles
 		BatteryHealthTracker.recordBatteryState(context, percentage, status);
+
+		// #260: keep the coldest/hottest reading of the current charge for the Insights temperature
+		// range. The whole reading goes in — finishing a charge is what starts a new range, so the
+		// tracker needs the level and status as well as the temperature.
+		BatteryTemperatureTracker.record(context, batteryDO);
 
 		final SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(context);
 		final LevelAlertConfig config = new LevelAlertConfig(

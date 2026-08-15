@@ -264,8 +264,14 @@
     <string name="design_capacity_value">%1$s mAh</string>
     <!-- #116: averaged measured capacity shown in Insights, with its min/max spread as a mini-table -->
     <string name="measured_capacity">Measured Capacity</string>
-    <string name="capacity_min_label">min</string>
-    <string name="capacity_max_label">max</string>
+    <!-- Captions of the shared min/max mini-table (MinMaxRangeView), used by the measured-capacity
+         card and the temperature-range card alike -->
+    <string name="range_min_label">min</string>
+    <string name="range_max_label">max</string>
+    <!-- #260: coldest/hottest battery temperature of the current charge, shown in Insights. The range
+         only starts over when a charge finishes, which is what the basis line tells the user. -->
+    <string name="temperature_range">Temperature Range</string>
+    <string name="temperature_range_basis">Since the battery last finished charging</string>
     <!-- Info icon (#116) explaining that the measured health/capacity is averaged over many readings -->
     <string name="health_measured_info_cd">How battery health is measured</string>
     <string name="health_measured_info_dialog_title">How this is measured</string>

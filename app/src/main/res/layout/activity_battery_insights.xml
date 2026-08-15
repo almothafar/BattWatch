@@ -180,65 +180,14 @@
                                 android:textStyle="bold"
                                 android:textColor="@color/battery_details_value_color"/>
 
-                        <!-- min / max spread as a compact two-column mini-table (label above value) -->
-                        <LinearLayout
+                        <!-- min / max spread (shared with the temperature-range card, #260) -->
+                        <com.almothafar.simplebatterynotifier.ui.widget.MinMaxRangeView
                                 android:id="@+id/measuredCapacityRange"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:orientation="horizontal"
-                                android:baselineAligned="false"
-                                android:weightSum="2"
                                 android:layout_marginTop="8dp"
                                 android:visibility="gone"
-                                tools:visibility="visible">
-
-                            <LinearLayout
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:layout_weight="1"
-                                    android:orientation="vertical">
-
-                                <TextView
-                                        android:layout_width="wrap_content"
-                                        android:layout_height="wrap_content"
-                                        android:text="@string/capacity_min_label"
-                                        android:textSize="11sp"
-                                        android:textColor="@color/battery_details_label_color"/>
-
-                                <TextView
-                                        android:id="@+id/measuredCapacityMinText"
-                                        android:layout_width="wrap_content"
-                                        android:layout_height="wrap_content"
-                                        android:textSize="14sp"
-                                        android:textColor="@color/battery_details_value_color"
-                                        tools:text="4420"/>
-
-                            </LinearLayout>
-
-                            <LinearLayout
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:layout_weight="1"
-                                    android:orientation="vertical">
-
-                                <TextView
-                                        android:layout_width="wrap_content"
-                                        android:layout_height="wrap_content"
-                                        android:text="@string/capacity_max_label"
-                                        android:textSize="11sp"
-                                        android:textColor="@color/battery_details_label_color"/>
-
-                                <TextView
-                                        android:id="@+id/measuredCapacityMaxText"
-                                        android:layout_width="wrap_content"
-                                        android:layout_height="wrap_content"
-                                        android:textSize="14sp"
-                                        android:textColor="@color/battery_details_value_color"
-                                        tools:text="4580"/>
-
-                            </LinearLayout>
-
-                        </LinearLayout>
+                                tools:visibility="visible"/>
 
                     </LinearLayout>
                 </androidx.cardview.widget.CardView>
@@ -366,6 +315,48 @@
                 </androidx.cardview.widget.CardView>
 
             </LinearLayout>
+
+            <!-- Temperature Range Card (coldest/hottest of the current charge, #260) -->
+            <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:cardCornerRadius="8dp"
+                    app:cardElevation="4dp"
+                    app:contentPadding="16dp">
+
+                <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                    <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/temperature_range"
+                            android:textSize="14sp"
+                            android:textColor="@color/battery_details_label_color"/>
+
+                    <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/temperature_range_basis"
+                            android:textSize="12sp"
+                            android:textColor="@color/battery_details_label_color"
+                            android:layout_marginBottom="8dp"/>
+
+                    <!-- min / max spread, shared with the measured-capacity card. Always visible: the
+                         values read "—" until the first reading lands, so the card never changes
+                         height under the user. -->
+                    <com.almothafar.simplebatterynotifier.ui.widget.MinMaxRangeView
+                            android:id="@+id/temperatureRange"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            app:rangeValueTextSize="18sp"
+                            app:rangeValueBold="true"/>
+
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
 
             <!-- Health Description Card -->
             <androidx.cardview.widget.CardView

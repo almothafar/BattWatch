@@ -27,6 +27,12 @@ The battery's rated full capacity when new (mAh), from the manufacturer's spec. 
 best-effort auto-detected from the kernel. Distinct from the measured current full capacity.
 _Avoid_: rated capacity (in prose only), max capacity.
 
+**Temperature range**:
+The lowest and highest battery temperature seen since the battery last finished charging, in the
+user's display unit. Accumulated from the readings the monitoring service observes; completing a
+charge is the only thing that starts a new range.
+_Avoid_: temperature history, heat range, thermal range.
+
 **Stable capacity**:
 The learned running average of the measured full capacity (mAh), built from spaced, trusted
 per-tick estimates. Slow-moving by design: it is the denominator of the sub-percent battery
