@@ -54,31 +54,35 @@ final class NotificationConfig {
 
 		final String defaultSound = context.getString(R.string._default_notification_sound_uri);
 
-		// Formatted here rather than handed to getString as ints: getString formats with the configuration locale, so a %1$d placeholder
-		// renders ٢٠ under ar-EG/ar-SA/ar-JO with no String.format anywhere in our code (#273). formatWhole brings the '%' sign with it.
-		final String criticalText = BatteryPercentFormatter.formatWhole(criticalLevel);
-		final String warningText = BatteryPercentFormatter.formatWhole(warningLevel);
-
 		// A switch EXPRESSION over the enum is exhaustive at compile time — the old int switch
 		// needed a default branch, which posted a completely blank notification on any invalid
 		// type value (issue #160). That branch can no longer exist.
+		//
+		// Each branch formats its own level: getString formats with the configuration locale, so a %1$d placeholder would render ٢٠ under ar-EG/ar-SA/ar-JO
+		// with no String.format anywhere in our code (#273), and formatWhole brings the '%' sign with it.
 		final AlertStyle style = switch (type) {
-			case CRITICAL -> new AlertStyle(
-					NotificationChannels.CHANNEL_ID_CRITICAL,
-					R.drawable.ic_stat_battery_alert,
-					prefs.getString(context.getString(R.string._pref_key_notifications_alert_sound_ringtone), defaultSound),
-					context.getString(R.string.notification_critical_ticker, criticalText),
-					context.getString(R.string.notification_critical_title),
-					context.getString(R.string.notification_critical_content, criticalText),
-					context.getString(R.string.notification_critical_content_big, criticalText));
-			case WARNING -> new AlertStyle(
-					NotificationChannels.CHANNEL_ID_WARNING,
-					R.drawable.ic_stat_battery_low,
-					prefs.getString(context.getString(R.string._pref_key_notifications_warning_sound_ringtone), defaultSound),
-					context.getString(R.string.notification_warning_ticker, warningText),
-					context.getString(R.string.notification_warning_title),
-					context.getString(R.string.notification_warning_content, warningText),
-					context.getString(R.string.notification_warning_content_big, warningText));
+			case CRITICAL -> {
+				final String levelText = BatteryPercentFormatter.formatWhole(criticalLevel);
+				yield new AlertStyle(
+						NotificationChannels.CHANNEL_ID_CRITICAL,
+						R.drawable.ic_stat_battery_alert,
+						prefs.getString(context.getString(R.string._pref_key_notifications_alert_sound_ringtone), defaultSound),
+						context.getString(R.string.notification_critical_ticker, levelText),
+						context.getString(R.string.notification_critical_title),
+						context.getString(R.string.notification_critical_content, levelText),
+						context.getString(R.string.notification_critical_content_big, levelText));
+			}
+			case WARNING -> {
+				final String levelText = BatteryPercentFormatter.formatWhole(warningLevel);
+				yield new AlertStyle(
+						NotificationChannels.CHANNEL_ID_WARNING,
+						R.drawable.ic_stat_battery_low,
+						prefs.getString(context.getString(R.string._pref_key_notifications_warning_sound_ringtone), defaultSound),
+						context.getString(R.string.notification_warning_ticker, levelText),
+						context.getString(R.string.notification_warning_title),
+						context.getString(R.string.notification_warning_content, levelText),
+						context.getString(R.string.notification_warning_content_big, levelText));
+			}
 			case FULL -> fullAlertStyle(context, prefs, defaultSound, levelPercent);
 		};
 		this.channelId = style.channelId();
@@ -127,7 +131,7 @@ final class NotificationConfig {
 			// Two different numbers, deliberately: the ticker reports the level the battery actually reached, the body names the target that level crossed.
 			// Plugging in at 95% with a target of 90 is "95% reached" against "your 90% charge target", and both are true.
 			//
-			// Both go through BatteryPercentFormatter rather than a %1$d placeholder: getString formats with the resource locale, so a bare int would print ٩٥
+			// Both go through BatteryPercentFormatter rather than a %1$d placeholder: getString formats with the configuration locale, so a bare int prints ٩٥
 			// on ar-EG/ar-SA/ar-JO. Numbers stay Western in every locale (#96).
 			final String reachedText = BatteryPercentFormatter.formatWhole(levelPercent);
 			final String targetText = BatteryPercentFormatter.formatWhole(target);

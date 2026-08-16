@@ -13,7 +13,8 @@
         <attr name="gaugeStatusColor" format="color"/>
         <attr name="gaugeStatusTextSize" format="dimension"/>
         <attr name="gaugeShowShadow" format="boolean"/>
-        <!-- Screen-reader template for the current level, e.g. "Battery at %1$d percent" -->
+        <!-- Screen-reader template for the current level, e.g. "Battery at %1$s percent". Takes the level as its single argument; %1$s is the catalogue's
+             convention (#273) but %1$d works too, since the gauge formats with Locale.ROOT and so keeps the digits Western either way. -->
         <attr name="gaugeLevelDescription" format="string"/>
     </declare-styleable>
 

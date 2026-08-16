@@ -112,8 +112,7 @@ public class HorseshoeProgressBar extends View {
 	private static final int DEFAULT_ALERT_COLOR = 0xFFE23A2E;
 	private static final int DEFAULT_TRACK_COLOR = 0x338A8A8A;
 	private static final int DEFAULT_TEXT_COLOR = 0xFFFFFFFF;
-	// %1$s, matching battery_progress_description: announceLevel passes an already-formatted number so the digits stay Western in every
-	// locale (#273). A %1$d here would not just localise the digits, it would throw — the argument is a String.
+	// %1$s to match battery_progress_description and the catalogue-wide rule (#273); a %1$d would work here too, since announceLevel formats with Locale.ROOT.
 	private static final String DEFAULT_LEVEL_DESCRIPTION = "Level at %1$s percent";
 
 	/** The track ring is drawn slightly wider than the level ring, framing it. */
@@ -567,7 +566,7 @@ public class HorseshoeProgressBar extends View {
 			titlePaint.setColor(a.getColor(R.styleable.HorseshoeProgressBar_gaugeTitleColor, DEFAULT_TEXT_COLOR));
 			statusPaint.setColor(a.getColor(R.styleable.HorseshoeProgressBar_gaugeStatusColor, DEFAULT_TEXT_COLOR));
 
-			// Localizable "Level at %1$s percent" template for screen readers. %1$s, not %1$d: announceLevel passes the number already formatted (#273).
+			// Localizable "Level at %1$s percent" template for screen readers; announceLevel formats it with Locale.ROOT so its digits stay Western (#273).
 			final String description = a.getString(R.styleable.HorseshoeProgressBar_gaugeLevelDescription);
 			levelDescriptionFormat = nonNull(description) && !description.isEmpty() ? description : DEFAULT_LEVEL_DESCRIPTION;
 
@@ -610,10 +609,10 @@ public class HorseshoeProgressBar extends View {
 	}
 
 	private void announceLevel() {
-		// Locale.ROOT and a pre-formatted argument, both deliberate (#273): the default locale renders ٤٠ for a %d under ar-EG/ar-SA/ar-JO,
-		// and the format string now carries a %1$s so the number is Western before it ever reaches the formatter. TalkBack reads the
-		// surrounding Arabic and the Western digits, which is what the rest of the app shows.
-		setContentDescription(String.format(Locale.ROOT, levelDescriptionFormat, String.valueOf(level)));
+		// Locale.ROOT, not getDefault(): the default locale renders ٤٠ under ar-EG/ar-SA/ar-JO, and TalkBack should read the digits the rest of the app shows
+		// (#273). The level is passed as an int rather than pre-formatted so the template may use either %1$s or %1$d — gaugeLevelDescription is a public
+		// attribute and has always accepted both, and ROOT already holds the digits Western for either.
+		setContentDescription(String.format(Locale.ROOT, levelDescriptionFormat, level));
 	}
 
 	private static int clampLevel(final int value) {

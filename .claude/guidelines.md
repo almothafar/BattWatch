@@ -234,7 +234,7 @@ The project uses **JUnit 4** for pure logic, with **Robolectric** and **Mockito*
 
 ### String Resources
 - **All user-facing text must be in string resources — never a hardcoded Java literal** (no `setText("Excellent")`, no `Toast` string literals). Map values/enums to a `@StringRes` in a UI/service layer.
-- Use positional format args for dynamic content: `<string name="notification_status_content">%1$d%% · %2$s · %3$s</string>`.
+- Use positional format args for dynamic content: `<string name="notification_status_title">%1$s · %2$s</string>`. Always `%s`, never `%d` — see "Numbers Are Always Western Digits" below.
 
 ### Arabic (`values-ar/`) Parity
 - The app ships an Arabic translation. Every new user-facing string in `values/strings.xml` needs a matching entry in `values-ar/strings.xml`.

@@ -13,7 +13,6 @@ import androidx.preference.PreferenceViewHolder;
 import com.almothafar.simplebatterynotifier.R;
 import com.almothafar.simplebatterynotifier.model.LevelThresholds;
 import com.almothafar.simplebatterynotifier.util.AppPrefs;
-import com.almothafar.simplebatterynotifier.util.BatteryPercentFormatter;
 import com.google.android.material.slider.RangeSlider;
 
 import java.util.List;
@@ -151,14 +150,7 @@ public class BatteryRangeSliderPreference extends Preference {
 	}
 
 	private void updateCaptions(TextView criticalCaption, TextView warningCaption, int critical, int warning) {
-		// Formatted, not handed to getString as an int: getString formats with the configuration locale, so a %1$d placeholder renders ٢٠
-		// under ar-EG/ar-SA/ar-JO (#273). formatWhole brings the '%' sign with it.
-		if (nonNull(criticalCaption)) {
-			criticalCaption.setText(getContext().getString(R.string.battery_range_caption_critical, BatteryPercentFormatter.formatWhole(critical)));
-		}
-		if (nonNull(warningCaption)) {
-			warningCaption.setText(getContext().getString(R.string.battery_range_caption_warning, BatteryPercentFormatter.formatWhole(warning)));
-		}
+		BatteryRangeSliderHelper.applyCaptions(getContext(), criticalCaption, warningCaption, critical, warning);
 	}
 
 	private static LevelThresholds currentValues(final RangeSlider slider) {

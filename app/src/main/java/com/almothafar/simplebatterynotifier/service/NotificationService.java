@@ -566,8 +566,8 @@ public final class NotificationService {
 			// Known tier but sub-watt (e.g. trickle): showing "~0 W" would read as an error.
 			return context.getString(R.string.charge_connected_tier, source, tierLabel);
 		}
-		// Western digits in every locale (#96/#273) via String.valueOf: getString formats with the configuration locale, so passing the int
-		// through a %3$d placeholder would render ~١٨ واط under ar-EG/ar-SA/ar-JO.
+		// Western digits in every locale (#96/#273) via String.valueOf: getString formats with the configuration locale, so passing the int through a %3$d
+		// placeholder would render ~١٨ واط under ar-EG/ar-SA/ar-JO. Not bidi-isolated the way OngoingStatusContent's wattage is — tracked in #275.
 		return context.getString(R.string.charge_connected_power, source, tierLabel, String.valueOf(watts));
 	}
 

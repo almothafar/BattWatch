@@ -1,11 +1,14 @@
 package com.almothafar.simplebatterynotifier.ui.preference;
 
 import android.content.Context;
+import android.widget.TextView;
 
 import com.almothafar.simplebatterynotifier.R;
 import com.almothafar.simplebatterynotifier.model.LevelThresholds;
 import com.almothafar.simplebatterynotifier.util.BatteryPercentFormatter;
 import com.google.android.material.slider.RangeSlider;
+
+import static java.util.Objects.nonNull;
 
 /**
  * Shared configuration for the combined critical/warning battery-level {@link RangeSlider}.
@@ -44,24 +47,45 @@ public final class BatteryRangeSliderHelper {
 		slider.setValueTo(to);
 		slider.setStepSize(1f);
 		slider.setMinSeparationValue(minSeparation);
-		slider.setLabelFormatter(value -> labelFor(slider.getContext(), value));
+		// Show the dragged thumb's value as a whole percentage (e.g. "20%") instead of "20.0".
+		slider.setLabelFormatter(BatteryRangeSliderHelper::labelFor);
 	}
 
 	/**
 	 * The dragged thumb's label: the value as a whole percentage (e.g. {@code "20%"}) rather than the raw {@code "20.0"}.
 	 * <p>
-	 * The level is formatted by {@link BatteryPercentFormatter} rather than handed to {@code getString} as an int, and that is the whole point of this method
-	 * existing rather than being an inline lambda: {@code getString} formats with the <b>configuration</b> locale, so a {@code %1$d} placeholder renders
-	 * {@code ٢٠} under {@code ar-EG}/{@code ar-SA}/{@code ar-JO} with no {@code String.format} call in sight (#273). Named and package-visible so that
-	 * property is testable without standing up a Material slider.
+	 * {@link BatteryPercentFormatter} is the whole label — it supplies both the digits and the {@code '%'}, and keeps the digits Western in every locale
+	 * (#96/#273). There is no string resource behind this: one existed, but once the formatter owned the {@code '%'} it had no text left but its own
+	 * placeholder, so it was removed rather than left as an identity format for a reader to puzzle over.
 	 *
-	 * @param context context to resolve the label string against
-	 * @param value   the thumb's value
+	 * @param value the thumb's value
 	 *
 	 * @return the label, in Western digits whatever the app language
 	 */
-	static String labelFor(Context context, float value) {
-		return context.getString(R.string.battery_level_percent, BatteryPercentFormatter.formatWhole(Math.round(value)));
+	static String labelFor(float value) {
+		return BatteryPercentFormatter.formatWhole(Math.round(value));
+	}
+
+	/**
+	 * Applies the critical/warning captions that sit under the slider, in the single form both surfaces show them.
+	 * <p>
+	 * The settings screen and the home screen each own a copy of this pair of captions. Keeping the wording and the formatting here means a change lands once
+	 * rather than twice — the two copies drifting apart is how a display defect survives a fix in one of them (#241 after #154).
+	 *
+	 * @param context         context to resolve the caption strings against
+	 * @param criticalCaption the critical caption view, or null when the layout omits it
+	 * @param warningCaption  the warning caption view, or null when the layout omits it
+	 * @param critical        the critical level in percent
+	 * @param warning         the warning level in percent
+	 */
+	public static void applyCaptions(Context context, TextView criticalCaption, TextView warningCaption, int critical, int warning) {
+		// Formatted, not handed to getString as an int: getString formats with the configuration locale, so a %1$d renders ٢٠ under ar-EG (#96/#273).
+		if (nonNull(criticalCaption)) {
+			criticalCaption.setText(context.getString(R.string.battery_range_caption_critical, BatteryPercentFormatter.formatWhole(critical)));
+		}
+		if (nonNull(warningCaption)) {
+			warningCaption.setText(context.getString(R.string.battery_range_caption_warning, BatteryPercentFormatter.formatWhole(warning)));
+		}
 	}
 
 	/**

@@ -1,7 +1,5 @@
 package com.almothafar.simplebatterynotifier.ui.preference;
 
-import androidx.test.core.app.ApplicationProvider;
-
 import com.almothafar.simplebatterynotifier.model.LevelThresholds;
 
 import org.junit.Test;
@@ -10,12 +8,9 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
-import org.robolectric.RobolectricTestRunner;
-import org.robolectric.annotation.Config;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Locale;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -71,25 +66,21 @@ public class BatteryRangeSliderHelperTest {
 	}
 
 	/**
-	 * The thumb label the user drags keeps Western digits (#96/#273).
+	 * The thumb label the user drags.
 	 * <p>
-	 * {@code battery_level_percent} is {@code translatable="false"}, which reads like protection and is not: {@code getString} formats with the
-	 * <b>configuration</b> locale, not with the locale the string was declared in, so the untranslated {@code %1$d} rendered {@code ٤٠٪} on an Arabic device
-	 * exactly like the translated ones. It was the one string in this class of defect that #273 did not list.
+	 * This used to run through {@code battery_level_percent} — {@code translatable="false"}, which reads like protection against the Eastern-digit defect and
+	 * is not, since {@code getString} formats with the <b>configuration</b> locale rather than the locale the string was declared in. It was the one string in
+	 * that class of defect (#273) the issue did not list. The resource is gone now: once {@code BatteryPercentFormatter} owned the {@code '%'} the string had
+	 * no text left but its own placeholder. So there is no locale-sensitive step left on this path to pin here — the digit property lives in the formatter and
+	 * is tested there. What is left worth pinning is the rounding, which is this method's own decision.
 	 */
-	@RunWith(RobolectricTestRunner.class)
-	@Config(sdk = 34, qualifiers = "ar-rEG")
-	public static class LabelDigits {
+	public static class Label {
 
 		@Test
-		public void thumbLabel_keepsWesternDigitsUnderARegionBearingArabicLocale() {
-			// Premise: this locale really does localise digits, so the assertions below are not vacuous.
-			assertEquals("ar-rEG should select Eastern Arabic digits", "٤٠", String.format(Locale.getDefault(), "%d", 40));
-
-			final String label = BatteryRangeSliderHelper.labelFor(ApplicationProvider.getApplicationContext(), 40f);
-
-			assertEquals("40%", label);
-			assertTrue("Eastern digits leaked into the slider label: " + label, !label.contains("٤٠"));
+		public void roundsToAWholePercentAndCarriesTheSign() {
+			assertEquals("40%", BatteryRangeSliderHelper.labelFor(40f));
+			assertEquals("the slider's step is 1, but the formatter still owns the rounding", "40%", BatteryRangeSliderHelper.labelFor(39.6f));
+			assertEquals("20%", BatteryRangeSliderHelper.labelFor(20.4f));
 		}
 	}
 

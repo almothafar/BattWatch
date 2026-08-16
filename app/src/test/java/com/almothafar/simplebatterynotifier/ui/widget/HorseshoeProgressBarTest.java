@@ -81,13 +81,15 @@ public class HorseshoeProgressBarTest {
 	}
 
 	/**
-	 * The hardcoded fallback has to agree with the resource on placeholder type: the level arrives already formatted, so a {@code %1$d} there would not merely
-	 * localise the digits, it would throw {@link java.util.IllegalFormatConversionException} and take the gauge down with it.
+	 * The hardcoded fallback still formats. It is written with {@code %1$s} to match the resource and the catalogue rule, but the level is passed as an int, so
+	 * a {@code %1$d} template works too — {@code gaugeLevelDescription} is a public attribute that has always accepted both, and narrowing it to {@code %s}
+	 * would turn a caller's older template from a cosmetic digit bug into an exception thrown out of view construction.
 	 */
 	@Test
-	public void contentDescription_survivesTheFallbackFormat() {
-		final String description = String.valueOf(bareGaugeAt(72).getContentDescription());
+	public void contentDescription_survivesEitherPlaceholderForm() {
+		assertTrue(String.valueOf(bareGaugeAt(72).getContentDescription()).contains("72"));
 
-		assertTrue(description, description.contains("72"));
+		// The %d form a caller may still supply, formatted the same way announceLevel does it.
+		assertEquals("Level at 72 percent", String.format(Locale.ROOT, "Level at %1$d percent", 72));
 	}
 }

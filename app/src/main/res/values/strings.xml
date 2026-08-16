@@ -77,14 +77,10 @@
     <string name="pref_ringtone_silent">Silent</string>
     <string name="pref_title_vibrate">Vibrate</string>
 
-    <!-- Combined critical/warning battery range slider.
-         %1$s, not %1$d: the level arrives already formatted by BatteryPercentFormatter, so it brings its own '%' sign and the digits stay
-         Western in every locale (#96/#273). getString formats with the configuration locale, so a %1$d here renders ٤٠ under ar-EG even
-         though no String.format appears in our code — and translatable="false" is no protection, since it is the device locale that picks
-         the numbering system, not the file the string came from. -->
+    <!-- Combined critical/warning battery range slider. %1$s takes the level already formatted by BatteryPercentFormatter, which brings its own '%' sign
+         and keeps the digits Western in every locale (#96/#273). The slider's own thumb label needs no resource at all — formatWhole is the whole string. -->
     <string name="battery_range_caption_critical">Critical %1$s</string>
     <string name="battery_range_caption_warning">Warning %1$s</string>
-    <string name="battery_level_percent" translatable="false">%1$s</string>
     <string name="temperature_unit">Temperature Unit</string>
     <string name="off">OFF</string>
     <string name="on">ON</string>
@@ -174,8 +170,8 @@
     <string name="charge_tier_super_fast">Super fast charging</string>
     <string name="charge_tier_super_fast_plus">Super fast charging+</string>
     <!-- e.g. "Wireless · Fast charging · ~18 W" (source · tier · estimated watts).
-         %3$s, not %3$d: the wattage is passed via String.valueOf so the digits stay Western in every locale (#96/#273), matching
-         notification_status_watts below. -->
+         %3$s, not %3$d: the wattage is passed via String.valueOf so the digits stay Western in every locale (#96/#273). Unlike the ongoing-status wattage,
+         this one is not bidi-isolated — see #275. -->
     <string name="charge_connected_power">%1$s · %2$s · ~%3$s W</string>
     <!-- e.g. "Wired · Slow charging" (source · tier, when the wattage is under 1 W) -->
     <string name="charge_connected_tier">%1$s · %2$s</string>
@@ -275,8 +271,8 @@
     <string name="view_battery_insights">View Battery Insights</string>
     <string name="battery_health">Battery Health</string>
     <!-- The big health figure. %1$s is a Western-digit number (passed via String.valueOf) so it stays 0-9 in every locale, matching the
-         other Insights numbers (#96). Kept separate from battery_level_percent, which now also holds its digits Western (#273) but takes a
-         value that already carries its own '%' sign; this one appends the sign itself. -->
+         other Insights numbers (#96). This one appends the '%' itself; where a value already carries its own sign, use
+         BatteryPercentFormatter.formatWhole and no resource. -->
     <string name="health_percentage_value" translatable="false">%1$s%%</string>
     <string name="charge_cycles">Charge Cycles</string>
     <string name="days_in_use">Days in Use</string>

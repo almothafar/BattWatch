@@ -21,11 +21,15 @@ import static org.junit.Assert.fail;
 /**
  * Guards the whole string catalogue against the Eastern-digit defect (#96/#154/#241/#273) rather than the twelve strings that happened to carry it.
  * <p>
- * {@link android.content.res.Resources#getString(int, Object...)} formats with the <b>configuration</b> locale, so a {@code %d} placeholder in a resource
- * renders {@code ٤٠} on any region-bearing Arabic locale — with no {@code String.format} call anywhere in our code to give the game away. The rule the
- * guidelines state is that every number a user sees is Western in every locale, which makes {@code %d} in a string resource unusable full stop: the number is
- * formatted in code, through {@link com.almothafar.simplebatterynotifier.util.BatteryPercentFormatter} or {@code String.valueOf}, and interpolated through a
- * {@code %s}.
+ * {@link android.content.res.Resources#getString(int, Object...)} formats with the <b>configuration</b> locale, so a numeric conversion in a resource renders
+ * {@code ٤٠} on any region-bearing Arabic locale — with no {@code String.format} call anywhere in our code to give the game away.
+ * {@link android.content.res.Resources#getQuantityString(int, int, Object...)} does the same for {@code <plurals>}. The rule the guidelines state is that
+ * every number a user sees is Western in every locale, which leaves a resource no legitimate numeric conversion at all: the number is formatted in code,
+ * through {@link com.almothafar.simplebatterynotifier.util.BatteryPercentFormatter} or {@code String.valueOf}, and interpolated through a {@code %s}.
+ * <p>
+ * So the check is stated the way the rule is: <b>{@code %s} and {@code %%} are the only conversions a resource may contain.</b> Enumerating the numeric ones
+ * instead would have to enumerate their flags, widths and precisions too — {@code %,d} and {@code %02d} localise digits exactly like {@code %d}, and
+ * {@code %02d} is already an idiom in this project's time formatting — and the first one missed is the next recurrence.
  * <p>
  * That makes this a static property of the catalogue, so it is checked as one. The behavioural tests that pin individual call sites live beside the code they
  * cover; this one exists so the thirteenth occurrence fails in CI the day it is written, in whichever locale file it appears, instead of surviving three
@@ -33,49 +37,90 @@ import static org.junit.Assert.fail;
  */
 public class StringResourceDigitsTest {
 
-	/** {@code %d}, {@code %1$d} and friends — every numeric conversion {@code getString} would localise. */
-	private static final Pattern NUMERIC_PLACEHOLDER = Pattern.compile("%(\\d+\\$)?[deEfgGoxX]");
+	/**
+	 * Any format conversion: {@code %s}, {@code %1$d}, {@code %,d}, {@code %02d}, {@code %.2f}, {@code %1$-5s}, {@code %tY}. Deliberately matches the whole
+	 * conversion grammar — argument index, flags, width, precision — rather than a list of numeric conversions, so that widening the check to a new one is not
+	 * required. Escaped percents are removed before this runs, so {@code %%} never reaches it.
+	 */
+	private static final Pattern CONVERSION = Pattern.compile("%(\\d+\\$)?([-#+ 0,(]*)(\\d+)?(\\.\\d+)?([a-zA-Z])");
+
+	/** Elements whose text is a translatable string body: {@code <string>} plus the {@code <item>} children of {@code <plurals>} and {@code <string-array>}. */
+	private static final List<String> TEXT_ELEMENTS = List.of("string", "item");
+
+	private static final DocumentBuilderFactory FACTORY = namespaceAwareFactory();
 
 	@Test
-	public void noStringResourceUsesANumericPlaceholder() throws Exception {
+	public void noStringResourceUsesANumericConversion() throws Exception {
 		final List<File> files = resourceFiles();
 		assertTrue("found no values*/*.xml to scan — the test is not looking where it thinks it is", !files.isEmpty());
 
+		final DocumentBuilder builder = FACTORY.newDocumentBuilder();
 		final List<String> offenders = new ArrayList<>();
 		for (File file : files) {
-			collectOffenders(file, offenders);
+			collectOffenders(builder, file, offenders);
 		}
 
 		if (!offenders.isEmpty()) {
-			fail("Numeric placeholders localise their digits under ar-EG/ar-SA/ar-JO — format the number in code and interpolate it with %s instead:\n  "
+			fail("Numeric conversions localise their digits under ar-EG/ar-SA/ar-JO — format the number in code and interpolate it with %s instead:\n  "
 					+ String.join("\n  ", offenders));
 		}
 	}
 
 	/**
-	 * Records every {@code <string>} in one file whose body carries a numeric placeholder.
+	 * Records every string body in one file that carries a conversion other than {@code %s}.
 	 *
+	 * @param builder   the shared parser
 	 * @param file      the resource file to scan
 	 * @param offenders accumulator of {@code "values-ar/strings.xml: name -> body"} descriptions
 	 */
-	private static void collectOffenders(File file, List<String> offenders) throws Exception {
-		final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-		// The files declare xmlns:tools; without this the parser rejects the prefixed attributes it never resolves.
-		factory.setNamespaceAware(true);
-		final DocumentBuilder builder = factory.newDocumentBuilder();
-
-		final NodeList strings = builder.parse(file).getElementsByTagName("string");
-		for (int i = 0; i < strings.getLength(); i++) {
-			final Element element = (Element) strings.item(i);
-			// getTextContent, not the raw source: comments and entities are already resolved away, so a %1$d written in an explanatory
-			// comment (this fix left several) can't be mistaken for one in a string.
-			final String body = element.getTextContent();
-			final Matcher matcher = NUMERIC_PLACEHOLDER.matcher(body);
-			if (matcher.find()) {
-				offenders.add(file.getParentFile().getName() + "/" + file.getName()
-						+ ": " + element.getAttribute("name") + " -> " + body.trim());
+	private static void collectOffenders(DocumentBuilder builder, File file, List<String> offenders) throws Exception {
+		final org.w3c.dom.Document document = builder.parse(file);
+		for (String tag : TEXT_ELEMENTS) {
+			final NodeList nodes = document.getElementsByTagName(tag);
+			for (int i = 0; i < nodes.getLength(); i++) {
+				final Element element = (Element) nodes.item(i);
+				// formatted="false" declares outright that the body is not a format string. This catalogue uses it for prose carrying bare, unescaped '%'
+				// signs ("kept at 100%"), which would otherwise read as conversions.
+				if ("false".equals(element.getAttribute("formatted"))) {
+					continue;
+				}
+				// getTextContent, not the raw source: comments and entities are already resolved away, so a %1$d written in an explanatory comment (this fix
+				// left several) can't be mistaken for one in a string. Escaped percents go first, so %%d reads as a literal '%' followed by 'd'.
+				final String body = element.getTextContent().replace("%%", "");
+				final Matcher matcher = CONVERSION.matcher(body);
+				while (matcher.find()) {
+					final String conversion = matcher.group(5);
+					if (!"s".equals(conversion) && !"S".equals(conversion)) {
+						offenders.add(file.getParentFile().getName() + "/" + file.getName() + ": <" + tag + "> " + describe(element)
+								+ " -> " + matcher.group() + " in " + element.getTextContent().trim());
+					}
+				}
 			}
 		}
+	}
+
+	/**
+	 * A name for the offending element. {@code <item>} carries no name of its own, so its parent's is used.
+	 *
+	 * @param element the offending element
+	 *
+	 * @return the resource name to report
+	 */
+	private static String describe(Element element) {
+		final String name = element.getAttribute("name");
+		if (!name.isEmpty()) {
+			return name;
+		}
+		return element.getParentNode() instanceof Element parent ? parent.getAttribute("name") : "(unnamed)";
+	}
+
+	/**
+	 * @return a factory that tolerates the {@code xmlns:tools} prefixes the resource files declare
+	 */
+	private static DocumentBuilderFactory namespaceAwareFactory() {
+		final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+		factory.setNamespaceAware(true);
+		return factory;
 	}
 
 	/**
@@ -103,23 +148,22 @@ public class StringResourceDigitsTest {
 	}
 
 	/**
-	 * Locates {@code src/main/res} by walking up from the working directory, which Gradle sets to the module dir but IDEs often set to the repository root.
+	 * Locates this module's {@code res}. Two working directories occur in practice and both are one step away: Gradle runs tests from the module directory,
+	 * IDEs often from the repository root. Anything else is a misconfiguration worth failing on rather than searching past — walking further up could only
+	 * find the resources of some unrelated project containing this checkout.
 	 *
 	 * @return the resource root
 	 */
 	private static File resourceRoot() {
-		File dir = new File("").getAbsoluteFile();
-		while (dir != null) {
-			final File candidate = new File(dir, "src/main/res");
-			if (candidate.isDirectory()) {
-				return candidate;
-			}
-			final File moduleCandidate = new File(dir, "app/src/main/res");
-			if (moduleCandidate.isDirectory()) {
-				return moduleCandidate;
-			}
-			dir = dir.getParentFile();
+		final File cwd = new File("").getAbsoluteFile();
+		final File fromModule = new File(cwd, "src/main/res");
+		if (fromModule.isDirectory()) {
+			return fromModule;
 		}
-		throw new IllegalStateException("could not locate src/main/res from " + new File("").getAbsolutePath());
+		final File fromRepoRoot = new File(cwd, "app/src/main/res");
+		if (fromRepoRoot.isDirectory()) {
+			return fromRepoRoot;
+		}
+		throw new IllegalStateException("expected src/main/res or app/src/main/res under " + cwd);
 	}
 }

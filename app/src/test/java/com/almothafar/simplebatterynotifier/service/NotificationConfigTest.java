@@ -186,23 +186,25 @@ public class NotificationConfigTest {
 	@Config(sdk = 34, qualifiers = "ar-rEG")
 	public void levelAlertCopy_keepsWesternDigitsUnderARegionBearingArabicLocale() {
 		// Premise: this locale really does localise digits, so the assertions below are not vacuous.
-		assertEquals("ar-rEG should select Eastern Arabic digits", "٢٠", String.format(Locale.getDefault(), "%d", 20));
-		setLevels(20, 40);
+		assertEquals("ar-rEG should select Eastern Arabic digits", "١٥", String.format(Locale.getDefault(), "%d", 15));
+		// Deliberately not 20/40: those are AppPrefs' own fallbacks, so the copy would read the same whether the levels were loaded or silently defaulted.
+		setLevels(15, 35);
 
-		final NotificationConfig critical = new NotificationConfig(context, prefs, AlertType.CRITICAL, 15);
-		final NotificationConfig warning = new NotificationConfig(context, prefs, AlertType.WARNING, 35);
+		final NotificationConfig critical = new NotificationConfig(context, prefs, AlertType.CRITICAL, 10);
+		final NotificationConfig warning = new NotificationConfig(context, prefs, AlertType.WARNING, 30);
 
-		assertTrue(critical.ticker, critical.ticker.contains("20%"));
-		assertTrue(critical.content, critical.content.contains("20%"));
-		assertTrue(critical.bigContent, critical.bigContent.contains("20%"));
-		assertTrue(warning.ticker, warning.ticker.contains("40%"));
-		assertTrue(warning.content, warning.content.contains("40%"));
-		assertTrue(warning.bigContent, warning.bigContent.contains("40%"));
+		assertTrue(critical.ticker, critical.ticker.contains("15%"));
+		assertTrue(critical.content, critical.content.contains("15%"));
+		assertTrue(critical.bigContent, critical.bigContent.contains("15%"));
+		assertTrue(warning.ticker, warning.ticker.contains("35%"));
+		assertTrue(warning.content, warning.content.contains("35%"));
+		assertTrue(warning.bigContent, warning.bigContent.contains("35%"));
 
-		assertTrue("Eastern digits leaked into the critical body: " + critical.content, !critical.content.contains("٢٠"));
-		assertTrue("Eastern digits leaked into the warning body: " + warning.content, !warning.content.contains("٤٠"));
+		assertTrue("Eastern digits leaked into the critical body: " + critical.content, !critical.content.contains("١٥"));
+		assertTrue("Eastern digits leaked into the warning body: " + warning.content, !warning.content.contains("٣٥"));
 
-		// values-ar was actually loaded, so the assertions above are about the Arabic copy and not an English fallback.
+		// values-ar was actually loaded on both paths, so the assertions above are about the Arabic copy and not an English fallback.
+		assertTrue(critical.content, critical.content.contains("البطارية"));
 		assertTrue(warning.content, warning.content.contains("البطارية"));
 	}
 
