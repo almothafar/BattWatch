@@ -26,6 +26,7 @@ import com.almothafar.simplebatterynotifier.service.BatteryHealthTracker;
 import com.almothafar.simplebatterynotifier.service.BatteryTemperatureTracker;
 import com.almothafar.simplebatterynotifier.service.SystemService;
 import com.almothafar.simplebatterynotifier.ui.widget.MinMaxRangeView;
+import com.almothafar.simplebatterynotifier.util.BatteryPercentFormatter;
 import com.almothafar.simplebatterynotifier.util.GeneralHelper;
 import com.almothafar.simplebatterynotifier.util.TemperatureUtils;
 
@@ -164,9 +165,10 @@ public class BatteryInsightsActivity extends BaseActivity {
 		                                 ? BatteryHealthTracker.gradeForPercentage(measuredHealth)
 		                                 : BatteryHealthTracker.gradeForCycles(cycles);
 
-		// Update health percentage and color it based on grade.
-		// Pass the number as a String so it renders in Western digits (0-9) in every locale (#96).
-		healthPercentageText.setText(getString(R.string.health_percentage_value, String.valueOf(healthPercentage)));
+		// Update health percentage and color it based on grade. The formatter is the whole figure — it supplies the digits and the '%', and keeps the digits
+		// Western in every locale (#96/#273). No string resource sits behind it: one did, and once the formatter owned the sign it had no text left but its own
+		// placeholder, so getString was being asked to return its own argument.
+		healthPercentageText.setText(BatteryPercentFormatter.formatWhole(healthPercentage));
 		healthPercentageText.setTextColor(getHealthColor(grade));
 
 		// Update health status text
@@ -472,9 +474,13 @@ public class BatteryInsightsActivity extends BaseActivity {
 	 * Shows the accepted design-capacity range as a Toast.
 	 */
 	private void showCapacityRangeError() {
-		Toast.makeText(this, getString(R.string.error_design_capacity_range,
-				BatteryHealthTracker.MIN_DESIGN_CAPACITY_MAH,
-				BatteryHealthTracker.MAX_DESIGN_CAPACITY_MAH), Toast.LENGTH_LONG).show();
+		// Western digits in every locale (#96/#273) via String.valueOf: getString formats with the configuration locale, so passing the bounds through
+		// %1$d/%2$d placeholders would render ٥٠٠ and ١٥٠٠٠ under ar-EG/ar-SA/ar-JO — digits the capacity field's own \d{1,5} validation, which is ASCII-only,
+		// would then reject if the user typed them back.
+		final String message = getString(R.string.error_design_capacity_range,
+				String.valueOf(BatteryHealthTracker.MIN_DESIGN_CAPACITY_MAH),
+				String.valueOf(BatteryHealthTracker.MAX_DESIGN_CAPACITY_MAH));
+		Toast.makeText(this, message, Toast.LENGTH_LONG).show();
 	}
 
 	/**

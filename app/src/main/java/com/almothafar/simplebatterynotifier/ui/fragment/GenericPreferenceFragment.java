@@ -377,7 +377,7 @@ public class GenericPreferenceFragment extends CardPreferenceFragment
 	private void applyChargeTargetWording(SeekBarPreference slider) {
 		final int target = AppPrefs.chargeTarget(requireContext());
 		final boolean fullCharge = AppPrefs.targetIsAFullCharge(target);
-		// Formatted rather than passed as an int: getString formats with the resource locale, so a %1$d would print ٩٠ on ar-EG/ar-SA/ar-JO. Numbers stay
+		// Formatted rather than passed as an int: getString formats with the configuration locale, so a %1$d prints ٩٠ on ar-EG/ar-SA/ar-JO. Numbers stay
 		// Western in every locale (#96).
 		slider.setSummary(getString(fullCharge ? R.string.charge_target_summary_full : R.string.charge_target_summary,
 				BatteryPercentFormatter.formatWhole(target)));

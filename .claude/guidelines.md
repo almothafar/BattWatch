@@ -234,7 +234,7 @@ The project uses **JUnit 4** for pure logic, with **Robolectric** and **Mockito*
 
 ### String Resources
 - **All user-facing text must be in string resources — never a hardcoded Java literal** (no `setText("Excellent")`, no `Toast` string literals). Map values/enums to a `@StringRes` in a UI/service layer.
-- Use positional format args for dynamic content: `<string name="notification_status_content">%1$d%% · %2$s · %3$s</string>`.
+- Use positional format args for dynamic content: `<string name="notification_status_title">%1$s · %2$s</string>`. Always `%s`, never `%d` — see "Numbers Are Always Western Digits" below.
 
 ### Arabic (`values-ar/`) Parity
 - The app ships an Arabic translation. Every new user-facing string in `values/strings.xml` needs a matching entry in `values-ar/strings.xml`.
@@ -249,9 +249,11 @@ The project uses **JUnit 4** for pure logic, with **Robolectric** and **Mockito*
 ### Numbers Are Always Western Digits
 - **Every number a user sees renders Western (`85`), never Eastern Arabic (`٨٥`), in any locale.** The words around a number are translated; the number is not. Product decision, enforced by `BatteryPercentFormatter` since #96.
 - **`Locale.ROOT` for all numeric formatting** — persisted and user-facing alike. `Locale.getDefault()` has no numeric use in this app.
-- **`getString(id, someInt)` is the trap.** `Resources.getString` formats with the *resource* locale, so a `%1$d` placeholder emits Eastern digits on `ar-EG`/`ar-SA`/`ar-JO` with no `String.format` anywhere in your code. Declare the placeholder as `%1$s` and pass an already-formatted string — `BatteryPercentFormatter.formatWhole(target)` for percentages, which brings its own `%` sign.
-- CLDR selects Eastern Arabic digits for region-bearing Arabic locales, so a locale-less or `getDefault()` `%d` prints `٨`, a persisted value stops parsing, and a displayed one stops matching the rest of the app. Shipped twice — #154 and #241.
-- **Locale tests must use a region tag.** Bare `"ar"` formats Western digits, so a test using it passes against the defect; that is how #241 survived the #154 fix. Use `ar-rEG` (the Robolectric/resource-qualifier spelling) and assert the digits a real user would see.
+- **`getString(id, someInt)` is the trap.** `Resources.getString` formats with the **configuration** locale — the device's, not the one the string was declared in — so a `%1$d` placeholder emits Eastern digits on `ar-EG`/`ar-SA`/`ar-JO` with no `String.format` anywhere in your code. Declare the placeholder as `%1$s` and pass an already-formatted string — `BatteryPercentFormatter.formatWhole(target)` for percentages, which brings its own `%` sign, or `String.valueOf(n)` for plain numbers (watts, mAh).
+- **Neither `translatable="false"` nor `formatted="false"` is protection.** The first keeps a string out of the translation files, the second silences aapt2's unpositioned-argument check; both are build-time attributes and neither changes what happens at runtime, where the digits follow the device locale rather than the file or the attributes the string came with. An untranslated `%1$d` renders `٤٠` on an Arabic device exactly like a translated one — `battery_level_percent` did, until #273.
+- **No string resource may contain `%d` at all.** Every number is formatted in code, so a numeric placeholder in a resource has no legitimate use; `StringResourceDigitsTest` fails the build on one in any `values*` file, with no exemption for either attribute above.
+- CLDR selects Eastern Arabic digits for region-bearing Arabic locales, so a locale-less or `getDefault()` `%d` prints `٨`, a persisted value stops parsing, and a displayed one stops matching the rest of the app. Shipped three times — #154, #241 and #273.
+- **Locale tests must use a region tag.** Bare `"ar"` formats Western digits, so a test using it passes against the defect; that is how #241 survived the #154 fix. Use `ar-rEG` (the Robolectric/resource-qualifier spelling) and assert the digits a real user would see. Assert the premise (`String.format(Locale.getDefault(), "%d", 40)` really does yield `٤٠`) before the behaviour, so the test visibly can still fail.
 
 ### Logging
 - Build log messages with `+` concatenation — **never `String.format`**. `android.util.Log` has no placeholder/varargs API, so concatenation is the official Android idiom; it also cannot throw on an argument-type mismatch, which matters inside a `BroadcastReceiver` where a throw becomes a crash loop.

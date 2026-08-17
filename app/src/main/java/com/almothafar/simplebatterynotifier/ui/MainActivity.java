@@ -384,8 +384,8 @@ public class MainActivity extends BaseActivity {
 
 		thresholdSlider.addOnChangeListener((slider, value, fromUser) -> {
 			final List<Float> values = slider.getValues();
-			updateThresholdCaptions(criticalCaption, warningCaption,
-					Math.round(values.get(0)), Math.round(values.get(1)));
+			final LevelThresholds levels = new LevelThresholds(Math.round(values.get(0)), Math.round(values.get(1)));
+			BatteryRangeSliderHelper.applyCaptions(this, criticalCaption, warningCaption, levels);
 		});
 
 		thresholdSlider.addOnSliderTouchListener(new RangeSlider.OnSliderTouchListener() {
@@ -421,18 +421,7 @@ public class MainActivity extends BaseActivity {
 				BatteryRangeSliderHelper.MIN_SEPARATION);
 
 		thresholdSlider.setValues((float) pair.critical(), (float) pair.warning());
-		updateThresholdCaptions(findViewById(R.id.thresholdCriticalCaption),
-				findViewById(R.id.thresholdWarningCaption), pair.critical(), pair.warning());
-	}
-
-	private void updateThresholdCaptions(final TextView criticalCaption, final TextView warningCaption,
-	                                     final int critical, final int warning) {
-		if (nonNull(criticalCaption)) {
-			criticalCaption.setText(getString(R.string.battery_range_caption_critical, critical));
-		}
-		if (nonNull(warningCaption)) {
-			warningCaption.setText(getString(R.string.battery_range_caption_warning, warning));
-		}
+		BatteryRangeSliderHelper.applyCaptions(this, findViewById(R.id.thresholdCriticalCaption), findViewById(R.id.thresholdWarningCaption), pair);
 	}
 
 	/**

@@ -1,5 +1,10 @@
 package com.almothafar.simplebatterynotifier.ui.preference;
 
+import android.content.Context;
+import android.widget.TextView;
+
+import androidx.test.core.app.ApplicationProvider;
+
 import com.almothafar.simplebatterynotifier.model.LevelThresholds;
 
 import org.junit.Test;
@@ -8,9 +13,12 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
+import org.robolectric.RobolectricTestRunner;
+import org.robolectric.annotation.Config;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Locale;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -62,6 +70,62 @@ public class BatteryRangeSliderHelperTest {
 					new LevelThresholds(critical, warning), FROM, TO, SEP);
 			assertEquals("critical", expectedCritical, result.critical());
 			assertEquals("warning", expectedWarning, result.warning());
+		}
+	}
+
+	/**
+	 * The thumb label the user drags.
+	 * <p>
+	 * This used to run through {@code battery_level_percent} — {@code translatable="false"}, which reads like protection against the Eastern-digit defect and
+	 * is not, since {@code getString} formats with the <b>configuration</b> locale rather than the locale the string was declared in. It was the one string in
+	 * that class of defect (#273) the issue did not list. The resource is gone now: once {@code BatteryPercentFormatter} owned the {@code '%'} the string had
+	 * no text left but its own placeholder. So there is no locale-sensitive step left on this path to pin here — the digit property lives in the formatter and
+	 * is tested there. What is left worth pinning is the rounding, which is this method's own decision.
+	 */
+	public static class Label {
+
+		@Test
+		public void roundsToAWholePercentAndCarriesTheSign() {
+			assertEquals("40%", BatteryRangeSliderHelper.labelFor(40f));
+			assertEquals("the slider's step is 1, but the formatter still owns the rounding", "40%", BatteryRangeSliderHelper.labelFor(39.6f));
+			assertEquals("20%", BatteryRangeSliderHelper.labelFor(20.4f));
+		}
+	}
+
+	/**
+	 * The captions under the slider, which the settings screen and the home screen now both render through this one method.
+	 * <p>
+	 * Two properties, and neither is visible from the resource: the caption strings read {@code "Critical %1$s"}, so the {@code '%'} the user sees comes from
+	 * {@code BatteryPercentFormatter} and vanishes silently if a caller ever passes the raw int — which {@code %1$s} accepts without complaint — and the digits
+	 * are Western only because the formatter uses {@code Locale.ROOT}, since {@code getString} would otherwise render {@code ٢٠} here under {@code ar-EG}.
+	 * <p>
+	 * The whole reason this method exists is that the two surfaces used to hold a copy each; a test on one copy is how #241 survived the #154 fix.
+	 */
+	@RunWith(RobolectricTestRunner.class)
+	@Config(sdk = 34, qualifiers = "ar-rEG")
+	public static class Captions {
+
+		@Test
+		public void labelsEachThresholdWithItsOwnWesternPercentage() {
+			// Premise: this locale really does localise digits, so the assertions below are not vacuous.
+			assertEquals("ar-rEG should select Eastern Arabic digits", "٢٠", String.format(Locale.getDefault(), "%d", 20));
+
+			final Context context = ApplicationProvider.getApplicationContext();
+			final TextView critical = new TextView(context);
+			final TextView warning = new TextView(context);
+
+			BatteryRangeSliderHelper.applyCaptions(context, critical, warning, new LevelThresholds(20, 40));
+
+			// Exact matches: the Arabic words prove values-ar was loaded rather than falling back to English, the '%' proves the formatter supplied the sign the
+			// resource no longer carries, and the digits prove it supplied them in ROOT.
+			assertEquals("حرج 20%", critical.getText().toString());
+			assertEquals("تحذير 40%", warning.getText().toString());
+		}
+
+		@Test
+		public void toleratesALayoutThatOmitsTheCaptions() {
+			// MainActivity passes findViewById results straight in, so a layout without the caption views hands this two nulls on every drag frame.
+			BatteryRangeSliderHelper.applyCaptions(ApplicationProvider.getApplicationContext(), null, null, new LevelThresholds(20, 40));
 		}
 	}
 

@@ -77,10 +77,10 @@
     <string name="pref_ringtone_silent">Silent</string>
     <string name="pref_title_vibrate">Vibrate</string>
 
-    <!-- Combined critical/warning battery range slider -->
-    <string name="battery_range_caption_critical">Critical %1$d%%</string>
-    <string name="battery_range_caption_warning">Warning %1$d%%</string>
-    <string name="battery_level_percent" translatable="false">%1$d%%</string>
+    <!-- Combined critical/warning battery range slider. %1$s takes the level already formatted by BatteryPercentFormatter, which brings its own '%' sign
+         and keeps the digits Western in every locale (#96/#273). The slider's own thumb label needs no resource at all — formatWhole is the whole string. -->
+    <string name="battery_range_caption_critical">Critical %1$s</string>
+    <string name="battery_range_caption_warning">Warning %1$s</string>
     <string name="temperature_unit">Temperature Unit</string>
     <string name="off">OFF</string>
     <string name="on">ON</string>
@@ -127,15 +127,17 @@
     <string name="critical_ignore_quiet_hours_summary_off">Critical alerts stay silent during quiet hours</string>
 
     <!-- Alert copy reworked in #114: neutral titles (the "healthy/regular" flip is retired) and
-         guidance aligned with the 20-80% advice instead of encouraging staying at 100%. -->
-    <string name="notification_critical_ticker">Battery critically low — below %1$d%%</string>
+         guidance aligned with the 20-80% advice instead of encouraging staying at 100%.
+         %1$s, not %1$d: the level arrives already formatted by BatteryPercentFormatter, so it brings its own '%' sign and the digits stay
+         Western in every locale (#96/#273). -->
+    <string name="notification_critical_ticker">Battery critically low — below %1$s</string>
     <string name="notification_critical_title">Battery critically low</string>
-    <string name="notification_critical_content">Battery almost empty (%1$d%%)</string>
-    <string name="notification_critical_content_big">Your battery is below the critical level (%1$d%%) — time to plug in.</string>
-    <string name="notification_warning_ticker">Battery below %1$d%%</string>
+    <string name="notification_critical_content">Battery almost empty (%1$s)</string>
+    <string name="notification_critical_content_big">Your battery is below the critical level (%1$s) — time to plug in.</string>
+    <string name="notification_warning_ticker">Battery below %1$s</string>
     <string name="notification_warning_title">Battery getting low</string>
-    <string name="notification_warning_content">Battery at %1$d%% — keep an eye on your usage</string>
-    <string name="notification_warning_content_big">Battery level is at %1$d%%. No need to charge yet — but when it\'s convenient, plugging in before the battery runs very low is easiest on it.</string>
+    <string name="notification_warning_content">Battery at %1$s — keep an eye on your usage</string>
+    <string name="notification_warning_content_big">Battery level is at %1$s. No need to charge yet — but when it\'s convenient, plugging in before the battery runs very low is easiest on it.</string>
     <string name="notification_full_level_ticker">Battery fully charged — you can unplug now</string>
     <string name="notification_full_level_title">Battery fully charged</string>
     <string name="notification_full_level_content">You can unplug your charger now</string>
@@ -167,8 +169,10 @@
     <string name="charge_tier_fast">Fast charging</string>
     <string name="charge_tier_super_fast">Super fast charging</string>
     <string name="charge_tier_super_fast_plus">Super fast charging+</string>
-    <!-- e.g. "Wireless · Fast charging · ~18 W" (source · tier · estimated watts) -->
-    <string name="charge_connected_power">%1$s · %2$s · ~%3$d W</string>
+    <!-- e.g. "Wireless · Fast charging · ~18 W" (source · tier · estimated watts).
+         %3$s, not %3$d: the wattage is passed via String.valueOf so the digits stay Western in every locale (#96/#273). Unlike the ongoing-status wattage,
+         this one is not bidi-isolated — see #275. -->
+    <string name="charge_connected_power">%1$s · %2$s · ~%3$s W</string>
     <!-- e.g. "Wired · Slow charging" (source · tier, when the wattage is under 1 W) -->
     <string name="charge_connected_tier">%1$s · %2$s</string>
     <!-- e.g. "Wired charging" (when the charging speed can't be estimated) -->
@@ -266,11 +270,6 @@
     <string name="battery_insights_title">Battery Insights</string>
     <string name="view_battery_insights">View Battery Insights</string>
     <string name="battery_health">Battery Health</string>
-    <!-- The big health figure. %1$s is a Western-digit number (passed via String.valueOf) so it stays
-         0-9 in every locale, matching the other Insights numbers (#96). Deliberately not the existing
-         battery_level_percent, which uses %1$d and so renders Eastern Arabic digits under ar-* — right
-         for the preference slider it serves, wrong for this screen. -->
-    <string name="health_percentage_value" translatable="false">%1$s%%</string>
     <string name="charge_cycles">Charge Cycles</string>
     <string name="days_in_use">Days in Use</string>
     <string name="about_battery_health">About Your Battery</string>
@@ -301,11 +300,11 @@
     <string name="look_up_my_model">Look up my model</string>
     <string name="no_browser_found">No browser available to open the search</string>
     <string name="save">Save</string>
-    <!-- PluralsCandidate does not apply: this is a range with two independent quantities, and a
-         <plurals> selects a form from exactly one. The word lint spotted after %1$d is the
-         conjunction "and", not a countable noun, and "mAh" is an invariant unit symbol in both
-         languages. There is nothing here to inflect. -->
-    <string name="error_design_capacity_range" tools:ignore="PluralsCandidate">Enter a capacity between %1$d and %2$d mAh</string>
+    <!-- %1$s/%2$s, not %1$d/%2$d: the bounds arrive already formatted so the digits stay Western in every locale (#96/#273).
+         PluralsCandidate does not apply either: this is a range with two independent quantities, and a <plurals> selects a form from
+         exactly one. The word lint used to spot after the placeholder is the conjunction "and", not a countable noun, and "mAh" is an
+         invariant unit symbol in both languages. There is nothing here to inflect. -->
+    <string name="error_design_capacity_range">Enter a capacity between %1$s and %2$s mAh</string>
     <string name="health_basis_measured">Averaged measured capacity vs design</string>
     <!-- #114: the cycle-based estimate is labelled by its source. OS-reported cycles cover the
          battery's whole life; app-tracked cycles start at install, so they understate real wear. -->
@@ -441,10 +440,10 @@
     <string name="feedback_support_email" translatable="false">support@almothafar.com</string>
 
     <!-- Accessibility -->
-    <!-- PluralsCandidate does not apply: "percent" is invariant in English ("1 percent",
-         "5 percent"), and the Arabic "بالمئة" is a fixed per-hundred phrase, not the counted noun,
-         so Arabic's number agreement does not reach it either. Neither locale has a form to select,
-         so a <plurals> would be six identical entries. -->
-    <string name="battery_progress_description" tools:ignore="PluralsCandidate">Battery at %1$d percent</string>
+    <!-- %1$s, not %1$d: the level arrives already formatted so the digits stay Western in every locale (#96/#273).
+         PluralsCandidate does not apply either: "percent" is invariant in English ("1 percent", "5 percent"), and the Arabic
+         "بالمئة" is a fixed per-hundred phrase, not the counted noun, so Arabic's number agreement does not reach it either.
+         Neither locale has a form to select, so a <plurals> would be six identical entries. -->
+    <string name="battery_progress_description">Battery at %1$s percent</string>
     <string name="battery_details_separator">:</string>
 </resources>

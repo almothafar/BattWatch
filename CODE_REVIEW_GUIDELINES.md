@@ -511,7 +511,7 @@ Identifiers are **not** copy — leave them out of `values-ar/`:
 
 ### 4. Format Strings & RTL
 
-- Use positional format args for dynamic content: `<string name="notification_status_content">%1$d%% · %2$s · %3$s</string>`.
+- Use positional format args for dynamic content: `<string name="notification_status_title">%1$s · %2$s</string>`. Always `%s` — never `%d`, see [Numbers Are Always Western Digits](#5-numbers-are-always-western-digits) below.
 - Use `start`/`end` (not `left`/`right`) in layouts and test with an RTL language.
 
 ### 5. Numbers Are Always Western Digits
@@ -534,10 +534,10 @@ String.format(Locale.ROOT, "%02d:%02d", hour, minute);
 BatteryPercentFormatter.formatWhole(level); // "85%"
 ```
 
-**`getString(id, someInt)` is the trap.** `Resources.getString` formats with the *resource* locale, so a `%1$d` placeholder produces Eastern digits on `ar-EG`/`ar-SA`/`ar-JO` even though no `String.format` appears in your code. Use a `%1$s` placeholder and pass an already-formatted string:
+**`getString(id, someInt)` is the trap.** `Resources.getString` formats with the **configuration** locale — the device's, not the one the string was declared in — so a `%1$d` placeholder produces Eastern digits on `ar-EG`/`ar-SA`/`ar-JO` even though no `String.format` appears in your code. Use a `%1$s` placeholder and pass an already-formatted string:
 
 ```xml
-<!-- ❌ BAD - %1$d is formatted by the resource locale -->
+<!-- ❌ BAD - %1$d is formatted by the configuration locale, so its digits follow the device language -->
 <string name="notification_almost_full_content">Reached your %1$d%% charge target</string>
 
 <!-- ✅ GOOD - %1$s takes the number exactly as we formatted it -->
@@ -549,9 +549,13 @@ BatteryPercentFormatter.formatWhole(level); // "85%"
 context.getString(R.string.notification_almost_full_content, BatteryPercentFormatter.formatWhole(target));
 ```
 
-**Locale tests must use a region tag.** Bare `"ar"` formats Western digits, so a test written against it passes even when the defect is present — that is exactly how #241 survived the #154 fix. Use `ar-rEG` (the Robolectric/resource-qualifier spelling of `ar-EG`) and assert the digits a real user would see.
+**Neither `translatable="false"` nor `formatted="false"` is protection.** The first keeps a string out of the translation files; the second silences aapt2's check on unpositioned arguments. Both are build-time attributes, and the digits are chosen at runtime by the device's locale rather than by the file or the attributes the string came with, so `getString(id, args)` still formats the body either way. An untranslated `%1$d` renders `٤٠` on an Arabic device exactly like a translated one — `battery_level_percent` did, until #273.
 
-**Why?** CLDR selects the Eastern Arabic numbering system for region-bearing Arabic locales (`ar-SA`, `ar-EG`, `ar-JO`), so `%d` prints `٨` rather than `8`, a persisted value stops parsing, and a displayed one stops matching the rest of the app. This shipped twice — issues #154 and #241.
+**No string resource may contain `%d` at all.** Since every number is formatted in code, a numeric placeholder in a resource has no legitimate use, and `StringResourceDigitsTest` fails the build on one in any `values*` file — with no exemption for either attribute above, since neither changes what the string does. That is a static property of the catalogue, so it is checked as one rather than string by string.
+
+**Locale tests must use a region tag.** Bare `"ar"` formats Western digits, so a test written against it passes even when the defect is present — that is exactly how #241 survived the #154 fix. Use `ar-rEG` (the Robolectric/resource-qualifier spelling of `ar-EG`) and assert the digits a real user would see. Assert the premise (`String.format(Locale.getDefault(), "%d", 40)` really does yield `٤٠`) first, so the test visibly can still fail.
+
+**Why?** CLDR selects the Eastern Arabic numbering system for region-bearing Arabic locales (`ar-SA`, `ar-EG`, `ar-JO`), so `%d` prints `٨` rather than `8`, a persisted value stops parsing, and a displayed one stops matching the rest of the app. This has shipped three times — issues #154, #241 and #273.
 
 ### 6. Don't Use `String.format` in Logs
 
@@ -771,7 +775,7 @@ When reviewing code, check:
 - [ ] All null checks in place
 - [ ] No silent/broad `catch`; expected failures validated, not caught
 - [ ] No hardcoded user-facing strings; `values-ar/` kept in parity
-- [ ] Every number a user sees is Western digits — `Locale.ROOT` everywhere, `%1$s` not `%1$d` in resources
+- [ ] Every number a user sees is Western digits — `Locale.ROOT` everywhere, `%1$s` not `%1$d` in resources, `translatable="false"` included
 - [ ] Locale tests use a region tag (`ar-rEG`), never bare `ar`
 - [ ] Log messages use `+` concatenation, not `String.format`
 - [ ] Permissions checked (Android 13+)

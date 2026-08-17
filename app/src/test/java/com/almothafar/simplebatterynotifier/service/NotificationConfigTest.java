@@ -27,6 +27,9 @@ import static org.junit.Assert.assertTrue;
  * call a charge complete when it isn't — and that the parameterised strings actually format, in <b>both</b> locales: the previous full-battery copy took no
  * arguments at all, so a stray {@code %} in either translation would first surface as an {@code IllegalFormatException} on a user's phone at the end of a
  * charge.
+ * <p>
+ * The digits those numbers render in are pinned here too (#273): every level alert names a percentage, and {@code getString} formats with the configuration
+ * locale, so the copy is the surface where a Eastern-digit regression would actually reach a user.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 34)
@@ -43,6 +46,13 @@ public class NotificationConfigTest {
 
 	private void setChargeTarget(int target) {
 		prefs.edit().putInt(context.getString(R.string._pref_key_charge_target), target).commit();
+	}
+
+	private void setLevels(int critical, int warning) {
+		prefs.edit()
+		     .putInt(context.getString(R.string._pref_key_critical_battery_level), critical)
+		     .putInt(context.getString(R.string._pref_key_warn_battery_level), warning)
+		     .commit();
 	}
 
 	private NotificationConfig fullAlertAt(int levelPercent) {
@@ -164,6 +174,38 @@ public class NotificationConfigTest {
 		assertTrue(config.bigContent, config.bigContent.contains("85%"));
 		assertTrue("Eastern digits leaked into the ticker: " + config.ticker, !config.ticker.contains("٨٥"));
 		assertTrue("Eastern digits leaked into the body: " + config.content, !config.content.contains("٨٥"));
+	}
+
+	/**
+	 * The critical and warning alerts keep Western digits too (#273).
+	 * <p>
+	 * These two predate the charge target and carried {@code %1$d} until #273; the level they name is the one number in the whole alert, so localising it was
+	 * the entire content of the defect. Same region-bearing locale and same premise assertion as the almost-full test above, for the same reason.
+	 */
+	@Test
+	@Config(sdk = 34, qualifiers = "ar-rEG")
+	public void levelAlertCopy_keepsWesternDigitsUnderARegionBearingArabicLocale() {
+		// Premise: this locale really does localise digits, so the assertions below are not vacuous.
+		assertEquals("ar-rEG should select Eastern Arabic digits", "١٥", String.format(Locale.getDefault(), "%d", 15));
+		// Deliberately not 20/40: those are AppPrefs' own fallbacks, so the copy would read the same whether the levels were loaded or silently defaulted.
+		setLevels(15, 35);
+
+		final NotificationConfig critical = new NotificationConfig(context, prefs, AlertType.CRITICAL, 10);
+		final NotificationConfig warning = new NotificationConfig(context, prefs, AlertType.WARNING, 30);
+
+		assertTrue(critical.ticker, critical.ticker.contains("15%"));
+		assertTrue(critical.content, critical.content.contains("15%"));
+		assertTrue(critical.bigContent, critical.bigContent.contains("15%"));
+		assertTrue(warning.ticker, warning.ticker.contains("35%"));
+		assertTrue(warning.content, warning.content.contains("35%"));
+		assertTrue(warning.bigContent, warning.bigContent.contains("35%"));
+
+		assertTrue("Eastern digits leaked into the critical body: " + critical.content, !critical.content.contains("١٥"));
+		assertTrue("Eastern digits leaked into the warning body: " + warning.content, !warning.content.contains("٣٥"));
+
+		// values-ar was actually loaded on both paths, so the assertions above are about the Arabic copy and not an English fallback.
+		assertTrue(critical.content, critical.content.contains("البطارية"));
+		assertTrue(warning.content, warning.content.contains("البطارية"));
 	}
 
 	@Test
