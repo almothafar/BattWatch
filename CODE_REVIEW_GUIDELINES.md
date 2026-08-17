@@ -549,9 +549,9 @@ BatteryPercentFormatter.formatWhole(level); // "85%"
 context.getString(R.string.notification_almost_full_content, BatteryPercentFormatter.formatWhole(target));
 ```
 
-**`translatable="false"` is not protection.** It keeps a string out of the translation files; it does nothing about formatting, because the digits are chosen by the device's locale rather than by the file the string came from. An untranslated `%1$d` renders `٤٠` on an Arabic device exactly like a translated one — `battery_level_percent` did, until #273.
+**Neither `translatable="false"` nor `formatted="false"` is protection.** The first keeps a string out of the translation files; the second silences aapt2's check on unpositioned arguments. Both are build-time attributes, and the digits are chosen at runtime by the device's locale rather than by the file or the attributes the string came with, so `getString(id, args)` still formats the body either way. An untranslated `%1$d` renders `٤٠` on an Arabic device exactly like a translated one — `battery_level_percent` did, until #273.
 
-**No string resource may contain `%d` at all.** Since every number is formatted in code, a numeric placeholder in a resource has no legitimate use, and `StringResourceDigitsTest` fails the build on one in any `values*` file. That is a static property of the catalogue, so it is checked as one rather than string by string.
+**No string resource may contain `%d` at all.** Since every number is formatted in code, a numeric placeholder in a resource has no legitimate use, and `StringResourceDigitsTest` fails the build on one in any `values*` file — with no exemption for either attribute above, since neither changes what the string does. That is a static property of the catalogue, so it is checked as one rather than string by string.
 
 **Locale tests must use a region tag.** Bare `"ar"` formats Western digits, so a test written against it passes even when the defect is present — that is exactly how #241 survived the #154 fix. Use `ar-rEG` (the Robolectric/resource-qualifier spelling of `ar-EG`) and assert the digits a real user would see. Assert the premise (`String.format(Locale.getDefault(), "%d", 40)` really does yield `٤٠`) first, so the test visibly can still fail.
 

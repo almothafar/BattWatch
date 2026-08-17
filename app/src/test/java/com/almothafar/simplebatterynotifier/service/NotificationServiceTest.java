@@ -39,6 +39,26 @@ import static org.robolectric.Shadows.shadowOf;
 public class NotificationServiceTest {
 
 	/**
+	 * An application context that will actually post a charge-connected notification: notifications permitted, and the charge style set to a real notification
+	 * rather than the default toast.
+	 * <p>
+	 * Shared by the two charge-connected classes below rather than written out in each. Held twice, a renamed preference key or a second required permission
+	 * has to be fixed in both places, and the copy that is missed stops posting silently — which surfaces as an {@code IndexOutOfBoundsException} reading the
+	 * notification list, not as the property the test was written to check.
+	 *
+	 * @return the prepared application context
+	 */
+	private static Context chargeNotificationContext() {
+		final Context context = ApplicationProvider.getApplicationContext();
+		shadowOf((Application) context).grantPermissions(Manifest.permission.POST_NOTIFICATIONS);
+		PreferenceManager.getDefaultSharedPreferences(context)
+				.edit()
+				.putString(context.getString(R.string._pref_key_charge_notification_style), NotificationService.CHARGE_STYLE_NOTIFICATION)
+				.commit();
+		return context;
+	}
+
+	/**
 	 * The charge-connected notification wiring (#155): posted under its own ID so it can never
 	 * replace a critical/warning/full level alert, cleared together with the level alert on
 	 * disconnect, and the level alert's plug-in dismissal is the explicit
@@ -56,13 +76,7 @@ public class NotificationServiceTest {
 
 		@Before
 		public void setUp() {
-			context = ApplicationProvider.getApplicationContext();
-			shadowOf((Application) context).grantPermissions(Manifest.permission.POST_NOTIFICATIONS);
-			// The "notification" charge style routes notifyChargeConnected to a real system notification.
-			PreferenceManager.getDefaultSharedPreferences(context).edit()
-					.putString(context.getString(R.string._pref_key_charge_notification_style),
-							NotificationService.CHARGE_STYLE_NOTIFICATION)
-					.commit();
+			context = chargeNotificationContext();
 			manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
 		}
 
@@ -145,12 +159,7 @@ public class NotificationServiceTest {
 			// Premise: this locale really does localise digits, so the assertions below are not vacuous.
 			assertEquals("ar-rEG should select Eastern Arabic digits", "١٨", String.format(Locale.getDefault(), "%d", 18));
 
-			final Context context = ApplicationProvider.getApplicationContext();
-			shadowOf((Application) context).grantPermissions(Manifest.permission.POST_NOTIFICATIONS);
-			PreferenceManager.getDefaultSharedPreferences(context).edit()
-					.putString(context.getString(R.string._pref_key_charge_notification_style),
-							NotificationService.CHARGE_STYLE_NOTIFICATION)
-					.commit();
+			final Context context = chargeNotificationContext();
 
 			// 4 A at 4.5 V — 18 W, comfortably inside the "fast charging" tier so the message takes the wattage branch.
 			NotificationService.notifyChargeConnected(context, ChargeSpeed.fromMeasurements(4_000_000, 4_500), true);

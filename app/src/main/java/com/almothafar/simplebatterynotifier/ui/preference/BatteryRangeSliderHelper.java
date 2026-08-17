@@ -42,7 +42,7 @@ public final class BatteryRangeSliderHelper {
 	 * @param to            combined track end (warning ceiling)
 	 * @param minSeparation minimum gap between the two thumbs, in value units
 	 */
-	public static void configure(final RangeSlider slider, final int from, final int to, final int minSeparation) {
+	public static void configure(RangeSlider slider, int from, int to, int minSeparation) {
 		slider.setValueFrom(from);
 		slider.setValueTo(to);
 		slider.setStepSize(1f);
@@ -71,20 +71,23 @@ public final class BatteryRangeSliderHelper {
 	 * <p>
 	 * The settings screen and the home screen each own a copy of this pair of captions. Keeping the wording and the formatting here means a change lands once
 	 * rather than twice — the two copies drifting apart is how a display defect survives a fix in one of them (#241 after #154).
+	 * <p>
+	 * The pair arrives as a {@link LevelThresholds} rather than two loose ints. Both captions take the same type and sit next to each other in the argument
+	 * list, so a transposed call would compile and simply label each threshold with the other's number; the record names them instead, and keeps the signature
+	 * at four parameters.
 	 *
 	 * @param context         context to resolve the caption strings against
 	 * @param criticalCaption the critical caption view, or null when the layout omits it
 	 * @param warningCaption  the warning caption view, or null when the layout omits it
-	 * @param critical        the critical level in percent
-	 * @param warning         the warning level in percent
+	 * @param levels          the (critical, warning) pair to label, in percent
 	 */
-	public static void applyCaptions(Context context, TextView criticalCaption, TextView warningCaption, int critical, int warning) {
+	public static void applyCaptions(Context context, TextView criticalCaption, TextView warningCaption, LevelThresholds levels) {
 		// Formatted, not handed to getString as an int: getString formats with the configuration locale, so a %1$d renders ٢٠ under ar-EG (#96/#273).
 		if (nonNull(criticalCaption)) {
-			criticalCaption.setText(context.getString(R.string.battery_range_caption_critical, BatteryPercentFormatter.formatWhole(critical)));
+			criticalCaption.setText(context.getString(R.string.battery_range_caption_critical, BatteryPercentFormatter.formatWhole(levels.critical())));
 		}
 		if (nonNull(warningCaption)) {
-			warningCaption.setText(context.getString(R.string.battery_range_caption_warning, BatteryPercentFormatter.formatWhole(warning)));
+			warningCaption.setText(context.getString(R.string.battery_range_caption_warning, BatteryPercentFormatter.formatWhole(levels.warning())));
 		}
 	}
 

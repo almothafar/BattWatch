@@ -5,6 +5,8 @@ import android.util.AttributeSet;
 
 import androidx.test.core.app.ApplicationProvider;
 
+import com.almothafar.simplebatterynotifier.R;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
@@ -24,8 +26,10 @@ import static org.junit.Assert.assertTrue;
  * explicit {@code String.format(Locale.getDefault(), …)}. TalkBack reading {@code ٤٠} while every other surface in the app reads {@code 40} is the regression
  * these pin.
  * <p>
- * Two construction paths, because the gauge has two sources for the template and they have to agree on placeholder type. The layout applies
- * {@code Widget.App.BatteryGauge}, which supplies {@code battery_progress_description}; without a style the hardcoded fallback is used instead.
+ * Three construction paths, because the template has three sources and they do not all agree on placeholder type. The layout applies
+ * {@code Widget.App.BatteryGauge}, which supplies {@code battery_progress_description}; without a style the hardcoded fallback is used; and
+ * {@code gaugeLevelDescription} is a public styleable attribute, so any caller may set a template of their own — including the {@code %1$d} form that predates
+ * the catalogue rule. Each is built through a real constructor, so narrowing the accepted placeholder fails these rather than slipping past them.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 34)
@@ -44,6 +48,16 @@ public class HorseshoeProgressBarTest {
 	/** The gauge with no style, so the template is the hardcoded fallback. */
 	private static HorseshoeProgressBar bareGaugeAt(int level) {
 		final HorseshoeProgressBar gauge = new HorseshoeProgressBar(context());
+		gauge.setLevel(level);
+		return gauge;
+	}
+
+	/** The gauge as a caller setting {@code gaugeLevelDescription} itself builds it, so the template really goes through the view rather than past it. */
+	private static HorseshoeProgressBar gaugeWithTemplate(String template, int level) {
+		final AttributeSet attrs = Robolectric.buildAttributeSet()
+		                                      .addAttribute(R.attr.gaugeLevelDescription, template)
+		                                      .build();
+		final HorseshoeProgressBar gauge = new HorseshoeProgressBar(context(), attrs);
 		gauge.setLevel(level);
 		return gauge;
 	}
@@ -80,16 +94,29 @@ public class HorseshoeProgressBarTest {
 		assertTrue("Eastern digits leaked into the gauge announcement: " + description, !description.contains("٤٠"));
 	}
 
+	/** With no style attached there is no {@code gaugeLevelDescription} to read, and the hardcoded fallback template has to carry the announcement itself. */
+	@Test
+	public void contentDescription_fallsBackToTheBuiltInTemplateWithoutAStyle() {
+		assertEquals("Level at 72 percent", String.valueOf(bareGaugeAt(72).getContentDescription()));
+	}
+
 	/**
-	 * The hardcoded fallback still formats. It is written with {@code %1$s} to match the resource and the catalogue rule, but the level is passed as an int, so
-	 * a {@code %1$d} template works too — {@code gaugeLevelDescription} is a public attribute that has always accepted both, and narrowing it to {@code %s}
-	 * would turn a caller's older template from a cosmetic digit bug into an exception thrown out of view construction.
+	 * A caller's own {@code %1$d} template still formats, and still formats Western.
+	 * <p>
+	 * {@code gaugeLevelDescription} is a public styleable attribute, so its accepted templates are a contract with callers this class does not own. The level
+	 * is therefore passed to {@code String.format} as an int and never pre-formatted: {@code Locale.ROOT} already holds the digits Western for {@code %d} and
+	 * {@code %s} alike, so pre-formatting would buy nothing and would turn an older {@code %1$d} template from a cosmetic digit bug into an
+	 * {@code IllegalFormatConversionException} thrown out of view construction.
+	 * <p>
+	 * The template is fed through a real constructor rather than to {@code String.format} here, which is what makes this a test of the gauge: if
+	 * {@code announceLevel} ever narrows to {@code %s}, this fails inside {@code gaugeWithTemplate} rather than passing on a property of the JDK.
 	 */
 	@Test
-	public void contentDescription_survivesEitherPlaceholderForm() {
-		assertTrue(String.valueOf(bareGaugeAt(72).getContentDescription()).contains("72"));
+	@Config(sdk = 34, qualifiers = "ar-rEG")
+	public void contentDescription_acceptsACallersPercentDTemplate() {
+		// Premise: this locale really does localise digits, so the assertion below is not vacuous.
+		assertEquals("ar-rEG should select Eastern Arabic digits", "٧٢", String.format(Locale.getDefault(), "%d", 72));
 
-		// The %d form a caller may still supply, formatted the same way announceLevel does it.
-		assertEquals("Level at 72 percent", String.format(Locale.ROOT, "Level at %1$d percent", 72));
+		assertEquals("Level at 72 percent", String.valueOf(gaugeWithTemplate("Level at %1$d percent", 72).getContentDescription()));
 	}
 }

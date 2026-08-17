@@ -26,6 +26,7 @@ import com.almothafar.simplebatterynotifier.service.BatteryHealthTracker;
 import com.almothafar.simplebatterynotifier.service.BatteryTemperatureTracker;
 import com.almothafar.simplebatterynotifier.service.SystemService;
 import com.almothafar.simplebatterynotifier.ui.widget.MinMaxRangeView;
+import com.almothafar.simplebatterynotifier.util.BatteryPercentFormatter;
 import com.almothafar.simplebatterynotifier.util.GeneralHelper;
 import com.almothafar.simplebatterynotifier.util.TemperatureUtils;
 
@@ -164,9 +165,10 @@ public class BatteryInsightsActivity extends BaseActivity {
 		                                 ? BatteryHealthTracker.gradeForPercentage(measuredHealth)
 		                                 : BatteryHealthTracker.gradeForCycles(cycles);
 
-		// Update health percentage and color it based on grade.
-		// Pass the number as a String so it renders in Western digits (0-9) in every locale (#96).
-		healthPercentageText.setText(getString(R.string.health_percentage_value, String.valueOf(healthPercentage)));
+		// Update health percentage and color it based on grade. The formatter is the whole figure — it supplies the digits and the '%', and keeps the digits
+		// Western in every locale (#96/#273). No string resource sits behind it: one did, and once the formatter owned the sign it had no text left but its own
+		// placeholder, so getString was being asked to return its own argument.
+		healthPercentageText.setText(BatteryPercentFormatter.formatWhole(healthPercentage));
 		healthPercentageText.setTextColor(getHealthColor(grade));
 
 		// Update health status text

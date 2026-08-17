@@ -106,14 +106,12 @@ public class BatteryRangeSliderPreference extends Preference {
 
 		final LevelThresholds pair = readClampedValues();
 		slider.setValues((float) pair.critical(), (float) pair.warning());
-		updateCaptions(criticalCaption, warningCaption, pair.critical(), pair.warning());
+		BatteryRangeSliderHelper.applyCaptions(getContext(), criticalCaption, warningCaption, pair);
 
 		// Update the captions live while dragging; persist only when the drag ends to avoid a burst
 		// of writes and readers seeing half-applied intermediate values.
-		slider.addOnChangeListener((s, value, fromUser) -> {
-			final LevelThresholds current = currentValues(s);
-			updateCaptions(criticalCaption, warningCaption, current.critical(), current.warning());
-		});
+		slider.addOnChangeListener((s, value, fromUser) ->
+				BatteryRangeSliderHelper.applyCaptions(getContext(), criticalCaption, warningCaption, currentValues(s)));
 
 		slider.addOnSliderTouchListener(new RangeSlider.OnSliderTouchListener() {
 			@Override
@@ -147,10 +145,6 @@ public class BatteryRangeSliderPreference extends Preference {
 					.putInt(warningKey, levels.warning())
 					.apply();
 		}
-	}
-
-	private void updateCaptions(TextView criticalCaption, TextView warningCaption, int critical, int warning) {
-		BatteryRangeSliderHelper.applyCaptions(getContext(), criticalCaption, warningCaption, critical, warning);
 	}
 
 	private static LevelThresholds currentValues(final RangeSlider slider) {

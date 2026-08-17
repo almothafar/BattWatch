@@ -13,8 +13,10 @@
         <attr name="gaugeStatusColor" format="color"/>
         <attr name="gaugeStatusTextSize" format="dimension"/>
         <attr name="gaugeShowShadow" format="boolean"/>
-        <!-- Screen-reader template for the current level, e.g. "Battery at %1$s percent". Takes the level as its single argument; %1$s is the catalogue's
-             convention (#273) but %1$d works too, since the gauge formats with Locale.ROOT and so keeps the digits Western either way. -->
+        <!-- Screen-reader template for the current level, e.g. "Battery at %1$s percent". Takes the level as its single argument, and is written with %1$s:
+             that is the catalogue's rule (#273), and StringResourceDigitsTest enforces it on the string resources and the style items where this attribute is
+             actually set. A %1$d template still formats correctly at runtime, since announceLevel uses Locale.ROOT and the digits stay Western either way —
+             that is tolerance for templates written before the rule, not a second spelling to pick from. -->
         <attr name="gaugeLevelDescription" format="string"/>
     </declare-styleable>
 

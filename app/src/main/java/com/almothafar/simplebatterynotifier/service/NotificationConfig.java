@@ -41,10 +41,6 @@ final class NotificationConfig {
 	NotificationConfig(Context context, SharedPreferences prefs, AlertType type, int levelPercent) {
 		this.type = type;
 
-		// Load common preferences
-		final int warningLevel = AppPrefs.warningLevel(context);
-		final int criticalLevel = AppPrefs.criticalLevel(context);
-
 		this.stickyNotification = prefs.getBoolean(context.getString(R.string._pref_key_notifications_sticky), false);
 		final boolean withinWindow = QuietHours.isWithinNotificationWindow(context, prefs);
 		final boolean criticalIgnoresQuietHours = prefs.getBoolean(context.getString(R.string._pref_key_critical_ignore_quiet_hours), true);
@@ -58,31 +54,11 @@ final class NotificationConfig {
 		// needed a default branch, which posted a completely blank notification on any invalid
 		// type value (issue #160). That branch can no longer exist.
 		//
-		// Each branch formats its own level: getString formats with the configuration locale, so a %1$d placeholder would render ٢٠ under ar-EG/ar-SA/ar-JO
-		// with no String.format anywhere in our code (#273), and formatWhole brings the '%' sign with it.
+		// Each branch reads only its own threshold, so the full-battery alert — the one that fires at the end of every charge — does no preference lookups for
+		// levels it never names.
 		final AlertStyle style = switch (type) {
-			case CRITICAL -> {
-				final String levelText = BatteryPercentFormatter.formatWhole(criticalLevel);
-				yield new AlertStyle(
-						NotificationChannels.CHANNEL_ID_CRITICAL,
-						R.drawable.ic_stat_battery_alert,
-						prefs.getString(context.getString(R.string._pref_key_notifications_alert_sound_ringtone), defaultSound),
-						context.getString(R.string.notification_critical_ticker, levelText),
-						context.getString(R.string.notification_critical_title),
-						context.getString(R.string.notification_critical_content, levelText),
-						context.getString(R.string.notification_critical_content_big, levelText));
-			}
-			case WARNING -> {
-				final String levelText = BatteryPercentFormatter.formatWhole(warningLevel);
-				yield new AlertStyle(
-						NotificationChannels.CHANNEL_ID_WARNING,
-						R.drawable.ic_stat_battery_low,
-						prefs.getString(context.getString(R.string._pref_key_notifications_warning_sound_ringtone), defaultSound),
-						context.getString(R.string.notification_warning_ticker, levelText),
-						context.getString(R.string.notification_warning_title),
-						context.getString(R.string.notification_warning_content, levelText),
-						context.getString(R.string.notification_warning_content_big, levelText));
-			}
+			case CRITICAL -> criticalAlertStyle(context, prefs, defaultSound);
+			case WARNING -> warningAlertStyle(context, prefs, defaultSound);
 			case FULL -> fullAlertStyle(context, prefs, defaultSound, levelPercent);
 		};
 		this.channelId = style.channelId();
@@ -92,6 +68,52 @@ final class NotificationConfig {
 		this.title = style.title();
 		this.content = style.content();
 		this.bigContent = style.bigContent();
+	}
+
+	/**
+	 * The critical alert's presentation: the copy names the threshold the user set, not the level the battery is at.
+	 * <p>
+	 * The level is formatted here rather than handed to {@code getString} as an int. {@code getString} formats with the <b>configuration</b> locale, so a
+	 * {@code %1$d} placeholder renders {@code ٢٠} under ar-EG/ar-SA/ar-JO with no {@code String.format} call anywhere in our code (#273);
+	 * {@link BatteryPercentFormatter#formatWhole} keeps the digits Western and brings the {@code '%'} sign with it.
+	 *
+	 * @param context      The application context
+	 * @param prefs        SharedPreferences containing user settings
+	 * @param defaultSound the fallback alarm sound URI
+	 *
+	 * @return the copy and channel for this alert
+	 */
+	private static AlertStyle criticalAlertStyle(Context context, SharedPreferences prefs, String defaultSound) {
+		final String levelText = BatteryPercentFormatter.formatWhole(AppPrefs.criticalLevel(context));
+		return new AlertStyle(
+				NotificationChannels.CHANNEL_ID_CRITICAL,
+				R.drawable.ic_stat_battery_alert,
+				prefs.getString(context.getString(R.string._pref_key_notifications_alert_sound_ringtone), defaultSound),
+				context.getString(R.string.notification_critical_ticker, levelText),
+				context.getString(R.string.notification_critical_title),
+				context.getString(R.string.notification_critical_content, levelText),
+				context.getString(R.string.notification_critical_content_big, levelText));
+	}
+
+	/**
+	 * The warning alert's presentation — the critical alert's shape one threshold up, on its own channel and sound.
+	 *
+	 * @param context      The application context
+	 * @param prefs        SharedPreferences containing user settings
+	 * @param defaultSound the fallback alarm sound URI
+	 *
+	 * @return the copy and channel for this alert
+	 */
+	private static AlertStyle warningAlertStyle(Context context, SharedPreferences prefs, String defaultSound) {
+		final String levelText = BatteryPercentFormatter.formatWhole(AppPrefs.warningLevel(context));
+		return new AlertStyle(
+				NotificationChannels.CHANNEL_ID_WARNING,
+				R.drawable.ic_stat_battery_low,
+				prefs.getString(context.getString(R.string._pref_key_notifications_warning_sound_ringtone), defaultSound),
+				context.getString(R.string.notification_warning_ticker, levelText),
+				context.getString(R.string.notification_warning_title),
+				context.getString(R.string.notification_warning_content, levelText),
+				context.getString(R.string.notification_warning_content_big, levelText));
 	}
 
 	/**

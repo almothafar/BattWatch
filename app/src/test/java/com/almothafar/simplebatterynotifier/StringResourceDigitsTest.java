@@ -1,6 +1,7 @@
 package com.almothafar.simplebatterynotifier;
 
 import org.junit.Test;
+import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
@@ -41,8 +42,13 @@ public class StringResourceDigitsTest {
 	 * Any format conversion: {@code %s}, {@code %1$d}, {@code %,d}, {@code %02d}, {@code %.2f}, {@code %1$-5s}, {@code %tY}. Deliberately matches the whole
 	 * conversion grammar — argument index, flags, width, precision — rather than a list of numeric conversions, so that widening the check to a new one is not
 	 * required. Escaped percents are removed before this runs, so {@code %%} never reaches it.
+	 * <p>
+	 * One conversion is deliberately <b>not</b> matched: the space flag, {@code "% d"}. It is indistinguishable from ordinary prose — this catalogue alone
+	 * contains "between 20% and 80% day to day", "collapses near the bottom (e.g. 20% behaves like 2%)" and three more, each of which parses as a space-flagged
+	 * conversion and none of which is one. Nobody writes {@code "% d"} in a string resource; several people have already written "80% and", so the flag class
+	 * excludes the space and the check keeps its reach over the conversions that actually occur.
 	 */
-	private static final Pattern CONVERSION = Pattern.compile("%(\\d+\\$)?([-#+ 0,(]*)(\\d+)?(\\.\\d+)?([a-zA-Z])");
+	private static final Pattern CONVERSION = Pattern.compile("%(\\d+\\$)?([-#+0,(]*)(\\d+)?(\\.\\d+)?([a-zA-Z])");
 
 	/** Elements whose text is a translatable string body: {@code <string>} plus the {@code <item>} children of {@code <plurals>} and {@code <string-array>}. */
 	private static final List<String> TEXT_ELEMENTS = List.of("string", "item");
@@ -74,16 +80,14 @@ public class StringResourceDigitsTest {
 	 * @param offenders accumulator of {@code "values-ar/strings.xml: name -> body"} descriptions
 	 */
 	private static void collectOffenders(DocumentBuilder builder, File file, List<String> offenders) throws Exception {
-		final org.w3c.dom.Document document = builder.parse(file);
+		final Document document = builder.parse(file);
 		for (String tag : TEXT_ELEMENTS) {
 			final NodeList nodes = document.getElementsByTagName(tag);
 			for (int i = 0; i < nodes.getLength(); i++) {
 				final Element element = (Element) nodes.item(i);
-				// formatted="false" declares outright that the body is not a format string. This catalogue uses it for prose carrying bare, unescaped '%'
-				// signs ("kept at 100%"), which would otherwise read as conversions.
-				if ("false".equals(element.getAttribute("formatted"))) {
-					continue;
-				}
+				// No exemption for formatted="false", which is the same trap as translatable="false" one attribute over: it silences aapt2 at build time and
+				// changes nothing at runtime, so getString(id, args) still hands the body to String.format under the configuration locale and a %1$d in one
+				// still renders ٩٠ on ar-EG. Four strings here carry the attribute; excusing them would leave the catalogue's longest prose unguarded.
 				// getTextContent, not the raw source: comments and entities are already resolved away, so a %1$d written in an explanatory comment (this fix
 				// left several) can't be mistaken for one in a string. Escaped percents go first, so %%d reads as a literal '%' followed by 'd'.
 				final String body = element.getTextContent().replace("%%", "");
