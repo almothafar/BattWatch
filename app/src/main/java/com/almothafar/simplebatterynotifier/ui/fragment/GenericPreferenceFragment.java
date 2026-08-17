@@ -37,6 +37,7 @@ import com.almothafar.simplebatterynotifier.ui.preference.TimePickerPreferenceDi
 
 import java.util.Set;
 
+import static com.almothafar.simplebatterynotifier.util.BidiText.isolate;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 
@@ -378,9 +379,9 @@ public class GenericPreferenceFragment extends CardPreferenceFragment
 		final int target = AppPrefs.chargeTarget(requireContext());
 		final boolean fullCharge = AppPrefs.targetIsAFullCharge(target);
 		// Formatted rather than passed as an int: getString formats with the configuration locale, so a %1$d prints ٩٠ on ar-EG/ar-SA/ar-JO. Numbers stay
-		// Western in every locale (#96).
+		// Western in every locale (#96), and isolated so the formatter's '%' can't reorder away from its digits inside the Arabic summary (#275).
 		slider.setSummary(getString(fullCharge ? R.string.charge_target_summary_full : R.string.charge_target_summary,
-				BatteryPercentFormatter.formatWhole(target)));
+				isolate(BatteryPercentFormatter.formatWhole(target))));
 
 		final Preference alertSwitch = findPreference(getString(R.string._pref_key_notify_for_full_level));
 		if (alertSwitch instanceof final TwoStatePreference toggle) {

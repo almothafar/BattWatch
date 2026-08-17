@@ -234,7 +234,8 @@
     <string name="notification_fast_drain_channel_description">ينبّه عندما تُستهلك البطارية بسرعة غير طبيعية</string>
     <string name="notification_fast_drain_ticker">البطارية تُستهلك بسرعة</string>
     <string name="notification_fast_drain_title">البطارية تُستهلك بسرعة</string>
-    <string name="notification_fast_drain_content">يفقد نحو %1$s%% في الساعة خلال آخر %2$s دقيقة (حدّك: %3$s%%/h). قد يكون أحد التطبيقات يستهلك طاقة كبيرة.</string>
+    <!-- #275: النسبة ووحدتها تصلان معاً في الوسيط (%1$s = "27%"، %3$s = "20%/h") ولا تُكتب علامة % هنا، كي تبقى مع رقمها داخل المقطع المعزول اتجاهياً -->
+    <string name="notification_fast_drain_content">يفقد نحو %1$s في الساعة خلال آخر %2$s دقيقة (حدّك: %3$s). قد يكون أحد التطبيقات يستهلك طاقة كبيرة.</string>
 
     <!-- تحذير الشحن البطيء (#123) -->
     <string name="notify_slow_charge">تحذير الشحن البطيء</string>

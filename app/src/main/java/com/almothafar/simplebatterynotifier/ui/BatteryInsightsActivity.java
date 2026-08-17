@@ -30,6 +30,7 @@ import com.almothafar.simplebatterynotifier.util.BatteryPercentFormatter;
 import com.almothafar.simplebatterynotifier.util.GeneralHelper;
 import com.almothafar.simplebatterynotifier.util.TemperatureUtils;
 
+import static com.almothafar.simplebatterynotifier.util.BidiText.isolate;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 
@@ -476,10 +477,11 @@ public class BatteryInsightsActivity extends BaseActivity {
 	private void showCapacityRangeError() {
 		// Western digits in every locale (#96/#273) via String.valueOf: getString formats with the configuration locale, so passing the bounds through
 		// %1$d/%2$d placeholders would render ٥٠٠ and ١٥٠٠٠ under ar-EG/ar-SA/ar-JO — digits the capacity field's own \d{1,5} validation, which is ASCII-only,
-		// would then reject if the user typed them back.
+		// would then reject if the user typed them back. Isolated for the same reason the alert copy is (#275): both bounds sit inside an Arabic sentence,
+		// and the second one is followed by a Latin "mAh" the resource carries.
 		final String message = getString(R.string.error_design_capacity_range,
-				String.valueOf(BatteryHealthTracker.MIN_DESIGN_CAPACITY_MAH),
-				String.valueOf(BatteryHealthTracker.MAX_DESIGN_CAPACITY_MAH));
+				isolate(String.valueOf(BatteryHealthTracker.MIN_DESIGN_CAPACITY_MAH)),
+				isolate(String.valueOf(BatteryHealthTracker.MAX_DESIGN_CAPACITY_MAH)));
 		Toast.makeText(this, message, Toast.LENGTH_LONG).show();
 	}
 
