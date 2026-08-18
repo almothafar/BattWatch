@@ -5,6 +5,7 @@ import android.widget.TextView;
 
 import androidx.test.core.app.ApplicationProvider;
 
+import com.almothafar.simplebatterynotifier.BidiVisualOrder;
 import com.almothafar.simplebatterynotifier.model.LevelThresholds;
 
 import org.junit.Test;
@@ -117,9 +118,14 @@ public class BatteryRangeSliderHelperTest {
 			BatteryRangeSliderHelper.applyCaptions(context, critical, warning, new LevelThresholds(20, 40));
 
 			// Exact matches: the Arabic words prove values-ar was loaded rather than falling back to English, the '%' proves the formatter supplied the sign the
-			// resource no longer carries, and the digits prove it supplied them in ROOT.
-			assertEquals("حرج 20%", critical.getText().toString());
-			assertEquals("تحذير 40%", warning.getText().toString());
+			// resource no longer carries, and the digits prove it supplied them in ROOT. Compared with the bidi controls stripped, because #275 wraps each
+			// percentage in isolation marks that are part of the string and never part of what is drawn.
+			assertEquals("حرج 20%", BidiVisualOrder.stripControls(critical.getText().toString()));
+			assertEquals("تحذير 40%", BidiVisualOrder.stripControls(warning.getText().toString()));
+
+			// And those marks do their job: laid out right-to-left, the '%' stays on its number instead of drifting to the far side of it as "حرج %20" (#275).
+			BidiVisualOrder.assertRendersAsWritten(critical.getText().toString(), "20%");
+			BidiVisualOrder.assertRendersAsWritten(warning.getText().toString(), "40%");
 		}
 
 		@Test

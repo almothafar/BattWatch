@@ -24,10 +24,12 @@ import com.almothafar.simplebatterynotifier.model.ChargeSpeed;
 import com.almothafar.simplebatterynotifier.model.ChargeSpeedTier;
 import com.almothafar.simplebatterynotifier.ui.MainActivity;
 import com.almothafar.simplebatterynotifier.util.AppPrefs;
+import com.almothafar.simplebatterynotifier.util.BatteryPercentFormatter;
 import com.almothafar.simplebatterynotifier.util.TemperatureUtils;
 
 import java.lang.ref.WeakReference;
 
+import static com.almothafar.simplebatterynotifier.util.BidiText.isolate;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 
@@ -156,7 +158,10 @@ public final class NotificationService {
 	 * @param rawTenthsC Battery temperature in tenths of a degree Celsius (as reported by BatteryManager)
 	 */
 	public static void sendTemperatureNotification(Context context, int rawTenthsC) {
-		final String temperature = TemperatureUtils.format(context, rawTenthsC);
+		// Isolated (#275): "32.0 °C" is a number and a Latin unit joined by a degree sign the bidi algorithm treats as neutral, so unisolated it reaches an
+		// Arabic reader as "C° 32.0" — the unit detached from its number and reversed. The unit belongs inside the isolated run, so the whole formatted
+		// temperature is what gets wrapped.
+		final String temperature = isolate(TemperatureUtils.format(context, rawTenthsC));
 		sendQuietHoursAwareAlert(context, new AlertSpec(
 				"temperature",
 				NotificationChannels.CHANNEL_ID_TEMPERATURE,
@@ -183,10 +188,18 @@ public final class NotificationService {
 	 * @param elapsedMinutes How long the rate has been sustained at/above the limit, in minutes
 	 */
 	public static void sendFastDrainNotification(Context context, int ratePph, int limitPph, int elapsedMinutes) {
-		// Western digits in every locale (#96) via String.valueOf.
-		final String rate = String.valueOf(ratePph);
-		final String limit = String.valueOf(limitPph);
-		final String minutes = String.valueOf(elapsedMinutes);
+		// Western digits in every locale (#96), and each figure arrives carrying its own unit rather than meeting it in the resource (#275). The message used
+		// to read "~%1$s%% per hour … (your limit: %3$s%%/h)": those signs sat outside the isolated run, so an Arabic reader got "%27" and "h/%20" — the unit
+		// resolved to the surrounding right-to-left direction and moved to the far side of the number. Isolating "27%" and "20%/h" whole is what fixes it, so
+		// the units move into the arguments and the two existing formatters that already produce those exact forms are what build them.
+		//
+		// The two are deliberately different presentations of the same kind of quantity, and the copy is what decides which: the sentence says "per hour" in
+		// words after the rate, so the rate is a bare percentage (formatWhole), while the limit stands alone inside a parenthesis where "20%" would read as a
+		// battery level rather than a speed, so it carries the "/h" (formatRateValue). Changing one without the other desynchronises the sentence, which is
+		// what ArabicAlertRenderingTest pins by asserting both forms.
+		final String rate = isolate(BatteryPercentFormatter.formatWhole(ratePph));
+		final String limit = isolate(BatteryRateTracker.formatRateValue(context, limitPph));
+		final String minutes = isolate(String.valueOf(elapsedMinutes));
 		final String content = context.getString(R.string.notification_fast_drain_content, rate, minutes, limit);
 
 		sendQuietHoursAwareAlert(context, new AlertSpec(
@@ -213,8 +226,10 @@ public final class NotificationService {
 	 * @param watts   The estimated charging power in watts
 	 */
 	public static void sendSlowChargeWarning(Context context, int watts) {
-		// Western digits in every locale (#96) via String.valueOf.
-		final String content = context.getString(R.string.notification_slow_charge_content, String.valueOf(watts));
+		// Western digits in every locale (#96) via String.valueOf, isolated for RTL copy (#275). The unit here is the Arabic word واط, not a Latin one, so the
+		// number alone is the left-to-right run and the '~' the resource carries stays outside it.
+		final String wattage = isolate(String.valueOf(watts));
+		final String content = context.getString(R.string.notification_slow_charge_content, wattage);
 		deliverPerChargeStyle(context, content, () -> sendQuietHoursAwareAlert(context, new AlertSpec(
 				"slow-charge",
 				NotificationChannels.CHANNEL_ID_SLOW_CHARGE,
@@ -223,7 +238,7 @@ public final class NotificationService {
 				context.getString(R.string.notification_slow_charge_ticker),
 				context.getString(R.string.notification_slow_charge_title),
 				content,
-				context.getString(R.string.notification_slow_charge_content_big, String.valueOf(watts)))));
+				context.getString(R.string.notification_slow_charge_content_big, wattage))));
 	}
 
 	/**
@@ -567,8 +582,9 @@ public final class NotificationService {
 			return context.getString(R.string.charge_connected_tier, source, tierLabel);
 		}
 		// Western digits in every locale (#96/#273) via String.valueOf: getString formats with the configuration locale, so passing the int through a %3$d
-		// placeholder would render ~١٨ واط under ar-EG/ar-SA/ar-JO. Not bidi-isolated the way OngoingStatusContent's wattage is — tracked in #275.
-		return context.getString(R.string.charge_connected_power, source, tierLabel, String.valueOf(watts));
+		// placeholder would render ~١٨ واط under ar-EG/ar-SA/ar-JO. Isolated like OngoingStatusContent's wattage (#275) — the unit here is the Arabic word
+		// واط rather than a Latin one, so the number is the whole left-to-right run and the '~' the resource carries sits outside it, where it reads correctly.
+		return context.getString(R.string.charge_connected_power, source, tierLabel, isolate(String.valueOf(watts)));
 	}
 
 	/**

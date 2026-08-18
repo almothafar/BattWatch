@@ -2,10 +2,7 @@ package com.almothafar.simplebatterynotifier.service;
 
 import android.content.Context;
 import android.os.BatteryManager;
-import android.view.View;
 
-import androidx.core.text.BidiFormatter;
-import androidx.core.text.TextUtilsCompat;
 import androidx.preference.PreferenceManager;
 
 import com.almothafar.simplebatterynotifier.R;
@@ -16,8 +13,8 @@ import com.almothafar.simplebatterynotifier.util.TemperatureUtils;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
+import static com.almothafar.simplebatterynotifier.util.BidiText.isolate;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 
@@ -27,8 +24,9 @@ import static java.util.Objects.nonNull;
  * reflects the current battery state.
  * <p>
  * Split out of {@code NotificationService} — which now only wires this text into a {@code Notification} —
- * so the AccuBattery-style status layout (#194) and its RTL bidi-isolation (#194) live in one place and
- * stay directly unit-testable ({@code OngoingStatusContentTest}).
+ * so the AccuBattery-style status layout (#194) lives in one place and stays directly unit-testable
+ * ({@code OngoingStatusContentTest}). The RTL bidi-isolation this file introduced for #194 now lives in
+ * {@link com.almothafar.simplebatterynotifier.util.BidiText}, shared with the alert copy that needs it too (#275).
  */
 final class OngoingStatusContent {
 
@@ -94,7 +92,10 @@ final class OngoingStatusContent {
 	 * @return Formatted title text
 	 */
 	static String statusTitle(Context context, BatteryDO batteryDO) {
-		final String percentage = BatteryPercentFormatter.formatLive(batteryDO);
+		// Isolated like every other Latin value here, though this one is defensive rather than load-bearing: the percentage opens the string, so no strong
+		// character precedes it and the algorithm never retypes its digits — deleting the call changes nothing on screen today (#275). It earns its keep the
+		// moment the title grows a word in front of the number, which is the shape every other surface in this class already has.
+		final String percentage = isolate(BatteryPercentFormatter.formatLive(batteryDO));
 		final String statusLabel = SystemService.getStatusLabel(context, isNull(batteryDO) ? -1 : batteryDO.getStatus());
 		return context.getString(R.string.notification_status_title, percentage, statusLabel);
 	}
@@ -333,21 +334,6 @@ final class OngoingStatusContent {
 		}
 		// Western digits (0-9) in every locale (#96).
 		return context.getString(R.string.notification_status_watts, String.valueOf(speed.getWatts()));
-	}
-
-	/**
-	 * Wraps a Latin value (mA, %/h, watts, a duration) as an isolated run so the RTL bidi algorithm can't
-	 * reorder it inside an Arabic detail line (#194) — the garbling seen without it. A no-op in LTR
-	 * locales, so it doesn't perturb the (LTR) values elsewhere.
-	 *
-	 * @param value the Latin value to isolate
-	 * @return the value, bidi-isolated in RTL locales; unchanged in LTR
-	 */
-	private static String isolate(String value) {
-		if (TextUtilsCompat.getLayoutDirectionFromLocale(Locale.getDefault()) == View.LAYOUT_DIRECTION_RTL) {
-			return BidiFormatter.getInstance().unicodeWrap(value);
-		}
-		return value;
 	}
 
 	/**

@@ -7,6 +7,8 @@ import com.almothafar.simplebatterynotifier.R;
 import com.almothafar.simplebatterynotifier.util.AppPrefs;
 import com.almothafar.simplebatterynotifier.util.BatteryPercentFormatter;
 
+import static com.almothafar.simplebatterynotifier.util.BidiText.isolate;
+
 /**
  * Configuration for a battery-level notification (reduces parameter count).
  * <p>
@@ -76,6 +78,9 @@ final class NotificationConfig {
 	 * The level is formatted here rather than handed to {@code getString} as an int. {@code getString} formats with the <b>configuration</b> locale, so a
 	 * {@code %1$d} placeholder renders {@code ٢٠} under ar-EG/ar-SA/ar-JO with no {@code String.format} call anywhere in our code (#273);
 	 * {@link BatteryPercentFormatter#formatWhole} keeps the digits Western and brings the {@code '%'} sign with it.
+	 * <p>
+	 * That sign is why the level is isolated before it goes into the copy (#275): every string below sets it against Arabic prose, where a bare {@code "20%"}
+	 * renders {@code %20}. Isolating the formatted level — not the digits alone — keeps the sign on the number it belongs to.
 	 *
 	 * @param context      The application context
 	 * @param prefs        SharedPreferences containing user settings
@@ -84,7 +89,7 @@ final class NotificationConfig {
 	 * @return the copy and channel for this alert
 	 */
 	private static AlertStyle criticalAlertStyle(Context context, SharedPreferences prefs, String defaultSound) {
-		final String levelText = BatteryPercentFormatter.formatWhole(AppPrefs.criticalLevel(context));
+		final String levelText = isolate(BatteryPercentFormatter.formatWhole(AppPrefs.criticalLevel(context)));
 		return new AlertStyle(
 				NotificationChannels.CHANNEL_ID_CRITICAL,
 				R.drawable.ic_stat_battery_alert,
@@ -105,7 +110,7 @@ final class NotificationConfig {
 	 * @return the copy and channel for this alert
 	 */
 	private static AlertStyle warningAlertStyle(Context context, SharedPreferences prefs, String defaultSound) {
-		final String levelText = BatteryPercentFormatter.formatWhole(AppPrefs.warningLevel(context));
+		final String levelText = isolate(BatteryPercentFormatter.formatWhole(AppPrefs.warningLevel(context)));
 		return new AlertStyle(
 				NotificationChannels.CHANNEL_ID_WARNING,
 				R.drawable.ic_stat_battery_low,
@@ -154,9 +159,10 @@ final class NotificationConfig {
 			// Plugging in at 95% with a target of 90 is "95% reached" against "your 90% charge target", and both are true.
 			//
 			// Both go through BatteryPercentFormatter rather than a %1$d placeholder: getString formats with the configuration locale, so a bare int prints ٩٥
-			// on ar-EG/ar-SA/ar-JO. Numbers stay Western in every locale (#96).
-			final String reachedText = BatteryPercentFormatter.formatWhole(levelPercent);
-			final String targetText = BatteryPercentFormatter.formatWhole(target);
+			// on ar-EG/ar-SA/ar-JO. Numbers stay Western in every locale (#96), and are isolated so the '%' the formatter brings with them stays on their side
+			// of the Arabic prose these two are set into (#275).
+			final String reachedText = isolate(BatteryPercentFormatter.formatWhole(levelPercent));
+			final String targetText = isolate(BatteryPercentFormatter.formatWhole(target));
 
 			ticker = context.getString(R.string.notification_almost_full_ticker, reachedText);
 			title = context.getString(R.string.notification_almost_full_title);

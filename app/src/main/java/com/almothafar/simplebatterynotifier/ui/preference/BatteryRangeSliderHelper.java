@@ -8,6 +8,7 @@ import com.almothafar.simplebatterynotifier.model.LevelThresholds;
 import com.almothafar.simplebatterynotifier.util.BatteryPercentFormatter;
 import com.google.android.material.slider.RangeSlider;
 
+import static com.almothafar.simplebatterynotifier.util.BidiText.isolate;
 import static java.util.Objects.nonNull;
 
 /**
@@ -82,12 +83,13 @@ public final class BatteryRangeSliderHelper {
 	 * @param levels          the (critical, warning) pair to label, in percent
 	 */
 	public static void applyCaptions(Context context, TextView criticalCaption, TextView warningCaption, LevelThresholds levels) {
-		// Formatted, not handed to getString as an int: getString formats with the configuration locale, so a %1$d renders ٢٠ under ar-EG (#96/#273).
+		// Formatted, not handed to getString as an int: getString formats with the configuration locale, so a %1$d renders ٢٠ under ar-EG (#96/#273). Isolated
+		// so the '%' stays on the number's side of the Arabic caption word ("حرج 20%", not "حرج %20") — #275.
 		if (nonNull(criticalCaption)) {
-			criticalCaption.setText(context.getString(R.string.battery_range_caption_critical, BatteryPercentFormatter.formatWhole(levels.critical())));
+			criticalCaption.setText(context.getString(R.string.battery_range_caption_critical, isolate(BatteryPercentFormatter.formatWhole(levels.critical()))));
 		}
 		if (nonNull(warningCaption)) {
-			warningCaption.setText(context.getString(R.string.battery_range_caption_warning, BatteryPercentFormatter.formatWhole(levels.warning())));
+			warningCaption.setText(context.getString(R.string.battery_range_caption_warning, isolate(BatteryPercentFormatter.formatWhole(levels.warning()))));
 		}
 	}
 

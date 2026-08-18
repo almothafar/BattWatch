@@ -251,8 +251,10 @@
     <string name="notification_fast_drain_channel_description">Warns when the battery is draining abnormally fast</string>
     <string name="notification_fast_drain_ticker">Battery draining fast</string>
     <string name="notification_fast_drain_title">Battery draining fast</string>
-    <!-- %1$s rate, %2$s minutes, %3$s limit — all Western-digit numbers (String.valueOf) for every locale (#96) -->
-    <string name="notification_fast_drain_content">Losing ~%1$s%% per hour for the last %2$s minutes (your limit: %3$s%%/h). Something may be using a lot of power.</string>
+    <!-- %1$s rate ("27%"), %2$s minutes, %3$s limit ("20%/h") — Western-digit numbers for every locale (#96). Each figure arrives with its unit
+         already attached rather than meeting a %% here: the sign has to be inside the run the code bidi-isolates, or it reorders away from its
+         number under RTL copy (#275) -->
+    <string name="notification_fast_drain_content">Losing ~%1$s per hour for the last %2$s minutes (your limit: %3$s). Something may be using a lot of power.</string>
 
     <!-- Slow-charge warning (#123) -->
     <string name="notify_slow_charge">Slow-charging warning</string>
@@ -302,9 +304,11 @@
     <string name="save">Save</string>
     <!-- %1$s/%2$s, not %1$d/%2$d: the bounds arrive already formatted so the digits stay Western in every locale (#96/#273).
          PluralsCandidate does not apply either: this is a range with two independent quantities, and a <plurals> selects a form from
-         exactly one. The word lint used to spot after the placeholder is the conjunction "and", not a countable noun, and "mAh" is an
-         invariant unit symbol in both languages. There is nothing here to inflect. -->
-    <string name="error_design_capacity_range">Enter a capacity between %1$s and %2$s mAh</string>
+         exactly one. The word lint used to spot after the placeholder is the conjunction "and", not a countable noun. There is nothing
+         here to inflect.
+         Each bound arrives as a whole "500 mAh" (design_capacity_value) rather than a bare number followed by a "mAh" written here:
+         the unit has to sit inside the caller's bidi-isolated run or it reorders away from its number in Arabic (#275). -->
+    <string name="error_design_capacity_range">Enter a capacity between %1$s and %2$s</string>
     <string name="health_basis_measured">Averaged measured capacity vs design</string>
     <!-- #114: the cycle-based estimate is labelled by its source. OS-reported cycles cover the
          battery's whole life; app-tracked cycles start at install, so they understate real wear. -->
