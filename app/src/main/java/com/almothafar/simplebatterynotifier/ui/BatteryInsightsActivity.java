@@ -1,6 +1,7 @@
 package com.almothafar.simplebatterynotifier.ui;
 
 import android.content.ActivityNotFoundException;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.net.Uri;
@@ -475,14 +476,29 @@ public class BatteryInsightsActivity extends BaseActivity {
 	 * Shows the accepted design-capacity range as a Toast.
 	 */
 	private void showCapacityRangeError() {
+		Toast.makeText(this, capacityRangeMessage(this), Toast.LENGTH_LONG).show();
+	}
+
+	/**
+	 * The accepted design-capacity range as one sentence, e.g. {@code "Enter a capacity between 500 mAh and 15000 mAh"}.
+	 * <p>
+	 * Split out from the Toast so the wording can be asserted without driving the screen — the bidi property below is invisible to any {@code contains} check
+	 * and only shows up once the string is laid out (#275).
+	 *
+	 * @param context context to resolve the strings against
+	 *
+	 * @return the range message for the current locale
+	 */
+	static String capacityRangeMessage(Context context) {
 		// Western digits in every locale (#96/#273) via String.valueOf: getString formats with the configuration locale, so passing the bounds through
 		// %1$d/%2$d placeholders would render ٥٠٠ and ١٥٠٠٠ under ar-EG/ar-SA/ar-JO — digits the capacity field's own \d{1,5} validation, which is ASCII-only,
-		// would then reject if the user typed them back. Isolated for the same reason the alert copy is (#275): both bounds sit inside an Arabic sentence,
-		// and the second one is followed by a Latin "mAh" the resource carries.
-		final String message = getString(R.string.error_design_capacity_range,
-				isolate(String.valueOf(BatteryHealthTracker.MIN_DESIGN_CAPACITY_MAH)),
-				isolate(String.valueOf(BatteryHealthTracker.MAX_DESIGN_CAPACITY_MAH)));
-		Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+		// would then reject if the user typed them back.
+		// Each bound is built into its full "500 mAh" form and isolated as one run (#275). Isolating the bare number instead would leave the "mAh" in the
+		// surrounding resource, where it is a neutral run in Arabic prose and reorders to the far side of the digits it belongs to — which is why the range
+		// string no longer carries the unit at all.
+		return context.getString(R.string.error_design_capacity_range,
+				isolate(context.getString(R.string.design_capacity_value, String.valueOf(BatteryHealthTracker.MIN_DESIGN_CAPACITY_MAH))),
+				isolate(context.getString(R.string.design_capacity_value, String.valueOf(BatteryHealthTracker.MAX_DESIGN_CAPACITY_MAH))));
 	}
 
 	/**

@@ -1,6 +1,10 @@
 package com.almothafar.simplebatterynotifier;
 
 import java.text.Bidi;
+import java.text.BreakIterator;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 
 import static org.junit.Assert.assertTrue;
 
@@ -50,9 +54,37 @@ public final class BidiVisualOrder {
 
 		final StringBuilder visual = new StringBuilder(logical.length());
 		for (Run run : runs) {
-			visual.append((run.level() & 1) == 1 ? new StringBuilder(run.text()).reverse() : run.text());
+			visual.append((run.level() & 1) == 1 ? reverseByGrapheme(run.text()) : run.text());
 		}
 		return stripControls(visual.toString());
+	}
+
+	/**
+	 * {@code text} reversed a reader's character at a time rather than a {@code char} at a time.
+	 * <p>
+	 * {@link StringBuilder#reverse()} keeps surrogate pairs together but not combining sequences, and the Arabic catalogue is full of them — the shadda in
+	 * "حدّك", the fathatan in "تقريباً". Reversing those by code unit puts the mark before the letter it sits on, so the helper would report a visual order no
+	 * reader could ever see, and an assertion written against Arabic words rather than Latin quantities would fail for a reason that is not the one under test.
+	 *
+	 * @param text one right-to-left run, in logical order
+	 *
+	 * @return the same run with its grapheme clusters in the opposite order, each cluster left intact
+	 */
+	private static String reverseByGrapheme(String text) {
+		final BreakIterator clusters = BreakIterator.getCharacterInstance(Locale.ROOT);
+		clusters.setText(text);
+
+		final List<String> parts = new ArrayList<>();
+		int start = clusters.first();
+		for (int end = clusters.next(); end != BreakIterator.DONE; start = end, end = clusters.next()) {
+			parts.add(text.substring(start, end));
+		}
+
+		final StringBuilder reversed = new StringBuilder(text.length());
+		for (int i = parts.size() - 1; i >= 0; i--) {
+			reversed.append(parts.get(i));
+		}
+		return reversed.toString();
 	}
 
 	/**

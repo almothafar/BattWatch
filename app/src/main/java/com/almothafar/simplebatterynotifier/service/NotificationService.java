@@ -192,6 +192,11 @@ public final class NotificationService {
 		// to read "~%1$s%% per hour … (your limit: %3$s%%/h)": those signs sat outside the isolated run, so an Arabic reader got "%27" and "h/%20" — the unit
 		// resolved to the surrounding right-to-left direction and moved to the far side of the number. Isolating "27%" and "20%/h" whole is what fixes it, so
 		// the units move into the arguments and the two existing formatters that already produce those exact forms are what build them.
+		//
+		// The two are deliberately different presentations of the same kind of quantity, and the copy is what decides which: the sentence says "per hour" in
+		// words after the rate, so the rate is a bare percentage (formatWhole), while the limit stands alone inside a parenthesis where "20%" would read as a
+		// battery level rather than a speed, so it carries the "/h" (formatRateValue). Changing one without the other desynchronises the sentence, which is
+		// what ArabicAlertRenderingTest pins by asserting both forms.
 		final String rate = isolate(BatteryPercentFormatter.formatWhole(ratePph));
 		final String limit = isolate(BatteryRateTracker.formatRateValue(context, limitPph));
 		final String minutes = isolate(String.valueOf(elapsedMinutes));

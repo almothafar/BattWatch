@@ -92,8 +92,9 @@ final class OngoingStatusContent {
 	 * @return Formatted title text
 	 */
 	static String statusTitle(Context context, BatteryDO batteryDO) {
-		// Isolated like every other Latin value here: the title's second half is a translated word, so under Arabic the percentage sits against RTL text and
-		// its '%' is a neutral between the two (#275).
+		// Isolated like every other Latin value here, though this one is defensive rather than load-bearing: the percentage opens the string, so no strong
+		// character precedes it and the algorithm never retypes its digits — deleting the call changes nothing on screen today (#275). It earns its keep the
+		// moment the title grows a word in front of the number, which is the shape every other surface in this class already has.
 		final String percentage = isolate(BatteryPercentFormatter.formatLive(batteryDO));
 		final String statusLabel = SystemService.getStatusLabel(context, isNull(batteryDO) ? -1 : batteryDO.getStatus());
 		return context.getString(R.string.notification_status_title, percentage, statusLabel);

@@ -7,6 +7,7 @@ import androidx.test.core.app.ApplicationProvider;
 import com.almothafar.simplebatterynotifier.BidiVisualOrder;
 import com.almothafar.simplebatterynotifier.R;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
 import org.junit.runner.RunWith;
@@ -60,6 +61,13 @@ public class BidiTextTest {
 	@Config(sdk = 34, qualifiers = "ar-rEG")
 	public static class UnderAnRtlLocale {
 
+		@Before
+		public void assertTheQualifierApplied() {
+			// Premise, in @Before rather than a @Test of its own: JUnit gives no ordering between test methods, so as a sibling test this could only report the
+			// bad locale after the others had already failed on it with a confusing bidi message. Every test below is meaningless if the qualifier slipped.
+			assertEquals("ar-rEG should be the default locale", "ar", Locale.getDefault().getLanguage());
+		}
+
 		@Test
 		public void isolate_marksTheValueWithoutAddingAnythingVisible() {
 			final String isolated = BidiText.isolate("20%");
@@ -96,12 +104,6 @@ public class BidiTextTest {
 
 			assertTrue("a '%' outside the isolated run should still reorder: " + signOutside,
 					BidiVisualOrder.inRtlParagraph(signOutside).contains("%20"));
-		}
-
-		@Test
-		public void isolate_isDrivenByTheLocale() {
-			// Premise: the locale really is the RTL one, so the assertions above are not passing for some unrelated reason.
-			assertEquals(Locale.getDefault().getLanguage(), "ar");
 		}
 	}
 }

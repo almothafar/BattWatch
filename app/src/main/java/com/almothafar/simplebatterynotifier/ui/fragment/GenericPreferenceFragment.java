@@ -1,6 +1,7 @@
 package com.almothafar.simplebatterynotifier.ui.fragment;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.media.Ringtone;
@@ -362,6 +363,24 @@ public class GenericPreferenceFragment extends CardPreferenceFragment
 	}
 
 	/**
+	 * The charge-target slider's summary line, e.g. {@code "Alert at 90% — nearly done, better for battery life"}.
+	 * <p>
+	 * Split out from the preference so the wording can be asserted without inflating the screen: the percentage's bidi isolation (#275) is invisible to a
+	 * {@code contains} check and only shows up once the summary is laid out.
+	 *
+	 * @param context context to resolve the strings against
+	 * @param target  the clamped charge target, in whole percent
+	 *
+	 * @return the summary for the current locale
+	 */
+	static String chargeTargetSummary(Context context, int target) {
+		// Formatted rather than passed as an int: getString formats with the configuration locale, so a %1$d prints ٩٠ on ar-EG/ar-SA/ar-JO. Numbers stay
+		// Western in every locale (#96), and isolated so the formatter's '%' can't reorder away from its digits inside the Arabic summary (#275).
+		return context.getString(AppPrefs.targetIsAFullCharge(target) ? R.string.charge_target_summary_full : R.string.charge_target_summary,
+				isolate(BatteryPercentFormatter.formatWhole(target)));
+	}
+
+	/**
 	 * Say what the chosen charge target will actually do (#263).
 	 * <p>
 	 * Below a full charge the alert is not about a full battery, so the whole row above the slider stops claiming it is — title and summary both — and the
@@ -378,10 +397,7 @@ public class GenericPreferenceFragment extends CardPreferenceFragment
 	private void applyChargeTargetWording(SeekBarPreference slider) {
 		final int target = AppPrefs.chargeTarget(requireContext());
 		final boolean fullCharge = AppPrefs.targetIsAFullCharge(target);
-		// Formatted rather than passed as an int: getString formats with the configuration locale, so a %1$d prints ٩٠ on ar-EG/ar-SA/ar-JO. Numbers stay
-		// Western in every locale (#96), and isolated so the formatter's '%' can't reorder away from its digits inside the Arabic summary (#275).
-		slider.setSummary(getString(fullCharge ? R.string.charge_target_summary_full : R.string.charge_target_summary,
-				isolate(BatteryPercentFormatter.formatWhole(target))));
+		slider.setSummary(chargeTargetSummary(requireContext(), target));
 
 		final Preference alertSwitch = findPreference(getString(R.string._pref_key_notify_for_full_level));
 		if (alertSwitch instanceof final TwoStatePreference toggle) {

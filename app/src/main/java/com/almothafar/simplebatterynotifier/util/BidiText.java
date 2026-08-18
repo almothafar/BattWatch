@@ -35,16 +35,18 @@ public final class BidiText {
 	 * Wrap a Latin value as an isolated left-to-right run, so neither it nor the neutral characters around it can be reordered inside right-to-left copy.
 	 * <p>
 	 * Direction comes from {@link Locale#getDefault()} rather than from a {@code Context}: the wrapping has to agree with the direction the text will actually
-	 * be laid out in, and {@link BidiFormatter#getInstance()} reads the default locale for exactly that.
+	 * be laid out in, and the default locale is what {@code TextView} resolves its own layout direction from.
 	 *
 	 * @param value the value to isolate — the whole quantity, sign and unit included; null passes through
 	 *
 	 * @return the value, bidi-isolated under an RTL locale; returned unchanged under an LTR one
 	 */
 	public static String isolate(String value) {
-		if (TextUtilsCompat.getLayoutDirectionFromLocale(Locale.getDefault()) == View.LAYOUT_DIRECTION_RTL) {
-			return BidiFormatter.getInstance().unicodeWrap(value);
+		if (TextUtilsCompat.getLayoutDirectionFromLocale(Locale.getDefault()) != View.LAYOUT_DIRECTION_RTL) {
+			return value;
 		}
-		return value;
+		// getInstance(true) rather than getInstance(): the no-argument form resolves the layout direction from the default locale all over again, which the
+		// line above has just done. This path runs several times per battery tick, and the boolean overload hands back a shared instance for a known context.
+		return BidiFormatter.getInstance(true).unicodeWrap(value);
 	}
 }

@@ -12,7 +12,6 @@ import androidx.test.core.app.ApplicationProvider;
 
 import com.almothafar.simplebatterynotifier.BidiVisualOrder;
 import com.almothafar.simplebatterynotifier.R;
-import com.almothafar.simplebatterynotifier.model.ChargeSpeed;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -38,8 +37,16 @@ import static org.robolectric.Shadows.shadowOf;
  * These call the production entry points rather than re-assembling their strings, so a call site that stops isolating fails here. That matters more than usual
  * on this defect: the fix is one call per surface and nothing at the perimeter enforces it, so the next surface added is the next one to ship broken.
  * <p>
- * The wattage surfaces are deliberately absent. "~18 واط" carries an Arabic unit word, so the number is the only left-to-right run in it and there is nothing
- * for layout to tear apart — they were isolated for consistency, and there is no visual property to pin. The alert copy below is where it goes wrong.
+ * Three call sites are deliberately absent, because no assertion here could fail on them — each was checked by deleting its {@code isolate} and watching the
+ * suite stay green:
+ * <ul>
+ *     <li>the two wattage messages. "~18 واط" carries an Arabic unit word, so the number is the only left-to-right run and a lone run is drawn in place
+ *     whether it is isolated or not. Their Western digits (#273) are covered by {@code NotificationServiceTest.ChargeConnectedDigits}.</li>
+ *     <li>{@code OngoingStatusContent.statusTitle}. Its percentage opens the string, so nothing strong precedes it and the algorithm never retypes its digits
+ *     — the case only arises once Arabic letters sit on the left of a number.</li>
+ * </ul>
+ * All three stay isolated defensively, against the copy ever growing a word in front of the number or a Latin unit behind it. That they are unpinnable is a
+ * property of where they sit in their sentence, not an oversight. The alert copy below is where layout actually goes wrong.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 34, qualifiers = "ar-rEG")
@@ -136,22 +143,5 @@ public class ArabicAlertRenderingTest {
 		assertTrue(text, text.contains("الساعة"));
 		BidiVisualOrder.assertRendersAsWritten(text, "27%");
 		BidiVisualOrder.assertRendersAsWritten(text, "20%/h");
-	}
-
-	/**
-	 * The charge-connected message is the surface the issue opened on. Its unit is the Arabic word واط, so only the number is a left-to-right run — this pins
-	 * that the wattage still arrives whole and in Western digits (#273) under the isolation added here.
-	 */
-	@Test
-	public void chargeConnectedMessage_keepsItsWattageIntact() {
-		prefs.edit().putString(context.getString(R.string._pref_key_charge_notification_style), NotificationService.CHARGE_STYLE_NOTIFICATION).commit();
-
-		// 4 A at 4.5 V — 18 W, comfortably inside the "fast charging" tier so the message takes the wattage branch.
-		NotificationService.notifyChargeConnected(context, ChargeSpeed.fromMeasurements(4_000_000, 4_500), true);
-
-		final String text = postedText();
-		assertTrue(text, text.contains("واط"));
-		BidiVisualOrder.assertRendersAsWritten(text, "18");
-		assertTrue("Eastern digits leaked into the charge-connected message: " + text, !text.contains("١٨"));
 	}
 }
