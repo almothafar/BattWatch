@@ -119,6 +119,12 @@
          Western in every locale (#96), and it brings its own '%' sign. -->
     <string name="charge_target_summary">Alert at %1$s — almost full, better for battery life</string>
     <string name="charge_target_summary_full">Alert at %1$s — a full charge</string>
+    <!-- #264: the opt-in repeat of the full-battery alert. Named for what the user wants out of it — the phone off the charger — rather than for the
+         notification being re-posted. -->
+    <string name="notify_unplug_reminder">Remind me until I unplug</string>
+    <string name="notify_unplug_reminder_summary_on">The alert repeats while the charger stays in</string>
+    <string name="notify_unplug_reminder_summary_off">The alert arrives once per charge</string>
+    <string name="unplug_reminder_minutes">Remind every (minutes)</string>
     <string name="notify_every_tick">Notify for critical every (1%)</string>
     <string name="notify_every_tick_summary_on">Notify every tick (1%) for critical level enabled</string>
     <string name="notify_every_tick_summary_off">Notify every tick (1%) for critical level disabled</string>
@@ -418,6 +424,9 @@
     <string name="_pref_key_critical_ignore_quiet_hours" translatable="false">key_critical_ignore_quiet_hours</string>
     <!-- #263: the level the full-battery alert fires at while charging -->
     <string name="_pref_key_charge_target" translatable="false">key_charge_target</string>
+    <!-- #264: repeat the full-battery alert until the charger comes out, and how far apart the repeats are -->
+    <string name="_pref_key_notify_unplug_reminder" translatable="false">key_notify_unplug_reminder</string>
+    <string name="_pref_key_unplug_reminder_minutes" translatable="false">key_unplug_reminder_minutes</string>
     <string name="_pref_key_notify_high_temperature" translatable="false">key_notify_high_temperature</string>
     <string name="_pref_key_high_temperature_threshold" translatable="false">key_high_temperature_threshold</string>
     <!-- #108/#109: append the rate to the ongoing notification, and the shared "high drain" limit (%/h) -->

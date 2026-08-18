@@ -27,9 +27,9 @@ import com.almothafar.simplebatterynotifier.model.LevelThresholds;
  *       default in three spots (channel creation, the level-alert config and the manual override path),
  *       which meant the alert channels and the silent-mode buzz could drift apart.</li>
  * </ul>
- * The one restatement that remains is the XML-declared slider default in {@code pref_alerts.xml}, which
- * the framework instantiates from XML and so cannot share a constant with — a comment ties the two, and
- * {@code AppPrefsTest} asserts they stay equal. Remaining settings migrate incrementally.
+ * The one restatement that remains is each slider's XML-declared default in {@code pref_alerts.xml}, which the framework instantiates from XML and so cannot
+ * share a constant with — a comment ties each pair, and {@code AppPrefsTest} asserts they stay equal. Remaining settings migrate incrementally; new ones (the
+ * charge target #263, the unplug reminder #264) are born here.
  */
 public final class AppPrefs {
 
@@ -63,6 +63,18 @@ public final class AppPrefs {
 	 */
 	public static final int CHARGE_TARGET_REARM_MARGIN = 5;
 
+	/**
+	 * Default for the "remind me until I unplug" preference (#264) — <b>off</b>. The full-battery alert fires once per charge; the repeat is deliberately
+	 * opt-in, because a notification that keeps coming back is a nag for everyone who did not ask for it.
+	 */
+	public static final boolean DEFAULT_UNPLUG_REMINDER = false;
+	/** Default gap between unplug reminders, in minutes — mirrors the slider's {@code android:defaultValue} in pref_alerts.xml. */
+	public static final int DEFAULT_UNPLUG_REMINDER_MINUTES = 15;
+	/** Shortest accepted unplug-reminder gap; mirrors the slider's {@code app:min} in pref_alerts.xml. */
+	public static final int MIN_UNPLUG_REMINDER_MINUTES = 5;
+	/** Longest accepted unplug-reminder gap; mirrors the slider's {@code android:max} in pref_alerts.xml. */
+	public static final int MAX_UNPLUG_REMINDER_MINUTES = 60;
+
 	/** Default "high drain" limit in %/h. */
 	public static final int DEFAULT_DRAIN_LIMIT_PPH = 20;
 	/** Lowest accepted drain limit in %/h; mirrors the slider's {@code app:min} in pref_alerts.xml. */
@@ -72,6 +84,8 @@ public final class AppPrefs {
 
 	/** Default for the "Vibrate" preference — mirrors the switch's {@code android:defaultValue} in pref_behaviour.xml. */
 	public static final boolean DEFAULT_VIBRATE = true;
+
+	private static final long MS_PER_MINUTE = 60_000L;
 
 	private AppPrefs() {
 		// Utility class
@@ -175,6 +189,51 @@ public final class AppPrefs {
 	 */
 	public static int reArmLevel(int chargeTarget) {
 		return chargeTarget - CHARGE_TARGET_REARM_MARGIN;
+	}
+
+	/**
+	 * Whether the unplug reminder is on (#264): the opt-in repeat of the full-battery alert for as long as the battery stays on the charger at or above the
+	 * charge target. Defaults to {@link #DEFAULT_UNPLUG_REMINDER} — the alert is once per charge unless the user asks otherwise.
+	 *
+	 * @param context Application context
+	 *
+	 * @return true when the full-battery alert repeats until the charger comes out
+	 */
+	public static boolean unplugReminderEnabled(Context context) {
+		return prefs(context).getBoolean(context.getString(R.string._pref_key_notify_unplug_reminder), DEFAULT_UNPLUG_REMINDER);
+	}
+
+	/**
+	 * The minimum gap between unplug reminders, in milliseconds (#264). Reads {@link #DEFAULT_UNPLUG_REMINDER_MINUTES} when unset and always clamps, so a
+	 * corrupt preference can't turn the reminder into a notification on every broadcast.
+	 * <p>
+	 * A <em>minimum</em>, not a period: the reminder rides the battery broadcasts rather than a timer of its own (no alarm, no wakelock — the same design as
+	 * the fast-drain reminder), so a device that goes quiet on the charger reminds late rather than on the dot.
+	 *
+	 * @param context Application context
+	 *
+	 * @return the configured reminder gap in milliseconds
+	 */
+	public static long unplugReminderGapMs(Context context) {
+		return clampMinutesToMs(
+				prefs(context).getInt(context.getString(R.string._pref_key_unplug_reminder_minutes), DEFAULT_UNPLUG_REMINDER_MINUTES),
+				MIN_UNPLUG_REMINDER_MINUTES,
+				MAX_UNPLUG_REMINDER_MINUTES);
+	}
+
+	/**
+	 * Clamps a stored minutes preference to its slider range and converts it to milliseconds. The sliders constrain UI input, but a corrupt or out-of-range
+	 * stored value (a 0-minute gap, say) would otherwise defeat the very interval it configures. Shared by every timing preference — the fast-drain window and
+	 * reminder (#109) and the unplug reminder (#264) — so "the slider range is also the enforced range" is stated once. Pure so it is unit-testable.
+	 *
+	 * @param storedMinutes the raw persisted value in minutes
+	 * @param minMinutes    the slider's minimum
+	 * @param maxMinutes    the slider's maximum
+	 *
+	 * @return the clamped duration in milliseconds
+	 */
+	public static long clampMinutesToMs(int storedMinutes, int minMinutes, int maxMinutes) {
+		return Math.max(minMinutes, Math.min(maxMinutes, storedMinutes)) * MS_PER_MINUTE;
 	}
 
 	/**

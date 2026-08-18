@@ -168,22 +168,6 @@ public final class FastDrainDetector {
 	                                int defaultMinutes,
 	                                int minMinutes,
 	                                int maxMinutes) {
-		return clampMinutesToMs(prefs.getInt(context.getString(keyRes), defaultMinutes), minMinutes, maxMinutes);
-	}
-
-	/**
-	 * Clamps a stored minutes preference to its slider range and converts to millis. Mirrors
-	 * {@link AppPrefs#clampDrainLimit}: the slider constrains UI input, but a corrupt or
-	 * out-of-range stored value (e.g. 0 sustained minutes) would otherwise defeat the sustained-window
-	 * requirement and fire on a momentary spike. Pure so it is unit-testable.
-	 *
-	 * @param storedMinutes the raw persisted value in minutes
-	 * @param minMinutes    the slider's minimum
-	 * @param maxMinutes    the slider's maximum
-	 *
-	 * @return the clamped duration in milliseconds
-	 */
-	static long clampMinutesToMs(int storedMinutes, int minMinutes, int maxMinutes) {
-		return Math.max(minMinutes, Math.min(maxMinutes, storedMinutes)) * MS_PER_MINUTE;
+		return AppPrefs.clampMinutesToMs(prefs.getInt(context.getString(keyRes), defaultMinutes), minMinutes, maxMinutes);
 	}
 }

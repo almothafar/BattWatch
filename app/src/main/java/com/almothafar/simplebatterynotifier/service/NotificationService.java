@@ -91,8 +91,11 @@ public final class NotificationService {
 	 * @param levelPercent The battery level this alert fired at. The full-battery alert's copy depends
 	 * on it (#263): a charge that completed below the user's charge target must not claim the target was reached. The critical/warning alerts word themselves
 	 * from their configured thresholds and ignore it.
+	 * @param reminder     Whether this post repeats an alert the user has already been sent — today only the unplug reminder (#264). It re-posts the same
+	 * notification ID, and a re-post is silent unless it is allowed to alert again, so this is what decides whether the user is actually reminded or the shade
+	 * quietly updates behind their back.
 	 */
-	public static void sendNotification(Context context, AlertType type, int levelPercent) {
+	public static void sendNotification(Context context, AlertType type, int levelPercent, boolean reminder) {
 		if (isNull(type)) {
 			Log.w(TAG, "No alert type given, notification not sent");
 			return;
@@ -109,8 +112,9 @@ public final class NotificationService {
 
 		final String channelId = NotificationChannels.channelFor(context, config.alertsAllowed, config.channelId);
 		final NotificationCompat.Builder builder = alertBuilder(context, channelId, config.toAlertSpec(NOTIFICATION_ID));
-		if (!type.alertsEveryTime()) {
-			// Non-critical alerts update quietly when re-posted; only critical alerts alert every time.
+		if (!type.alertsEveryTime() && !reminder) {
+			// Non-critical alerts update quietly when re-posted; only critical alerts alert every time — and a
+			// reminder, which exists precisely to be noticed again (#264).
 			builder.setOnlyAlertOnce(true);
 		}
 

@@ -52,6 +52,7 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 	private static final String PREF_PREV_TYPE = "_level_alert_prev_type";
 	private static final String PREF_FULL_NOTIFIED = "_level_alert_full_notified";
 	private static final String PREF_FULL_ALERT_SHOWN = "_level_alert_full_shown";
+	private static final String PREF_FULL_ALERT_AT = "_level_alert_full_at";
 	private static final String PREF_TEMPERATURE_ALERTED = "_temperature_alert_sent";
 
 	/**
@@ -164,10 +165,13 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 				AppPrefs.chargeTarget(context),
 				sharedPref.getBoolean(context.getString(R.string._pref_key_notify_for_warning_level), true),
 				sharedPref.getBoolean(context.getString(R.string._pref_key_notify_for_full_level), true),
-				sharedPref.getBoolean(context.getString(R.string._pref_key_notify_every_tick), false));
+				sharedPref.getBoolean(context.getString(R.string._pref_key_notify_every_tick), false),
+				AppPrefs.unplugReminderEnabled(context),
+				AppPrefs.unplugReminderGapMs(context));
 
 		final LevelAlertState previous = loadLevelState(sharedPref);
-		final LevelAlertDecision decision = decideLevelAlert(previous, percentage, power, config);
+		// The unplug reminder (#264) is the only time-dependent part of this decision; every other branch ignores the clock.
+		final LevelAlertDecision decision = decideLevelAlert(previous, percentage, power, config, System.currentTimeMillis());
 
 		// Persisted before the notification is posted, so a kill in between can only leave the
 		// recoverable "flag says shown, nothing is" state — never the reverse (#268).
@@ -176,7 +180,7 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 			NotificationService.clearLevelAlert(context);
 		}
 		if (nonNull(decision.notifyType())) {
-			NotificationService.sendNotification(context, decision.notifyType(), percentage);
+			NotificationService.sendNotification(context, decision.notifyType(), percentage, decision.reminder());
 		}
 	}
 
@@ -270,11 +274,17 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 	 * @param percentage current battery percentage (whole, via the single rounding policy #158)
 	 * @param power      what this broadcast says about charging, fullness and the cable
 	 * @param config     the user's alert thresholds and toggles
+	 * @param nowMillis  current time in millis, for the unplug reminder's gap (#264)
 	 *
-	 * @return which alert to send now ({@code null} for none), whether to dismiss a stale full alert,
-	 * and the new state to persist
+	 * @return which alert to send now ({@code null} for none), whether it is a reminder rather than the
+	 * charge session's first alert, whether to dismiss a stale full alert, and the new state to persist
 	 */
-	static LevelAlertDecision decideLevelAlert(LevelAlertState state, int percentage, ChargeState power, LevelAlertConfig config) {
+	static LevelAlertDecision decideLevelAlert(
+			LevelAlertState state,
+			int percentage,
+			ChargeState power,
+			LevelAlertConfig config,
+			long nowMillis) {
 		// Off the charger the charge session is over: re-arm exactly as the unplug transition does, and
 		// dismiss the full alert if one is still occupying the shared level-alert notification.
 		final boolean chargeSessionOver = !power.plugged() && (state.fullNotified() || state.fullAlertShown());
@@ -284,7 +294,7 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 		final boolean levelChanged = episode.prevLevel() != percentage;
 		final LevelAlertDecision decision = levelChanged && !power.charging()
 		                                    ? decideDischarging(episode, percentage, config)
-		                                    : decideChargingOrFull(episode, percentage, power, config);
+		                                    : decideChargingOrFull(episode, percentage, power, config, nowMillis);
 
 		return decision.withClearFullAlert(dismissFullAlert);
 	}
@@ -313,7 +323,7 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 		// screen is gone — and must not be "dismissed" later, which would cancel this one instead.
 		final boolean fullAlertShown = state.fullAlertShown() && isNull(notifyType);
 		return new LevelAlertDecision(notifyType,
-				new LevelAlertState(percentage, prevType, state.fullNotified(), fullAlertShown));
+				new LevelAlertState(percentage, prevType, state.fullNotified(), fullAlertShown, state.fullAlertAt()));
 	}
 
 	/**
@@ -326,26 +336,49 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 	 * <p>
 	 * The re-arm band moves with the target ({@link AppPrefs#reArmLevel}) rather than sitting at a fixed 95%. A fixed point below the target would re-arm on
 	 * the very tick the alert fired and then fire again on every percent up to 100 — seven notifications for one charge at a target of 90.
+	 * <p>
+	 * On top of that once-per-charge alert sits the opt-in unplug reminder (#264): while the charge stays done and the cable stays in, the same alert is
+	 * re-posted every {@code unplugReminderGapMs}. It is a rate-limited repeat <em>of</em> the once-per-charge episode, not a replacement for it — the
+	 * {@code fullNotified} guard is what bounds the repeat to one charge session, and the gap is measured from the last post rather than from the first, so the
+	 * reminders are evenly spaced however long the cable stays in.
 	 *
 	 * @param state      current persisted episode state
 	 * @param percentage current battery percentage
 	 * @param power      what this broadcast says about charging, fullness and the cable — the status
 	 *                   alone is not enough, see {@link #decideLevelAlert}
 	 * @param config     the user's alert thresholds and toggles
+	 * @param nowMillis  current time in millis, for the unplug reminder's gap
 	 */
-	private static LevelAlertDecision decideChargingOrFull(LevelAlertState state, int percentage, ChargeState power, LevelAlertConfig config) {
+	private static LevelAlertDecision decideChargingOrFull(
+			LevelAlertState state,
+			int percentage,
+			ChargeState power,
+			LevelAlertConfig config,
+			long nowMillis) {
 		// One reading of "the charge you asked for is done", used by both the fire condition and the re-arm below. They are exact opposites, and evaluating the
 		// predicate twice invites them to drift apart — which is the bug the re-arm comment describes.
 		final boolean chargeDone = power.reachedChargeTarget(percentage, config.chargeTarget());
 
 		boolean fullNotified = state.fullNotified();
 		boolean fullAlertShown = state.fullAlertShown();
+		long fullAlertAt = state.fullAlertAt();
 		AlertType notifyType = null;
+		boolean reminder = false;
 
-		if (!fullNotified && config.fullNotifyEnabled() && chargeDone) {
-			notifyType = AlertType.FULL;
+		if (config.fullNotifyEnabled() && chargeDone) {
+			if (!fullNotified) {
+				notifyType = AlertType.FULL;
+			} else if (dueForUnplugReminder(state, config, nowMillis)) {
+				notifyType = AlertType.FULL;
+				reminder = true;
+			}
+		}
+		// One place records "a full alert just went out", so the first alert and its reminders can't drift on what that means: the episode is open, the shared
+		// notification ID now holds a full alert, and the next reminder is timed from here.
+		if (nonNull(notifyType)) {
 			fullNotified = true;
 			fullAlertShown = true;
+			fullAlertAt = nowMillis;
 		}
 		// Only the once-per-charge flag re-arms here. Whether the alert is still on screen is a separate fact: the battery drifting down out of the band
 		// doesn't take the notification away, and conflating the two left stale full alerts undismissable after a missed unplug.
@@ -357,9 +390,34 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 		// guards the identical hazard the same way.
 		if (!chargeDone && percentage <= AppPrefs.reArmLevel(config.chargeTarget()) && percentage > config.warningLevel()) {
 			fullNotified = false;
+			// The reminder clock belongs to the episode that flag opens, so it re-arms with it rather than being left to age into an instant reminder the
+			// moment the next charge reaches the target.
+			fullAlertAt = 0;
 		}
 		return new LevelAlertDecision(notifyType,
-				new LevelAlertState(percentage, state.prevType(), fullNotified, fullAlertShown));
+				new LevelAlertState(percentage, state.prevType(), fullNotified, fullAlertShown, fullAlertAt)).withReminder(reminder);
+	}
+
+	/**
+	 * Whether the unplug reminder is switched on and its gap has elapsed since the last full alert (#264).
+	 * <p>
+	 * The gap is a <em>minimum</em>: reminders ride the {@code ACTION_BATTERY_CHANGED} broadcasts rather than an alarm of their own — the same no-timer design
+	 * as the fast-drain reminder — so a phone that goes quiet on the charger reminds late rather than on the dot.
+	 * <p>
+	 * A missing timestamp ({@code 0}) never reminds. That is the state an install upgrading mid-charge is in — the flag saying an alert already fired, with no
+	 * record of when — and treating an absent time as "long ago" would greet exactly those users with a reminder the instant they updated. The next charge
+	 * records a real timestamp and reminds normally.
+	 *
+	 * @param state     current persisted episode state
+	 * @param config    the user's alert thresholds and toggles
+	 * @param nowMillis current time in millis
+	 *
+	 * @return true when a reminder is due now
+	 */
+	private static boolean dueForUnplugReminder(LevelAlertState state, LevelAlertConfig config, long nowMillis) {
+		return config.unplugReminderEnabled()
+				&& state.fullAlertAt() != 0
+				&& nowMillis - state.fullAlertAt() >= config.unplugReminderGapMs();
 	}
 
 	/**
@@ -398,7 +456,8 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 				prefs.getInt(PREF_PREV_LEVEL, 0),
 				AlertType.fromPersistedId(prefs.getInt(PREF_PREV_TYPE, 0)),
 				prefs.getBoolean(PREF_FULL_NOTIFIED, false),
-				prefs.getBoolean(PREF_FULL_ALERT_SHOWN, false));
+				prefs.getBoolean(PREF_FULL_ALERT_SHOWN, false),
+				prefs.getLong(PREF_FULL_ALERT_AT, 0));
 	}
 
 	static void saveLevelState(SharedPreferences prefs, LevelAlertState state) {
@@ -426,7 +485,8 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 		            .putInt(PREF_PREV_LEVEL, state.prevLevel())
 		            .putInt(PREF_PREV_TYPE, AlertType.persistedId(state.prevType()))
 		            .putBoolean(PREF_FULL_NOTIFIED, state.fullNotified())
-		            .putBoolean(PREF_FULL_ALERT_SHOWN, state.fullAlertShown());
+		            .putBoolean(PREF_FULL_ALERT_SHOWN, state.fullAlertShown())
+		            .putLong(PREF_FULL_ALERT_AT, state.fullAlertAt());
 	}
 
 	/**
@@ -435,8 +495,8 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 	 * SharedPreferences on every tick.
 	 * <p>
 	 * The transition that puts a full alert on screen goes through {@link #saveLevelStateDurably};
-	 * everything else, the re-arm included, stays asynchronous. Losing a re-arm write is self-healing —
-	 * the next tick re-decides it — so only the one unrecoverable write pays for the disk wait.
+	 * everything else, the re-arm and the unplug reminder's timestamp included, stays asynchronous. Losing one of those writes is self-healing — the next tick
+	 * re-decides the re-arm, and a lost reminder timestamp costs at most one extra reminder — so only the one unrecoverable write pays for the disk wait.
 	 *
 	 * @param prefs    the shared preferences
 	 * @param previous the state loaded at the start of this tick
@@ -466,8 +526,27 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 	 *                       notification. Distinct from {@code fullNotified}: the band re-arms that
 	 *                       one while the notification is still up, and a critical/warning alert
 	 *                       repaints the ID without ending the charge session
+	 * @param fullAlertAt    when the full alert was last posted, in millis ({@code 0} = never this episode). The unplug reminder (#264) measures its gap from
+	 *                       here; it re-arms with {@code fullNotified}, whose episode it belongs to
 	 */
-	record LevelAlertState(int prevLevel, AlertType prevType, boolean fullNotified, boolean fullAlertShown) {
+	record LevelAlertState(
+			int prevLevel,
+			AlertType prevType,
+			boolean fullNotified,
+			boolean fullAlertShown,
+			long fullAlertAt) {
+
+		/**
+		 * Episode state with no full alert on the clock — every state in which {@code fullNotified} is false, and the state a pre-#264 install reads back.
+		 *
+		 * @param prevLevel      the percentage seen on the previous broadcast
+		 * @param prevType       the last level alert sent while discharging ({@code null} when none)
+		 * @param fullNotified   whether the full-battery alert has fired this charge session
+		 * @param fullAlertShown whether a full alert currently occupies the shared level-alert notification
+		 */
+		LevelAlertState(int prevLevel, AlertType prevType, boolean fullNotified, boolean fullAlertShown) {
+			this(prevLevel, prevType, fullNotified, fullAlertShown, 0);
+		}
 	}
 
 	/**
@@ -530,12 +609,15 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 	 * The user's alert thresholds and toggles (reduces parameter count, like
 	 * {@code NotificationConfig}).
 	 *
-	 * @param criticalLevel     critical alert threshold in percent
-	 * @param warningLevel      warning alert threshold in percent
-	 * @param chargeTarget      the level the full-battery alert fires at while charging (#263)
-	 * @param warningEnabled    whether the warning alert is enabled
-	 * @param fullNotifyEnabled whether the full-battery alert is enabled
-	 * @param alertEveryTick    whether the critical alert repeats on every level tick
+	 * @param criticalLevel          critical alert threshold in percent
+	 * @param warningLevel           warning alert threshold in percent
+	 * @param chargeTarget           the level the full-battery alert fires at while charging (#263)
+	 * @param warningEnabled         whether the warning alert is enabled
+	 * @param fullNotifyEnabled      whether the full-battery alert is enabled
+	 * @param alertEveryTick         whether the critical alert repeats on every level tick — the <b>critical</b> alert only; the full alert's repeat is the
+	 *                               separate, opt-in {@code unplugReminderEnabled} below
+	 * @param unplugReminderEnabled  whether the full-battery alert repeats until the charger comes out (#264)
+	 * @param unplugReminderGapMs    minimum gap between those reminders, in millis
 	 */
 	record LevelAlertConfig(
 			int criticalLevel,
@@ -543,7 +625,9 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 			int chargeTarget,
 			boolean warningEnabled,
 			boolean fullNotifyEnabled,
-			boolean alertEveryTick) {
+			boolean alertEveryTick,
+			boolean unplugReminderEnabled,
+			long unplugReminderGapMs) {
 	}
 
 	/**
@@ -554,8 +638,11 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 	 * @param newState       the state to persist
 	 * @param clearFullAlert whether a full-battery alert shown from a finished charge session must be
 	 *                       dismissed (the charger is out)
+	 * @param reminder       whether {@code notifyType} is an unplug reminder re-posting an alert this charge session already sent (#264), rather than that
+	 *                       session's first alert. The dispatcher needs the distinction: a re-post that keeps {@code setOnlyAlertOnce} slips into the shade in
+	 *                       silence, and a reminder nobody notices is the miss the feature exists to prevent
 	 */
-	record LevelAlertDecision(AlertType notifyType, LevelAlertState newState, boolean clearFullAlert) {
+	record LevelAlertDecision(AlertType notifyType, LevelAlertState newState, boolean clearFullAlert, boolean reminder) {
 
 		/**
 		 * A decision from one of the branch helpers, which see a single broadcast's level and cannot
@@ -566,7 +653,7 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 		 * @param newState   the state to persist
 		 */
 		LevelAlertDecision(AlertType notifyType, LevelAlertState newState) {
-			this(notifyType, newState, false);
+			this(notifyType, newState, false, false);
 		}
 
 		/**
@@ -577,7 +664,20 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 		 * @return the same decision carrying {@code clear}
 		 */
 		LevelAlertDecision withClearFullAlert(boolean clear) {
-			return new LevelAlertDecision(notifyType, newState, clear);
+			return new LevelAlertDecision(notifyType, newState, clear, reminder);
+		}
+
+		/**
+		 * This decision marked as an unplug reminder rather than the charge session's first alert (#264). A separate wither for the same reason as
+		 * {@link #withClearFullAlert}: it keeps the branch helpers off the four-argument constructor, where two adjacent booleans are one transposition away
+		 * from silently swapping "dismiss this" with "re-alert for this".
+		 *
+		 * @param repeat whether this dispatch repeats an alert already sent this charge session
+		 *
+		 * @return the same decision carrying {@code repeat}
+		 */
+		LevelAlertDecision withReminder(boolean repeat) {
+			return new LevelAlertDecision(notifyType, newState, clearFullAlert, repeat);
 		}
 	}
 

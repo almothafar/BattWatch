@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.Locale;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
@@ -82,7 +83,7 @@ public class NotificationServiceTest {
 
 		@Test
 		public void chargeNotification_doesNotReplaceLevelAlert() {
-			NotificationService.sendNotification(context, AlertType.CRITICAL, 15);
+			NotificationService.sendNotification(context, AlertType.CRITICAL, 15, false);
 			NotificationService.notifyChargeConnected(context, ChargeSpeed.unknown(), false);
 
 			// Distinct IDs: both must be showing, not "Charging started" swallowing the critical alert.
@@ -91,7 +92,7 @@ public class NotificationServiceTest {
 
 		@Test
 		public void clearNotifications_onDisconnect_removesLevelAlertAndChargeNotification() {
-			NotificationService.sendNotification(context, AlertType.CRITICAL, 15);
+			NotificationService.sendNotification(context, AlertType.CRITICAL, 15, false);
 			NotificationService.notifyChargeConnected(context, ChargeSpeed.unknown(), false);
 
 			NotificationService.clearNotifications(context);
@@ -102,7 +103,7 @@ public class NotificationServiceTest {
 
 		@Test
 		public void clearLevelAlert_dismissesOnlyTheLevelAlert() {
-			NotificationService.sendNotification(context, AlertType.CRITICAL, 15);
+			NotificationService.sendNotification(context, AlertType.CRITICAL, 15, false);
 			NotificationService.notifyChargeConnected(context, ChargeSpeed.unknown(), false);
 
 			NotificationService.clearLevelAlert(context);
@@ -138,9 +139,61 @@ public class NotificationServiceTest {
 		public void nullAlertType_postsNothing() {
 			// The old int API's default branch posted a completely BLANK notification for an invalid
 			// type (#160). With the enum, the only invalid value left is null — and it must be a no-op.
-			NotificationService.sendNotification(context, null, 50);
+			NotificationService.sendNotification(context, null, 50, false);
 
 			assertEquals(0, shadowOf(manager).size());
+		}
+	}
+
+	/**
+	 * Which posts are allowed to alert the user again (#264).
+	 * <p>
+	 * The level alerts share one notification ID, so every full-battery post after the first is a re-post of that ID. Android only re-alerts on a re-post when
+	 * {@code FLAG_ONLY_ALERT_ONCE} is absent — which is exactly what separates a reminder the user notices from a shade entry that quietly updates behind
+	 * their back. It is the one property the unplug reminder cannot work without, and nothing above this layer can assert it.
+	 */
+	@RunWith(RobolectricTestRunner.class)
+	@Config(sdk = 34)
+	public static class ReminderAlertsAgain {
+
+		private Context context;
+		private NotificationManager manager;
+
+		@Before
+		public void setUp() {
+			context = ApplicationProvider.getApplicationContext();
+			shadowOf((Application) context).grantPermissions(Manifest.permission.POST_NOTIFICATIONS);
+			manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+		}
+
+		@Test
+		public void firstFullAlert_updatesQuietlyOnARePost() {
+			NotificationService.sendNotification(context, AlertType.FULL, 90, false);
+
+			assertTrue("the charge session's first full alert should keep setOnlyAlertOnce", onlyAlertsOnce(latestNotification()));
+		}
+
+		@Test
+		public void unplugReminder_alertsAgain() {
+			NotificationService.sendNotification(context, AlertType.FULL, 90, true);
+
+			assertFalse("a reminder that only-alerts-once re-posts in silence, reminding nobody", onlyAlertsOnce(latestNotification()));
+		}
+
+		@Test
+		public void criticalAlert_alertsEveryTimeWithoutBeingAReminder() {
+			// The pre-existing per-type rule, unchanged: the critical alert already re-alerts on every post, so the reminder flag has nothing to add there.
+			NotificationService.sendNotification(context, AlertType.CRITICAL, 15, false);
+
+			assertFalse(onlyAlertsOnce(latestNotification()));
+		}
+
+		private Notification latestNotification() {
+			return shadowOf(manager).getAllNotifications().get(0);
+		}
+
+		private static boolean onlyAlertsOnce(Notification notification) {
+			return (notification.flags & Notification.FLAG_ONLY_ALERT_ONCE) != 0;
 		}
 	}
 

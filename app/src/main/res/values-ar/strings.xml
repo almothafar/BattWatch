@@ -119,6 +119,10 @@
     <string name="charge_target">هدف الشحن</string>
     <string name="charge_target_summary">تنبيه عند %1$s — شارف على الاكتمال، أفضل لعمر البطارية</string>
     <string name="charge_target_summary_full">تنبيه عند %1$s — شحن كامل</string>
+    <string name="notify_unplug_reminder">ذكّرني حتى أفصل الشاحن</string>
+    <string name="notify_unplug_reminder_summary_on">يتكرر التنبيه ما دام الشاحن موصولًا</string>
+    <string name="notify_unplug_reminder_summary_off">يصل التنبيه مرة واحدة لكل شحنة</string>
+    <string name="unplug_reminder_minutes">التذكير كل (دقائق)</string>
     <string name="notify_every_tick">التنبيه للمستوى الحرج كل (\u20661%\u2069)</string>
     <string name="notify_every_tick_summary_on">التنبيه كل درجة (\u20661%\u2069) للمستوى الحرج مفعل</string>
     <string name="notify_every_tick_summary_off">التنبيه كل درجة (\u20661%\u2069) للمستوى الحرج معطل</string>
