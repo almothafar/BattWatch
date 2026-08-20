@@ -50,8 +50,6 @@ final class NotificationConfig {
 		this.ignoreSilent = QuietHours.shouldIgnoreSilentMode(context, prefs);
 		this.vibrate = AppPrefs.vibrateEnabled(context);
 
-		final String defaultSound = context.getString(R.string._default_notification_sound_uri);
-
 		// A switch EXPRESSION over the enum is exhaustive at compile time — the old int switch
 		// needed a default branch, which posted a completely blank notification on any invalid
 		// type value (issue #160). That branch can no longer exist.
@@ -59,13 +57,15 @@ final class NotificationConfig {
 		// Each branch reads only its own threshold, so the full-battery alert — the one that fires at the end of every charge — does no preference lookups for
 		// levels it never names.
 		final AlertStyle style = switch (type) {
-			case CRITICAL -> criticalAlertStyle(context, prefs, defaultSound);
-			case WARNING -> warningAlertStyle(context, prefs, defaultSound);
-			case FULL -> fullAlertStyle(context, prefs, defaultSound, levelPercent);
+			case CRITICAL -> criticalAlertStyle(context);
+			case WARNING -> warningAlertStyle(context);
+			case FULL -> fullAlertStyle(context, levelPercent);
 		};
 		this.channelId = style.channelId();
 		this.iconRes = style.iconRes();
-		this.alarmSound = style.alarmSound();
+		// The channel this alert posts on is what decides which sound pick applies, so the override-silent playback below can't
+		// end up on a different sound from the one the channel itself plays (#286).
+		this.alarmSound = NotificationChannels.alertSoundUri(context, this.channelId);
 		this.ticker = style.ticker();
 		this.title = style.title();
 		this.content = style.content();
@@ -82,18 +82,15 @@ final class NotificationConfig {
 	 * That sign is why the level is isolated before it goes into the copy (#275): every string below sets it against Arabic prose, where a bare {@code "20%"}
 	 * renders {@code %20}. Isolating the formatted level — not the digits alone — keeps the sign on the number it belongs to.
 	 *
-	 * @param context      The application context
-	 * @param prefs        SharedPreferences containing user settings
-	 * @param defaultSound the fallback alarm sound URI
+	 * @param context The application context
 	 *
 	 * @return the copy and channel for this alert
 	 */
-	private static AlertStyle criticalAlertStyle(Context context, SharedPreferences prefs, String defaultSound) {
+	private static AlertStyle criticalAlertStyle(Context context) {
 		final String levelText = isolate(BatteryPercentFormatter.formatWhole(AppPrefs.criticalLevel(context)));
 		return new AlertStyle(
 				NotificationChannels.CHANNEL_ID_CRITICAL,
 				R.drawable.ic_stat_battery_alert,
-				prefs.getString(context.getString(R.string._pref_key_notifications_alert_sound_ringtone), defaultSound),
 				context.getString(R.string.notification_critical_ticker, levelText),
 				context.getString(R.string.notification_critical_title),
 				context.getString(R.string.notification_critical_content, levelText),
@@ -103,18 +100,15 @@ final class NotificationConfig {
 	/**
 	 * The warning alert's presentation — the critical alert's shape one threshold up, on its own channel and sound.
 	 *
-	 * @param context      The application context
-	 * @param prefs        SharedPreferences containing user settings
-	 * @param defaultSound the fallback alarm sound URI
+	 * @param context The application context
 	 *
 	 * @return the copy and channel for this alert
 	 */
-	private static AlertStyle warningAlertStyle(Context context, SharedPreferences prefs, String defaultSound) {
+	private static AlertStyle warningAlertStyle(Context context) {
 		final String levelText = isolate(BatteryPercentFormatter.formatWhole(AppPrefs.warningLevel(context)));
 		return new AlertStyle(
 				NotificationChannels.CHANNEL_ID_WARNING,
 				R.drawable.ic_stat_battery_low,
-				prefs.getString(context.getString(R.string._pref_key_notifications_warning_sound_ringtone), defaultSound),
 				context.getString(R.string.notification_warning_ticker, levelText),
 				context.getString(R.string.notification_warning_title),
 				context.getString(R.string.notification_warning_content, levelText),
@@ -134,13 +128,11 @@ final class NotificationConfig {
 	 * rather than one parameterised one — the messages differ in more than a number.
 	 *
 	 * @param context      The application context
-	 * @param prefs        SharedPreferences containing user settings
-	 * @param defaultSound the fallback alarm sound URI
 	 * @param levelPercent the battery level the alert fired at
 	 *
 	 * @return the copy and channel for this alert
 	 */
-	private static AlertStyle fullAlertStyle(Context context, SharedPreferences prefs, String defaultSound, int levelPercent) {
+	private static AlertStyle fullAlertStyle(Context context, int levelPercent) {
 		final int target = AppPrefs.chargeTarget(context);
 		// Below the target the only way here is a charge the battery reported as complete.
 		final boolean chargeIsComplete = AppPrefs.targetIsAFullCharge(target) || levelPercent < target;
@@ -173,7 +165,6 @@ final class NotificationConfig {
 		return new AlertStyle(
 				NotificationChannels.CHANNEL_ID_FULL,
 				R.drawable.ic_stat_battery_full,
-				prefs.getString(context.getString(R.string._pref_key_notifications_full_sound_ringtone), defaultSound),
 				ticker,
 				title,
 				content,
@@ -198,7 +189,6 @@ final class NotificationConfig {
 	 *
 	 * @param channelId  the audible base channel ID for this type
 	 * @param iconRes    the small-icon resource
-	 * @param alarmSound the user's chosen alarm sound for this type
 	 * @param ticker     the ticker text
 	 * @param title      the notification title
 	 * @param content    the collapsed content line
@@ -207,7 +197,6 @@ final class NotificationConfig {
 	private record AlertStyle(
 			String channelId,
 			int iconRes,
-			String alarmSound,
 			String ticker,
 			String title,
 			String content,

@@ -289,9 +289,10 @@ public class GenericPreferenceFragment extends CardPreferenceFragment
 		final Preference pref = findPreference(key);
 		updatePreferencesSummary(sharedPreferences, pref);
 
-		// The Vibrate toggle changes channel settings, which Android caches; recreate the alert
-		// channels under new versioned IDs so the new setting takes effect (#153).
-		if (nonNull(key) && key.equals(getString(R.string._pref_key_notifications_vibrate))) {
+		// The Vibrate toggle and the three per-severity sound picks are baked into the alert channels, which Android
+		// caches; recreate the channels under new versioned IDs so the new setting takes effect (#153, #286). Which
+		// preferences those are is the channel registry's to know, not this screen's.
+		if (NotificationService.affectsAlertChannels(requireContext(), key)) {
 			NotificationService.refreshAlertChannels(requireContext());
 		}
 	}

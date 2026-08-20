@@ -22,12 +22,14 @@ import org.junit.runners.Parameterized.Parameters;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 
+import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Locale;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
@@ -225,6 +227,62 @@ public class NotificationServiceTest {
 			assertTrue(text, text.contains("واط"));
 			assertTrue(text, text.contains("18"));
 			assertTrue("Eastern digits leaked into the charge-connected message: " + text, !text.contains("١٨"));
+		}
+	}
+
+	/**
+	 * Quiet hours still swallow the sound, whatever the user picked (#111/#286).
+	 * <p>
+	 * The picks reach the alert channels now, while outside the notification window an alert is rerouted to the shared
+	 * silent channel instead — so a pick has to stay behind on the channel it was set on. One that followed the alert
+	 * onto the quiet-hours channel would ding at 3am on exactly the alerts quiet hours exist to silence.
+	 */
+	@RunWith(RobolectricTestRunner.class)
+	@Config(sdk = 34)
+	public static class QuietHoursRouting {
+
+		private Context context;
+		private NotificationManager manager;
+
+		@Before
+		public void setUp() {
+			context = ApplicationProvider.getApplicationContext();
+			shadowOf((Application) context).grantPermissions(Manifest.permission.POST_NOTIFICATIONS);
+			manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+
+			// A loud pick, and a one-minute notification window starting two minutes from now — so "now" is outside it
+			// whatever time of day the suite runs at, without the test having to freeze the clock.
+			final LocalTime windowStart = LocalTime.now().plusMinutes(2);
+			PreferenceManager.getDefaultSharedPreferences(context)
+					.edit()
+					.putString(context.getString(R.string._pref_key_notifications_alert_sound_ringtone), "content://media/internal/audio/media/101")
+					.putBoolean(context.getString(R.string._pref_key_notifications_time_range), true)
+					.putString(context.getString(R.string._pref_key_notifications_time_range_start), asHourMinute(windowStart))
+					.putString(context.getString(R.string._pref_key_notifications_time_range_end), asHourMinute(windowStart.plusMinutes(1)))
+					.commit();
+		}
+
+		@Test
+		public void alertOutsideTheWindow_postsOnTheSilentChannel() {
+			NotificationService.sendTemperatureNotification(context, 460);
+
+			assertEquals(NotificationChannels.CHANNEL_ID_ALERTS_SILENT, postedChannelId());
+		}
+
+		@Test
+		public void theChannelItLandsOn_playsNothing() {
+			NotificationService.sendTemperatureNotification(context, 460);
+
+			assertNull("a sound pick must not follow an alert onto the quiet-hours channel",
+					manager.getNotificationChannel(postedChannelId()).getSound());
+		}
+
+		private String postedChannelId() {
+			return shadowOf(manager).getAllNotifications().get(0).getChannelId();
+		}
+
+		private static String asHourMinute(LocalTime time) {
+			return String.format(Locale.ROOT, "%02d:%02d", time.getHour(), time.getMinute());
 		}
 	}
 

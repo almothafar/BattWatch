@@ -5,6 +5,8 @@ import android.app.NotificationManager;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.media.AudioAttributes;
+import android.net.Uri;
 
 import androidx.preference.PreferenceManager;
 
@@ -12,6 +14,7 @@ import com.almothafar.simplebatterynotifier.R;
 import com.almothafar.simplebatterynotifier.util.AppPrefs;
 
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 
 /**
  * The notification-channel registry (issue #166): creates, updates, refreshes and resolves the app's
@@ -22,6 +25,12 @@ import static java.util.Objects.isNull;
  * (see {@link #versionedChannelId}) because Android un-deletes a channel recreated under the same ID,
  * restoring its old settings — which made the Vibrate toggle a no-op (issue #153).
  * {@link #refreshAlertChannels} bumps the version so a changed setting really applies.
+ * <p>
+ * From Android 8 the <em>channel</em> owns the alert sound, so the user's per-severity sound picks are applied here
+ * as well ({@link #alertSoundUri}). Until they were, every alert channel was created with the framework default and
+ * the three pickers on Settings › Alerts saved a choice that changed nothing audible (issue #286). A sound pick is
+ * therefore as much a channel setting as the Vibrate toggle, and re-versions the channels the same way — see
+ * {@link #affectsAlertChannels}.
  */
 final class NotificationChannels {
 
@@ -40,7 +49,7 @@ final class NotificationChannels {
 
 	// Current version of the alert channels' settings, stored in the default SharedPreferences.
 	// Version 1 means the original unsuffixed channel IDs, so existing installs keep their channels
-	// (and any per-channel tweaks) until the user first changes the Vibrate preference.
+	// (and any per-channel tweaks) until the user first changes a setting the channels are made of.
 	private static final String PREF_ALERT_CHANNEL_VERSION = "alert_channel_version";
 
 	private NotificationChannels() {
@@ -65,22 +74,28 @@ final class NotificationChannels {
 
 		createOrUpdateAlertChannel(manager, versionedChannelId(CHANNEL_ID_CRITICAL, version),
 				context.getString(R.string.notification_critical_channel_name),
-				context.getString(R.string.notification_critical_channel_description), Color.RED, vibrate);
+				context.getString(R.string.notification_critical_channel_description), Color.RED, vibrate,
+				alertSoundUri(context, CHANNEL_ID_CRITICAL));
 		createOrUpdateAlertChannel(manager, versionedChannelId(CHANNEL_ID_WARNING, version),
 				context.getString(R.string.notification_warning_channel_name),
-				context.getString(R.string.notification_warning_channel_description), Color.rgb(0xff, 0x66, 0x00), vibrate);
+				context.getString(R.string.notification_warning_channel_description), Color.rgb(0xff, 0x66, 0x00), vibrate,
+				alertSoundUri(context, CHANNEL_ID_WARNING));
 		createOrUpdateAlertChannel(manager, versionedChannelId(CHANNEL_ID_FULL, version),
 				context.getString(R.string.notification_full_channel_name),
-				context.getString(R.string.notification_full_channel_description), Color.GREEN, vibrate);
+				context.getString(R.string.notification_full_channel_description), Color.GREEN, vibrate,
+				alertSoundUri(context, CHANNEL_ID_FULL));
 		createOrUpdateAlertChannel(manager, versionedChannelId(CHANNEL_ID_TEMPERATURE, version),
 				context.getString(R.string.notification_temperature_channel_name),
-				context.getString(R.string.notification_temperature_channel_description), Color.RED, vibrate);
+				context.getString(R.string.notification_temperature_channel_description), Color.RED, vibrate,
+				alertSoundUri(context, CHANNEL_ID_TEMPERATURE));
 		createOrUpdateAlertChannel(manager, versionedChannelId(CHANNEL_ID_FAST_DRAIN, version),
 				context.getString(R.string.notification_fast_drain_channel_name),
-				context.getString(R.string.notification_fast_drain_channel_description), Color.rgb(0xff, 0x66, 0x00), vibrate);
+				context.getString(R.string.notification_fast_drain_channel_description), Color.rgb(0xff, 0x66, 0x00), vibrate,
+				alertSoundUri(context, CHANNEL_ID_FAST_DRAIN));
 		createOrUpdateAlertChannel(manager, versionedChannelId(CHANNEL_ID_SLOW_CHARGE, version),
 				context.getString(R.string.notification_slow_charge_channel_name),
-				context.getString(R.string.notification_slow_charge_channel_description), Color.rgb(0xff, 0x66, 0x00), vibrate);
+				context.getString(R.string.notification_slow_charge_channel_description), Color.rgb(0xff, 0x66, 0x00), vibrate,
+				alertSoundUri(context, CHANNEL_ID_SLOW_CHARGE));
 		createOrUpdateSilentChannel(manager, CHANNEL_ID_STATUS,
 				context.getString(R.string.notification_status_channel_name),
 				context.getString(R.string.notification_status_channel_description));
@@ -90,13 +105,13 @@ final class NotificationChannels {
 	}
 
 	/**
-	 * Re-create the alert channels so a changed "Vibrate" preference takes effect.
+	 * Re-create the alert channels so a changed "Vibrate" or sound preference takes effect.
 	 * <p>
 	 * Deleting and recreating a channel under the same ID is not enough: Android un-deletes it with
 	 * its old settings (issue #153). So the old-version channels are deleted (keeping system
 	 * settings free of orphans) and the channels are recreated under the next version's IDs, which
-	 * the system treats as brand-new channels with the new vibration setting. The silent channels
-	 * are untouched.
+	 * the system treats as brand-new channels with the new settings. The silent channels are
+	 * untouched.
 	 *
 	 * @param context The application context
 	 */
@@ -117,6 +132,57 @@ final class NotificationChannels {
 
 		prefs.edit().putInt(PREF_ALERT_CHANNEL_VERSION, oldVersion + 1).apply();
 		ensureChannels(context);
+	}
+
+	/**
+	 * Whether a changed preference is one the alert channels are built from, so the channels have to be re-created
+	 * for it to take effect: the "Vibrate" toggle (issue #153) and the three per-severity sound picks (issue #286).
+	 * <p>
+	 * Android freezes a channel's sound and vibration at creation, so a setting that never reaches
+	 * {@link #refreshAlertChannels} is simply ignored — which is what made both of these look like they worked and
+	 * not. Kept here, next to the channels themselves, so the settings screen doesn't accumulate its own list of
+	 * which preferences happen to be channel settings.
+	 *
+	 * @param context The application context
+	 * @param prefKey the preference key that changed, or null
+	 *
+	 * @return true when the alert channels have to be re-created under a new version
+	 */
+	static boolean affectsAlertChannels(Context context, String prefKey) {
+		return nonNull(prefKey) && (prefKey.equals(context.getString(R.string._pref_key_notifications_vibrate))
+				|| prefKey.equals(context.getString(R.string._pref_key_notifications_alert_sound_ringtone))
+				|| prefKey.equals(context.getString(R.string._pref_key_notifications_warning_sound_ringtone))
+				|| prefKey.equals(context.getString(R.string._pref_key_notifications_full_sound_ringtone)));
+	}
+
+	/**
+	 * The sound an alert channel plays: the URI the user picked for the severity bucket that channel belongs to.
+	 * <p>
+	 * Three pickers cover six channels, so the two rate alerts and the overheat alert — which have no picker of their
+	 * own — need a bucket that is chosen rather than the critical pref they reached by accident (issue #286). The
+	 * mapping is the one #223 designs its bundled sounds around: the critical level and overheating are the same
+	 * "act now" severity, while low battery, fast drain and slow charge are all "something is off, look at it".
+	 * <p>
+	 * The same resolution feeds the channel and {@link AlertSounds#playAlarm}, so the sound a user hears can't depend
+	 * on which of the two paths delivered the alert.
+	 * <p>
+	 * An empty result is a real answer, not a missing one: it is what the picker's "Silent" option persists.
+	 *
+	 * @param context       The application context
+	 * @param baseChannelId the unversioned channel ID whose sound is wanted
+	 *
+	 * @return the picked sound URI, empty when the user chose Silent, or the device's default notification sound
+	 */
+	static String alertSoundUri(Context context, String baseChannelId) {
+		final int soundKeyRes = switch (baseChannelId) {
+			case CHANNEL_ID_FULL -> R.string._pref_key_notifications_full_sound_ringtone;
+			case CHANNEL_ID_WARNING, CHANNEL_ID_FAST_DRAIN, CHANNEL_ID_SLOW_CHARGE -> R.string._pref_key_notifications_warning_sound_ringtone;
+			// The critical bucket takes the overheat alert and, deliberately, anything added later without a bucket of
+			// its own: an alert on a neighbouring severity's sound is a far smaller failure than one that loses its sound.
+			default -> R.string._pref_key_notifications_alert_sound_ringtone;
+		};
+		final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+		return prefs.getString(context.getString(soundKeyRes), context.getString(R.string._default_notification_sound_uri));
 	}
 
 	/**
@@ -153,10 +219,10 @@ final class NotificationChannels {
 
 	/**
 	 * The current alert-channel settings version, bumped by {@link #refreshAlertChannels(Context)}
-	 * whenever the Vibrate preference changes.
+	 * whenever one of the {@link #affectsAlertChannels} preferences changes.
 	 *
 	 * @param prefs the default SharedPreferences
-	 * @return the current version, 1 for installs that never changed the Vibrate preference
+	 * @return the current version, 1 for installs that never changed one of those preferences
 	 */
 	private static int alertChannelVersion(SharedPreferences prefs) {
 		return prefs.getInt(PREF_ALERT_CHANNEL_VERSION, 1);
@@ -202,9 +268,15 @@ final class NotificationChannels {
 	 * @param description The channel description
 	 * @param ledColor    The LED color for notifications
 	 * @param vibrate     Whether the channel should vibrate (from the user's Vibrate preference)
+	 * @param soundUri    The sound to play, from the user's pick for this channel's severity bucket (#286)
 	 */
-	private static void createOrUpdateAlertChannel(NotificationManager manager, String channelId, String name, String description,
-	                                               int ledColor, boolean vibrate) {
+	private static void createOrUpdateAlertChannel(NotificationManager manager,
+	                                               String channelId,
+	                                               String name,
+	                                               String description,
+	                                               int ledColor,
+	                                               boolean vibrate,
+	                                               String soundUri) {
 		final NotificationChannel channel = new NotificationChannel(channelId, name, NotificationManager.IMPORTANCE_HIGH);
 		channel.setDescription(description);
 		channel.enableLights(true);
@@ -213,7 +285,45 @@ final class NotificationChannels {
 		if (vibrate) {
 			channel.setVibrationPattern(SystemService.VIBRATION_PATTERN);
 		}
+		// Set at creation and frozen there by the system, which is why a changed pick comes back through
+		// refreshAlertChannels rather than being re-applied on the next ensureChannels (#286).
+		channel.setSound(soundUriOrSilent(soundUri), alertAudioAttributes());
 		manager.createNotificationChannel(channel);
+	}
+
+	/**
+	 * The picked sound as a {@link Uri}, or null for the picker's "Silent" choice.
+	 * <p>
+	 * {@code RingtonePreference} persists Silent as an empty string, and {@code setSound(null, …)} is how a channel
+	 * says "no sound" — so the empty string has to be translated into that null rather than parsed into an empty
+	 * {@code Uri} that resolves to nothing at post time.
+	 *
+	 * @param soundUri the persisted sound URI, possibly empty
+	 *
+	 * @return the sound to set on the channel, or null for no sound
+	 */
+	private static Uri soundUriOrSilent(String soundUri) {
+		return isNull(soundUri) || soundUri.isEmpty() ? null : Uri.parse(soundUri);
+	}
+
+	/**
+	 * The attributes an alert channel's sound plays under: a notification, so it follows the notification stream's
+	 * volume and the system's Do Not Disturb rules.
+	 * <p>
+	 * Deliberately not the {@code USAGE_ALARM} that {@link AlertSounds} plays under. That path exists to be heard when
+	 * notifications are silenced, and this one is suppressed in exactly those conditions, so the channel sound and the
+	 * override-silent sound can never double up (issue #286).
+	 * <p>
+	 * Built per call rather than held in a static field: a static initializer touching {@code android.media} would
+	 * throw {@code Stub!} in the plain-JUnit tests that use this class's pure channel-ID helpers.
+	 *
+	 * @return the audio attributes for an alert channel's sound
+	 */
+	private static AudioAttributes alertAudioAttributes() {
+		return new AudioAttributes.Builder()
+				.setUsage(AudioAttributes.USAGE_NOTIFICATION)
+				.setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+				.build();
 	}
 
 	private static NotificationManager getManager(Context context) {
