@@ -13,6 +13,7 @@ import com.almothafar.simplebatterynotifier.service.SustainedConditionTracker.St
 import com.almothafar.simplebatterynotifier.util.AppPrefs;
 
 import static java.util.Objects.isNull;
+import static java.util.concurrent.TimeUnit.MINUTES;
 
 /**
  * Warns when the battery drains abnormally fast for a <em>sustained</em> time (issue #109).
@@ -41,17 +42,6 @@ public final class FastDrainDetector {
 
 	private static final StreakStore STORE =
 			new StreakStore(PREF_STREAK_START, PREF_ALERTED, PREF_LAST_SEEN_ABOVE, PREF_LAST_REMINDER);
-
-	// Defaults and accepted ranges (user-tunable), matching the settings XML min/max — enforced when the
-	// preferences are read, so a corrupt/out-of-range value can't turn this into a spike alarm.
-	static final int DEFAULT_SUSTAINED_MINUTES = 5;
-	static final int MIN_SUSTAINED_MINUTES = 1;
-	static final int MAX_SUSTAINED_MINUTES = 30;
-	static final int DEFAULT_REMINDER_MINUTES = 15;
-	static final int MIN_REMINDER_MINUTES = 5;
-	static final int MAX_REMINDER_MINUTES = 60;
-
-	private static final long MS_PER_MINUTE = 60_000L;
 
 	private FastDrainDetector() {
 		// Utility class - prevent instantiation
@@ -92,10 +82,8 @@ public final class FastDrainDetector {
 		}
 
 		final int limit = AppPrefs.drainLimitPph(context);
-		final long sustainedMs = minutesPref(prefs, context, R.string._pref_key_fast_drain_sustained_minutes,
-				DEFAULT_SUSTAINED_MINUTES, MIN_SUSTAINED_MINUTES, MAX_SUSTAINED_MINUTES);
-		final long reminderGapMs = minutesPref(prefs, context, R.string._pref_key_fast_drain_reminder_minutes,
-				DEFAULT_REMINDER_MINUTES, MIN_REMINDER_MINUTES, MAX_REMINDER_MINUTES);
+		final long sustainedMs = AppPrefs.fastDrainSustainedMs(context);
+		final long reminderGapMs = AppPrefs.fastDrainReminderGapMs(context);
 		final boolean activelyUsed = SystemService.isActivelyUsed(context);
 		final long now = System.currentTimeMillis();
 
@@ -104,7 +92,7 @@ public final class FastDrainDetector {
 
 		STORE.saveIfChanged(transientPrefs, decision.newState());
 		if (decision.shouldNotify()) {
-			final int elapsedMinutes = Math.max(1, Math.round(decision.elapsedMs() / (float) MS_PER_MINUTE));
+			final int elapsedMinutes = Math.max(1, Math.round(decision.elapsedMs() / (float) MINUTES.toMillis(1)));
 			NotificationService.sendFastDrainNotification(context, rate.percentPerHour(), limit, elapsedMinutes);
 		} else if (previous.alerted() && !decision.newState().alerted()) {
 			// The episode ended: the drain calmed back below the limit (hysteresis re-arm), or a long
@@ -160,14 +148,5 @@ public final class FastDrainDetector {
 		final SustainedConditionTracker.RepeatPolicy policy =
 				SustainedConditionTracker.withReminders(activelyUsed, reminderGapMs);
 		return SustainedConditionTracker.decide(state, rateAvailable, conditionActive, sustainedMs, nowMillis, policy);
-	}
-
-	private static long minutesPref(SharedPreferences prefs,
-	                                Context context,
-	                                int keyRes,
-	                                int defaultMinutes,
-	                                int minMinutes,
-	                                int maxMinutes) {
-		return AppPrefs.clampMinutesToMs(prefs.getInt(context.getString(keyRes), defaultMinutes), minMinutes, maxMinutes);
 	}
 }

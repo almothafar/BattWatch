@@ -145,6 +145,40 @@ public class AppPrefsTest {
 			assertEquals(30 * 60_000L, AppPrefs.unplugReminderGapMs(context));
 		}
 
+		/**
+		 * The fast-drain window (#109), now that the facade owns it. A 0-minute window is the corrupt-preference case that matters: it would fire on the first
+		 * broadcast above the limit, turning the sustained-drain warning into the spike alarm the window exists to prevent.
+		 */
+		@Test
+		public void fastDrainSustained_defaultsToTheSliderDefaultAndClampsStoredValues() {
+			assertEquals(AppPrefs.DEFAULT_FAST_DRAIN_SUSTAINED_MINUTES * 60_000L, AppPrefs.fastDrainSustainedMs(context));
+
+			PreferenceManager.getDefaultSharedPreferences(context).edit()
+			                 .putInt(context.getString(R.string._pref_key_fast_drain_sustained_minutes), 0)
+			                 .apply();
+			assertEquals(AppPrefs.MIN_FAST_DRAIN_SUSTAINED_MINUTES * 60_000L, AppPrefs.fastDrainSustainedMs(context));
+
+			PreferenceManager.getDefaultSharedPreferences(context).edit()
+			                 .putInt(context.getString(R.string._pref_key_fast_drain_sustained_minutes), 999)
+			                 .apply();
+			assertEquals(AppPrefs.MAX_FAST_DRAIN_SUSTAINED_MINUTES * 60_000L, AppPrefs.fastDrainSustainedMs(context));
+		}
+
+		@Test
+		public void fastDrainReminderGap_defaultsToTheSliderDefaultAndClampsStoredValues() {
+			assertEquals(AppPrefs.DEFAULT_FAST_DRAIN_REMINDER_MINUTES * 60_000L, AppPrefs.fastDrainReminderGapMs(context));
+
+			PreferenceManager.getDefaultSharedPreferences(context).edit()
+			                 .putInt(context.getString(R.string._pref_key_fast_drain_reminder_minutes), 0)
+			                 .apply();
+			assertEquals(AppPrefs.MIN_FAST_DRAIN_REMINDER_MINUTES * 60_000L, AppPrefs.fastDrainReminderGapMs(context));
+
+			PreferenceManager.getDefaultSharedPreferences(context).edit()
+			                 .putInt(context.getString(R.string._pref_key_fast_drain_reminder_minutes), 30)
+			                 .apply();
+			assertEquals(30 * 60_000L, AppPrefs.fastDrainReminderGapMs(context));
+		}
+
 		@Test
 		public void vibrateEnabled_defaultsTrueAndReadsBack() {
 			// Defaults on (matches the switch's android:defaultValue in pref_behaviour.xml).
@@ -256,12 +290,58 @@ public class AppPrefsTest {
 		}
 
 		/**
-		 * Builds the charge-target slider from {@code pref_alerts.xml} exactly as the preference framework would, so its bounds are the ones a user's finger
-		 * actually meets.
+		 * The same guard for the two fast-drain timing sliders (#109), whose bounds moved into this facade so that "the slider range is also the enforced
+		 * range" is stated once. Until now that pairing was only a comment in {@code pref_alerts.xml}; these are the assertions that make it a rule.
+		 * <p>
+		 * The sustained window is the one where the {@code app:min} trap bites hardest: a slider bottoming out at 0 offers a zero-minute window, which is the
+		 * spike alarm the whole "sustained, not spikes" design exists to rule out.
+		 */
+		@Test
+		public void fastDrainSustainedSlider_boundsAreTheFacadeConstantsAtRuntime() throws Exception {
+			final SeekBarPreference slider = inflateSlider(R.string._pref_key_fast_drain_sustained_minutes);
+
+			assertNotNull("fast-drain sustained slider missing from pref_alerts.xml", slider);
+			assertEquals(AppPrefs.MIN_FAST_DRAIN_SUSTAINED_MINUTES, slider.getMin());
+			assertEquals(AppPrefs.MAX_FAST_DRAIN_SUSTAINED_MINUTES, slider.getMax());
+		}
+
+		@Test
+		public void fastDrainReminderSlider_boundsAreTheFacadeConstantsAtRuntime() throws Exception {
+			final SeekBarPreference slider = inflateSlider(R.string._pref_key_fast_drain_reminder_minutes);
+
+			assertNotNull("fast-drain reminder slider missing from pref_alerts.xml", slider);
+			assertEquals(AppPrefs.MIN_FAST_DRAIN_REMINDER_MINUTES, slider.getMin());
+			assertEquals(AppPrefs.MAX_FAST_DRAIN_REMINDER_MINUTES, slider.getMax());
+		}
+
+		@Test
+		public void xmlFastDrainDefaults_matchTheFacadeConstants() throws Exception {
+			final Integer xmlSustained = xmlDefaultOf(R.string._pref_key_fast_drain_sustained_minutes);
+			final Integer xmlReminder = xmlDefaultOf(R.string._pref_key_fast_drain_reminder_minutes);
+
+			assertNotNull("defaultValue attr missing from the fast-drain sustained slider", xmlSustained);
+			assertNotNull("defaultValue attr missing from the fast-drain reminder slider", xmlReminder);
+			assertEquals(AppPrefs.DEFAULT_FAST_DRAIN_SUSTAINED_MINUTES, (int) xmlSustained);
+			assertEquals(AppPrefs.DEFAULT_FAST_DRAIN_REMINDER_MINUTES, (int) xmlReminder);
+		}
+
+		/**
+		 * Both fast-drain timing sliders grey out with the fast-drain alert itself — the same "no settings that cannot do anything" rule the unplug reminder
+		 * follows, and the reason neither slider needs a separate enabled check when it is read.
+		 */
+		@Test
+		public void fastDrainTimingControls_greyOutWithTheAlertTheyTune() throws Exception {
+			assertEquals(R.string._pref_key_notify_fast_drain, xmlDependencyOf(R.string._pref_key_fast_drain_sustained_minutes));
+			assertEquals(R.string._pref_key_notify_fast_drain, xmlDependencyOf(R.string._pref_key_fast_drain_reminder_minutes));
+		}
+
+		/**
+		 * Builds a slider from {@code pref_alerts.xml}, by preference key, exactly as the preference framework would — so its bounds are the ones a user's
+		 * finger actually meets.
 		 *
 		 * @param keyRes the slider's preference-key string resource
-	 *
-	 * @return the inflated slider, or {@code null} when the screen no longer declares one
+		 *
+		 * @return the inflated slider, or {@code null} when the screen no longer declares one
 		 */
 		private SeekBarPreference inflateSlider(int keyRes) throws Exception {
 			final XmlResourceParser parser = context.getResources().getXml(R.xml.pref_alerts);
@@ -286,23 +366,7 @@ public class AppPrefsTest {
 		 * @return the declared default, or {@code null} when the slider or its attribute is gone
 		 */
 		private Integer xmlDefaultOf(int keyRes) throws Exception {
-			final XmlResourceParser parser = context.getResources().getXml(R.xml.pref_alerts);
-			Integer xmlDefault = null;
-			try {
-				for (int event = parser.getEventType(); event != XmlPullParser.END_DOCUMENT; event = parser.next()) {
-					if (event != XmlPullParser.START_TAG || !hasKey(parser, keyRes)) {
-						continue;
-					}
-					for (int i = 0; i < parser.getAttributeCount(); i++) {
-						if (parser.getAttributeNameResource(i) == android.R.attr.defaultValue) {
-							xmlDefault = parser.getAttributeIntValue(i, Integer.MIN_VALUE);
-						}
-					}
-				}
-			} finally {
-				parser.close();
-			}
-			return xmlDefault;
+			return attrOf(keyRes, android.R.attr.defaultValue, (parser, i) -> parser.getAttributeIntValue(i, Integer.MIN_VALUE), null);
 		}
 
 		/**
@@ -313,23 +377,41 @@ public class AppPrefsTest {
 		 * @return the dependency's key resource, or {@code 0} when the preference declares none
 		 */
 		private int xmlDependencyOf(int keyRes) throws Exception {
+			return attrOf(keyRes, android.R.attr.dependency, (parser, i) -> parser.getAttributeResourceValue(i, 0), 0);
+		}
+
+		/**
+		 * One attribute off the preference declared with {@code keyRes}, read straight from {@code pref_alerts.xml}. The typed readers above differ only in
+		 * which attribute they want and how it is decoded, so the walk itself lives here once.
+		 * <p>
+		 * The first tag carrying the key wins, matching {@link #inflateSlider}: a key declared twice is a bug in the screen, not a value to pick between.
+		 *
+		 * @param keyRes  the preference's own key string resource
+		 * @param attrRes the {@code android.R.attr} constant to look for
+		 * @param reader  decodes the attribute at the given index off the positioned parser
+		 * @param absent  what the preference or the attribute being undeclared reads as
+		 * @param <T>     the decoded attribute type
+		 *
+		 * @return the decoded attribute, or {@code absent}
+		 */
+		private <T> T attrOf(int keyRes, int attrRes, AttrReader<T> reader, T absent) throws Exception {
 			final XmlResourceParser parser = context.getResources().getXml(R.xml.pref_alerts);
-			int dependency = 0;
 			try {
 				for (int event = parser.getEventType(); event != XmlPullParser.END_DOCUMENT; event = parser.next()) {
 					if (event != XmlPullParser.START_TAG || !hasKey(parser, keyRes)) {
 						continue;
 					}
 					for (int i = 0; i < parser.getAttributeCount(); i++) {
-						if (parser.getAttributeNameResource(i) == android.R.attr.dependency) {
-							dependency = parser.getAttributeResourceValue(i, 0);
+						if (parser.getAttributeNameResource(i) == attrRes) {
+							return reader.read(parser, i);
 						}
 					}
+					return absent;
 				}
 			} finally {
 				parser.close();
 			}
-			return dependency;
+			return absent;
 		}
 
 		/**
@@ -344,6 +426,12 @@ public class AppPrefsTest {
 				}
 			}
 			return false;
+		}
+
+		/** Decodes one attribute off a parser already positioned on the tag that declares it. */
+		private interface AttrReader<T> {
+
+			T read(XmlResourceParser parser, int index);
 		}
 	}
 

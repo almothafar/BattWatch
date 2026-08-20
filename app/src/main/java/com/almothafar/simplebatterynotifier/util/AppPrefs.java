@@ -25,7 +25,10 @@ import com.almothafar.simplebatterynotifier.model.LevelThresholds;
  *       value can't defeat the feature" lives in one place;</li>
  *   <li>the "Vibrate" flag ({@link #vibrateEnabled}) — previously re-read with an inline {@code true}
  *       default in three spots (channel creation, the level-alert config and the manual override path),
- *       which meant the alert channels and the silent-mode buzz could drift apart.</li>
+ *       which meant the alert channels and the silent-mode buzz could drift apart;</li>
+ *   <li>the fast-drain timing pair (#109) — the sustained window and the reminder gap ({@link #fastDrainSustainedMs} + {@link #fastDrainReminderGapMs}), whose
+ *       six bounds moved here from {@code FastDrainDetector} so they sit beside the {@link #clampMinutesToMs} that enforces them, like every other timing
+ *       preference.</li>
  * </ul>
  * The one restatement that remains is each slider's XML-declared default in {@code pref_alerts.xml}, which the framework instantiates from XML and so cannot
  * share a constant with — a comment ties each pair, and {@code AppPrefsTest} asserts they stay equal. Remaining settings migrate incrementally; new ones (the
@@ -82,9 +85,27 @@ public final class AppPrefs {
 	/** Highest accepted drain limit in %/h; mirrors the slider's {@code android:max} in pref_alerts.xml. */
 	public static final int MAX_DRAIN_LIMIT_PPH = 60;
 
+	/**
+	 * Default fast-drain window in minutes (#109) — how long the rate must hold at/above the limit before the alert fires. Mirrors the slider's
+	 * {@code android:defaultValue} in pref_alerts.xml.
+	 */
+	public static final int DEFAULT_FAST_DRAIN_SUSTAINED_MINUTES = 5;
+	/** Shortest accepted fast-drain window; mirrors the slider's {@code app:min} in pref_alerts.xml. */
+	public static final int MIN_FAST_DRAIN_SUSTAINED_MINUTES = 1;
+	/** Longest accepted fast-drain window; mirrors the slider's {@code android:max} in pref_alerts.xml. */
+	public static final int MAX_FAST_DRAIN_SUSTAINED_MINUTES = 30;
+
+	/** Default gap between fast-drain reminders, in minutes (#109) — mirrors the slider's {@code android:defaultValue} in pref_alerts.xml. */
+	public static final int DEFAULT_FAST_DRAIN_REMINDER_MINUTES = 15;
+	/** Shortest accepted fast-drain reminder gap; mirrors the slider's {@code app:min} in pref_alerts.xml. */
+	public static final int MIN_FAST_DRAIN_REMINDER_MINUTES = 5;
+	/** Longest accepted fast-drain reminder gap; mirrors the slider's {@code android:max} in pref_alerts.xml. */
+	public static final int MAX_FAST_DRAIN_REMINDER_MINUTES = 60;
+
 	/** Default for the "Vibrate" preference — mirrors the switch's {@code android:defaultValue} in pref_behaviour.xml. */
 	public static final boolean DEFAULT_VIBRATE = true;
 
+	/** Milliseconds in a minute — the conversion between the minutes every timing slider speaks in and the millis the decision cores measure in. */
 	private static final long MS_PER_MINUTE = 60_000L;
 
 	private AppPrefs() {
@@ -234,6 +255,37 @@ public final class AppPrefs {
 	 */
 	public static long clampMinutesToMs(int storedMinutes, int minMinutes, int maxMinutes) {
 		return Math.max(minMinutes, Math.min(maxMinutes, storedMinutes)) * MS_PER_MINUTE;
+	}
+
+	/**
+	 * How long the drain rate must hold at/above the limit before the fast-drain alert fires (#109), in milliseconds. Reads
+	 * {@link #DEFAULT_FAST_DRAIN_SUSTAINED_MINUTES} when unset and always clamps, so a corrupt preference (a 0-minute window, say) can't turn a sustained-drain
+	 * warning into a spike alarm.
+	 *
+	 * @param context Application context
+	 *
+	 * @return the configured window in milliseconds
+	 */
+	public static long fastDrainSustainedMs(Context context) {
+		return clampMinutesToMs(
+				prefs(context).getInt(context.getString(R.string._pref_key_fast_drain_sustained_minutes), DEFAULT_FAST_DRAIN_SUSTAINED_MINUTES),
+				MIN_FAST_DRAIN_SUSTAINED_MINUTES,
+				MAX_FAST_DRAIN_SUSTAINED_MINUTES);
+	}
+
+	/**
+	 * The minimum gap between fast-drain reminders while the screen is off or locked (#109), in milliseconds. Reads
+	 * {@link #DEFAULT_FAST_DRAIN_REMINDER_MINUTES} when unset and always clamps, for the same reason as every other timing preference here.
+	 *
+	 * @param context Application context
+	 *
+	 * @return the configured reminder gap in milliseconds
+	 */
+	public static long fastDrainReminderGapMs(Context context) {
+		return clampMinutesToMs(
+				prefs(context).getInt(context.getString(R.string._pref_key_fast_drain_reminder_minutes), DEFAULT_FAST_DRAIN_REMINDER_MINUTES),
+				MIN_FAST_DRAIN_REMINDER_MINUTES,
+				MAX_FAST_DRAIN_REMINDER_MINUTES);
 	}
 
 	/**

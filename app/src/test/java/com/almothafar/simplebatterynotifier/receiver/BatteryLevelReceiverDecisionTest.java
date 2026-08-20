@@ -77,14 +77,37 @@ public class BatteryLevelReceiverDecisionTest {
 	 * fixed for the whole suite, so only what a case actually varies is named at the call site.
 	 */
 	private static LevelAlertConfig config(int chargeTarget, boolean warningEnabled, boolean fullNotifyEnabled, boolean alertEveryTick) {
-		return new LevelAlertConfig(CRITICAL, WARNING, chargeTarget, warningEnabled, fullNotifyEnabled, alertEveryTick, false, REMINDER_GAP_MS);
+		return config(chargeTarget, warningEnabled, fullNotifyEnabled, alertEveryTick, false);
+	}
+
+	/**
+	 * The same with the unplug reminder (#264) named too. The one place the record is constructed, so a component added to it lands here rather than in every
+	 * shape the suite happens to need — and no case has to spell out eight positional arguments to reach the combination it is about.
+	 */
+	private static LevelAlertConfig config(
+			int chargeTarget,
+			boolean warningEnabled,
+			boolean fullNotifyEnabled,
+			boolean alertEveryTick,
+			boolean unplugReminderEnabled) {
+		return new LevelAlertConfig(
+				CRITICAL, WARNING, chargeTarget, warningEnabled, fullNotifyEnabled, alertEveryTick, unplugReminderEnabled, REMINDER_GAP_MS);
 	}
 
 	/**
 	 * A config with the unplug reminder on (#264), at the given charge target. Everything else matches {@link #config}.
 	 */
 	private static LevelAlertConfig remindingAt(int chargeTarget) {
-		return new LevelAlertConfig(CRITICAL, WARNING, chargeTarget, true, true, false, true, REMINDER_GAP_MS);
+		return config(chargeTarget, true, true, false, true);
+	}
+
+	/**
+	 * The same, but with the full-battery alert the reminder repeats switched off — the one combination {@link #remindingAt} cannot express, and the premise of
+	 * the case proving the reminder does not outlive the alert it exists to repeat. Named rather than spelled out, because the two booleans that disagree are
+	 * the whole point and a positional list is where that reads as a typo.
+	 */
+	private static LevelAlertConfig remindingWithTheFullAlertOff(int chargeTarget) {
+		return config(chargeTarget, true, false, false, true);
 	}
 
 	/**
@@ -536,10 +559,8 @@ public class BatteryLevelReceiverDecisionTest {
 	@Test
 	public void unplugReminder_withTheFullAlertSwitchedOff_saysNothing() {
 		// The reminder repeats the full-battery alert; with that alert off there is nothing to repeat, whatever this switch says.
-		final LevelAlertConfig noFullButReminding =
-				new LevelAlertConfig(CRITICAL, WARNING, TARGET_90, true, false, false, true, REMINDER_GAP_MS);
 		final LevelAlertDecision d = BatteryLevelReceiver.decideLevelAlert(
-				fullAlertShowing(90, NOW), 90, CHARGING, noFullButReminding, NOW + 10 * REMINDER_GAP_MS);
+				fullAlertShowing(90, NOW), 90, CHARGING, remindingWithTheFullAlertOff(TARGET_90), NOW + 10 * REMINDER_GAP_MS);
 
 		assertNull(d.notifyType());
 	}
