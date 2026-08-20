@@ -33,7 +33,8 @@ Icon?
 # Android bui
 
 *.lock
-.claude/
+.claude/*
 !.claude/guidelines.md
+!.claude/guidelines/
 app/release/
 *.log

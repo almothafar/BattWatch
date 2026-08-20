@@ -1,4 +1,4 @@
-# Copilot instructions — SimpleBatteryNotifier
+# Copilot instructions — BattWatch
 
 Android app (single Gradle module `app/`, Java, min SDK 26) that monitors the battery and notifies on low/critical/full levels, temperature, and health.
 

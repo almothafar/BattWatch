@@ -1,4 +1,4 @@
-# SimpleBatteryNotifier — agent guide
+# BattWatch — agent guide
 
 Android app that monitors the device battery and notifies on low/critical/full levels, high temperature, and battery health. Single-module Gradle project (`app/`), Java, min SDK 26.
 
@@ -29,6 +29,16 @@ Building the upload APK is manual (from a local machine) — the pipeline only d
 
 ## Reference
 
+The coding standards are imported below, so they load with this file on every session — line width, no `final` on parameters, exception handling, the Western-digits rule, and the ban on tooling metadata in commits and PR bodies:
+
+@.claude/guidelines.md
+
+Read on demand, when the work touches them:
+
+- `.claude/guidelines/android.md` — API-level branches, deprecation policy, reflection ban, UI, threading, accessibility, Gradle/ProGuard.
+- `.claude/guidelines/testing.md` — JUnit vs. Robolectric and what to cover.
+- `.claude/guidelines/patterns.md` — house patterns, JavaDoc format, architectural decision log.
 - `CONTEXT.md` — glossary of domain terms (drain rate, charge rate, design capacity, …). Use these exact terms in UI and code.
-- `CODE_REVIEW_GUIDELINES.md` — coding standards (e.g. no `final` on parameters) and review checklist.
-- Every user-facing string needs an Arabic translation — the build fails on `MissingTranslation`.
+- `CODE_REVIEW_GUIDELINES.md` — the human-facing edition of the same standards, plus the reviewer checklist.
+
+Every user-facing string needs an Arabic translation — the build fails on `MissingTranslation`.
