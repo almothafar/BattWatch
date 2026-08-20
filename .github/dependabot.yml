@@ -1,0 +1,72 @@
+# Dependabot — automated dependency PRs for the two ecosystems this repo actually has.
+#
+# PR titles are gated: the `PR Title` workflow runs a Conventional Commits check on every PR, including
+# Dependabot's, so `commit-message.prefix` below is what keeps these PRs mergeable. `build` and `ci` are
+# both non-bumping types, so a dependency PR never makes release-please cut a version.
+#
+# `google()` is declared in settings.gradle's dependencyResolutionManagement block. Dependabot only
+# learned to read that block in Feb 2026 (dependabot-core#3286) — if AndroidX bumps ever stop showing
+# up, that regression is the first thing to check, and the fix is a `registries:` entry pointing at
+# https://dl.google.com/dl/android/maven2/.
+version: 2
+
+updates:
+  # app/build.gradle dependencies, the AGP plugin version in the root build.gradle, and the Gradle wrapper.
+  - package-ecosystem: gradle
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Asia/Amman
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: build
+      include: scope
+    # Let a release settle before opening a PR for it — AndroidX and AGP both ship same-week respins.
+    cooldown:
+      default-days: 5
+      semver-major-days: 14
+    groups:
+      # Minor/patch bumps of the UI stack move together and are reviewed as one change. Major bumps are
+      # deliberately left out of every group so each one arrives as its own PR with its own CI run.
+      androidx:
+        patterns:
+          - androidx.*
+          - com.google.android.material:material
+        exclude-patterns:
+          - androidx.test*
+        update-types:
+          - minor
+          - patch
+      test-libraries:
+        patterns:
+          - androidx.test*
+          - junit:junit
+          - org.mockito:*
+          - org.robolectric:*
+        update-types:
+          - minor
+          - patch
+    ignore:
+      # Held at 1.18.0 until the AGP 9 upgrade in #81 — core 1.19.0 requires AGP 9.1+, so a bump PR
+      # would just fail CI every week. Remove this entry when #81 lands.
+      - dependency-name: androidx.core:core
+        versions:
+          - ">= 1.19.0"
+
+  # The actions used by android-ci.yml, pr-title-lint.yml and release-please.yml. All are pinned to a
+  # major tag, so this only fires on a new major — monthly is often enough.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+      timezone: Asia/Amman
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: ci
+      include: scope
+    groups:
+      github-actions:
+        patterns:
+          - "*"
