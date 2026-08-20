@@ -2,7 +2,7 @@
 
 These are the coding standards and best practices for the BattWatch Android project (formerly Simple Battery Notifier).
 
-> **Audience:** this is the human-facing standard for contributors and reviewers. The AI code-review agent has a machine-facing companion at [`.claude/guidelines.md`](.claude/guidelines.md); keep the two in sync when a standard changes.
+> **Audience:** this is the human-facing standard for contributors and reviewers. The machine-facing companion is [`.claude/guidelines.md`](.claude/guidelines.md), which [`CLAUDE.md`](CLAUDE.md) imports so it loads into every AI agent session; its situational detail lives in [`.claude/guidelines/`](.claude/guidelines/). Keep the two in sync when a standard changes.
 
 ---
 

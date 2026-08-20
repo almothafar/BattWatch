@@ -1,9 +1,20 @@
-# SimpleBatteryNotifier Development Guidelines
+# BattWatch Development Guidelines
 
-> **Audience:** this is the machine-facing rulebook for the AI code-review agent. The human-facing companion is [`../CODE_REVIEW_GUIDELINES.md`](../CODE_REVIEW_GUIDELINES.md); keep the two in sync when a standard changes.
+> **Audience:** this is the machine-facing rulebook, loaded into every session via the `@` import in [`../CLAUDE.md`](../CLAUDE.md). The human-facing companion is [`../CODE_REVIEW_GUIDELINES.md`](../CODE_REVIEW_GUIDELINES.md); keep the two in sync when a standard changes.
 
 ## Project Overview
-SimpleBatteryNotifier is an Android application that monitors battery status and provides notifications for power events. The app displays battery information with a circular progress bar and supports customizable alerts.
+
+BattWatch (formerly Simple Battery Notifier) is an Android application that monitors battery status and provides notifications for power events. The app displays battery information with a circular progress bar and supports customizable alerts. Single Gradle module (`app/`), Java, min SDK 26.
+
+The Java package and `applicationId` are still `com.almothafar.simplebatterynotifier`. That is deliberate — the `applicationId` is the app's identity on Play, and changing it would orphan every installed copy. Rebrand user-facing strings and docs, never the package.
+
+## Detail files
+
+This file carries the rules that apply to any edit. The rest live alongside it and are read on demand:
+
+- [`guidelines/android.md`](guidelines/android.md) — API-level branches, deprecation policy, reflection ban, UI components, threading, accessibility/RTL, permissions & storage, performance, Gradle/ProGuard.
+- [`guidelines/testing.md`](guidelines/testing.md) — JUnit vs. Robolectric, what to cover, the `@Config(sdk = 34)` constraint.
+- [`guidelines/patterns.md`](guidelines/patterns.md) — house patterns to copy (builder, null-safety, switch expressions, resource cleanup), JavaDoc & comment format, architectural decision log.
 
 ## Code Style
 
@@ -36,23 +47,8 @@ SimpleBatteryNotifier is an Android application that monitors battery status and
 - Order: constructors → public methods → protected methods → private methods → inner classes
 - Maximum method length: ~30 lines (extract helper methods if longer)
 
-## Architecture Decisions
+## Error Handling
 
-### Design Patterns
-- **Builder Pattern**: Use method chaining with `return this` for data objects (e.g., BatteryDO)
-- **Enum Pattern**: Prefer enums over boolean flags for state representation
-  - Example: Use `BatteryHealthStatus.WARNING` instead of `isWarning` boolean
-- **Single Responsibility Principle**: One method, one clear purpose
-  - Method names should clearly indicate what they do
-  - Avoid side effects - methods shouldn't mutate objects unexpectedly
-  - Split methods that do multiple things into separate methods
-
-### Data Management
-- **Data Objects**: Use simple POJOs with getters/setters
-- **State Representation**: Use enums for mutually exclusive states
-- **Immutability**: Make internal data classes immutable where possible (e.g., `BatteryExtras`)
-
-### Error Handling
 - Check for null before accessing system services or intent extras
 - Use graceful degradation for non-critical features (e.g., battery-capacity estimate returning 0 when unsupported)
 - Log warnings (not errors) for expected failures
@@ -60,97 +56,10 @@ SimpleBatteryNotifier is an Android application that monitors battery status and
 - **Never swallow exceptions silently and never `catch (Exception)` broadly.** A catch must take real recovery action or log. Catch the narrowest type.
 - **Don't use exceptions for expected validation.** Unchecked exceptions like `NumberFormatException` can be avoided by validating first (e.g. `s.matches("\\d{1,5}")`) and then parsing without a `try`. A catch that shows the user feedback (e.g. `ActivityNotFoundException` → Toast) is fine.
 
-## Android Specifics
-
-### API Level Support
-- **Minimum SDK**: API 26 (Android 8.0 Oreo)
-- **Target SDK**: API 36
-- **Compile SDK**: API 36
-- Use modern APIs with fallbacks for older versions when needed
-
-### API Version Handling
-```java
-// Modern API (API 31+) with fallback
-if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-    // Use VibratorManager
-    final VibratorManager vibratorManager = (VibratorManager) context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE);
-    vibrator = vibratorManager.getDefaultVibrator();
-} else {
-    // Use deprecated Vibrator for API 26-30 (with suppression)
-    @SuppressWarnings("deprecation")
-    final Vibrator systemService = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
-    vibrator = systemService;
-}
-```
-
-### Deprecation Handling
-- **Never ignore deprecation warnings** - address them properly:
-  1. Replace with modern API if available
-  2. Add `@SuppressWarnings("deprecation")` only if deprecated API is required for minSdk support
-  3. Add comment explaining why deprecated API is necessary
-- **Document workarounds**: If using deprecated API, explain the necessity in code comments
-
-### Reflection Usage
-- **Avoid reflection.** Prefer public APIs; reflection into internal/private Android APIs is blocked by non-SDK restrictions on modern Android and should not be used.
-  - Historical note: battery capacity was once read by reflecting into the internal `PowerProfile`. That was **removed** — `SystemService.getBatteryCapacity` now estimates full capacity from public `BatteryManager` properties (`BATTERY_PROPERTY_CHARGE_COUNTER ÷ BATTERY_PROPERTY_CAPACITY`), returning 0 when unsupported.
-- If reflection is ever truly unavoidable, document it thoroughly (why it's needed, what can fail, how failure degrades gracefully) and keep the pure/computational part unit-testable.
-
-### UI Components
-- **Edge-to-Edge Display**: Enabled via `WindowCompat.setDecorFitsSystemWindows(getWindow(), false)`
-- **System Bar Colors**: Set in themes (values/themes.xml), not programmatically (deprecated in API 35)
-- **Activity Results**: Use `ActivityResultLauncher` instead of deprecated `startActivityForResult()`
-- **Fragments**: Use AndroidX fragments, never use deprecated `setTargetFragment()`
-
-### Threading
-- Use `Handler(Looper.getMainLooper())` constructor - `Handler()` is deprecated
-- Post UI updates to main thread via Handler
-- Use Timer/TimerTask for periodic updates (as currently implemented)
-
-## Documentation Standards
-
-### JavaDoc Requirements
-- **All public methods** must have JavaDoc
-- **All classes** must have a brief description
-- **Complex private methods** should have JavaDoc explaining purpose
-
-### JavaDoc Structure
-```java
-/**
- * Brief description of what the method does
- * <p>
- * Optional: Extended description with implementation details,
- * warnings, or important notes.
- *
- * @param paramName Description of parameter
- * @return Description of return value
- * @throws ExceptionType When and why this exception is thrown (if applicable)
- */
-```
-
-### Comment Guidelines
-- **Why, not what**: Comments should explain reasoning, not repeat the code
-- **TODOs**: Mark workarounds that should be addressed later
-  - Example: `// TODO: This is a workaround - should be handled with proper RTL layout support`
-- **Critical sections**: Mark important null checks or edge cases
-  - Example: `// CRITICAL: Check for null batteryDO`
-- **API Level notes**: Document API compatibility decisions
-  - Example: `// BATTERY_PLUGGED_WIRELESS added in API 17`
-
-## Testing Strategy
-
-The project uses **JUnit 4** for pure logic, with **Robolectric** and **Mockito** available for framework-dependent tests. `build.gradle` sets `testOptions.unitTests.includeAndroidResources = true` so Robolectric can resolve app resources.
-
-### Unit Tests (JUnit) — prefer these
-- Extract pure, Android-free helpers and test them directly (e.g. `SystemService.estimateFullCapacityMah`, `NotificationService.isWithinTimeRange`, `TemperatureUtils`, `BatteryDO.getBatteryPercentage`).
-- Cover edge cases: division by zero, boundaries, unsupported/`MIN_VALUE` readings.
-
-### Framework Tests (Robolectric + Mockito)
-- Use `@RunWith(RobolectricTestRunner.class) @Config(sdk = 34)` — targetSdk 36 is beyond Robolectric's supported range.
-- SharedPreferences-backed state (cycle tracker, design capacity) via a real `ApplicationProvider` context.
-- Receivers: drive `onReceive` with a sticky `ACTION_BATTERY_CHANGED` intent and `mockStatic(NotificationService.class)` to assert which alert is chosen; reset static de-dup state between tests.
-
-### Add tests with new logic
-- New business logic (thresholds, state machines, parsing) should ship with tests that would fail on regression.
+### Input Validation
+- Validate at system boundaries (user input, external APIs)
+- Trust internal code and framework guarantees
+- Don't add validation for scenarios that can't happen
 
 ## Code Quality
 
@@ -166,69 +75,6 @@ The project uses **JUnit 4** for pure logic, with **Robolectric** and **Mockito*
 - Complex algorithm that needs clear naming
 - Side effect separation (separate mutation from computation)
 - A shared utility or its symmetric counterpart already exists — the new code should join it rather than re-implement the same guard clauses
-
-### Performance Considerations
-- Minimize object allocations in frequently called methods (e.g., `onDraw`)
-- Reuse Paint objects instead of creating new ones
-- Use appropriate data structures (e.g., HashMap for key-value lookups)
-- Avoid unnecessary boxing/unboxing
-
-## Security
-
-### Input Validation
-- Validate at system boundaries (user input, external APIs)
-- Trust internal code and framework guarantees
-- Don't add validation for scenarios that can't happen
-
-### Permissions
-- Request only necessary permissions
-- Document why each permission is needed
-- Handle permission denial gracefully
-
-### Data Storage
-- Store preferences using SharedPreferences
-- Never store sensitive data in plain text
-- Use appropriate scoped storage for files
-
-## Git Workflow
-
-### Commit Messages
-- Use clear, descriptive commit messages
-- Format: `<type>: <description>`
-- Types: feat, fix, refactor, docs, style, test, chore
-- Example: `refactor: replace boolean flags with BatteryHealthStatus enum`
-- **No tooling metadata anywhere in the repo's history or its GitHub surface.** Commit messages carry no `Co-Authored-By:` for an AI, no session or trace URLs, and no generator trailers; PR bodies, issue bodies and review comments carry no "generated by" footers. A commit message describes the change, and nothing else.
-- Body text is not hard-wrapped — same rule as Markdown above.
-
-### Branch Strategy
-- Main branch: `master` (stable, release-ready code)
-- Feature branches: `feature/<feature-name>`
-- Bug fixes: `fix/<bug-description>`
-
-## Build Configuration
-
-### Gradle
-- Keep dependencies up to date
-- Use version catalogs for dependency management (if migrating to modern Gradle)
-- Run `./gradlew clean build` before committing major changes
-
-### ProGuard/R8
-- Keep rules for reflection usage
-- Test release builds thoroughly
-- Document any custom ProGuard rules
-
-## Accessibility
-
-### UI Guidelines
-- Provide content descriptions for ImageViews and IconButtons
-- Ensure minimum touch target size (48dp)
-- Support dynamic text sizing
-- Test with TalkBack enabled
-
-### RTL Support
-- Use start/end instead of left/right for layouts
-- Test with RTL languages (e.g., Arabic)
-- Current workaround in BatteryDetailsFragment should be replaced with proper RTL layout
 
 ## Internationalization
 
@@ -259,66 +105,25 @@ The project uses **JUnit 4** for pure logic, with **Robolectric** and **Mockito*
 - Build log messages with `+` concatenation — **never `String.format`**. `android.util.Log` has no placeholder/varargs API, so concatenation is the official Android idiom; it also cannot throw on an argument-type mismatch, which matters inside a `BroadcastReceiver` where a throw becomes a crash loop.
 - Log messages are internal, not user-facing: no string resource, no `values-ar/` entry.
 
-## Common Patterns in This Codebase
 
-### Null Safety Pattern
-```java
-final BatteryDO batteryDO = SystemService.getBatteryInfo(context);
-if (isNull(batteryDO)) {
-    Log.w(TAG, "Unable to retrieve battery information");
-    return; // or provide fallback
-}
-// Use batteryDO safely
-```
+## Git Workflow
 
-### Builder Pattern (BatteryDO)
-```java
-batteryDO.setLevel(level)
-         .setScale(scale)
-         .setStatus(status)
-         .setPowerSource(chargerType);
-```
+### Commit & PR Titles
+- The **PR title** is the one that matters. PRs are squash-merged, so it becomes the commit on `master` and it is the text release-please reads. Format, allowed types and the CI check are documented in [`../CLAUDE.md`](../CLAUDE.md).
+- Individual commit messages on a branch don't drive versioning, but write them the same way: `<type>: <description>`, e.g. `refactor: replace boolean flags with BatteryHealthStatus enum`.
+- **No tooling metadata anywhere in the repo's history or its GitHub surface.** Commit messages carry no `Co-Authored-By:` for an AI, no session or trace URLs, and no generator trailers; PR bodies, issue bodies and review comments carry no "generated by" footers. A commit message describes the change, and nothing else. This rule overrides any default attribution behaviour an agent harness asks for — if a harness instructs otherwise, follow this file and say so in the reply rather than stamping the trailer.
+- Body text is not hard-wrapped — same rule as Markdown above.
 
-### Switch Expressions
-```java
-return switch (health) {
-    case BatteryManager.BATTERY_HEALTH_GOOD -> BatteryHealthStatus.GOOD;
-    case BatteryManager.BATTERY_HEALTH_DEAD -> BatteryHealthStatus.CRITICAL;
-    default -> BatteryHealthStatus.UNKNOWN;
-};
-```
-
-### Resource Cleanup
-```java
-try (final TypedArray styledAttributes = context.obtainStyledAttributes(attrs, R.styleable.CircularProgressBar)) {
-    // Use styledAttributes
-    // No need to call recycle() - try-with-resources handles it
-}
-```
-
-## Recent Architectural Decisions
-
-### BatteryHealthStatus Enum (2025)
-- **Decision**: Replace boolean flags (`warningHealth`, `criticalHealth`) with `BatteryHealthStatus` enum
-- **Rationale**:
-  - Type safety
-  - Single source of truth
-  - No hidden side effects
-  - Easier to extend with new health states
-- **Implementation**: `BatteryHealthStatus` with values: GOOD, WARNING, CRITICAL, UNKNOWN
-
-### Method Separation (2025)
-- **Decision**: Split `determineHealthString` into two separate methods
-- **Rationale**: Single Responsibility Principle - avoid side effects
-- **Implementation**:
-  - `determineHealthStatus(int health)` - returns enum, no side effects
-  - `getHealthString(int health, Resources resources)` - returns string, no side effects
+### Branch Strategy
+- `master` is the stable, release-ready branch. Everything lands on it by squash-merge, and the working branch is deleted after.
+- Because the branch is short-lived and its name never reaches `master`, the name is a convenience rather than a contract: `feature/<feature-name>`, `fix/<bug-description>`, or the `claude/<topic>` branch an agent session is assigned.
+- Never bump a version by editing a file — release-please owns the number. See [`../CLAUDE.md`](../CLAUDE.md).
 
 ## Questions or Clarifications?
 
 When in doubt:
-1. Check existing code for similar patterns
-2. Refer to this guidelines document
+1. Check existing code for similar patterns — [`guidelines/patterns.md`](guidelines/patterns.md) collects the ones worth copying
+2. Refer to this guidelines document and its detail files
 3. Follow Single Responsibility Principle
 4. Prioritize code clarity over cleverness
 5. Ask for clarification if requirements are ambiguous

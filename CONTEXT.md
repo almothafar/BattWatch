@@ -1,4 +1,4 @@
-# Simple Battery Notifier
+# BattWatch
 
 An Android app that monitors the device battery and raises notifications for low/critical/full
 levels, high temperature, and battery health. This glossary pins down the terms the app's UI and

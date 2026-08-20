@@ -145,7 +145,7 @@ Before submitting:
 3. Add tests for new features
 4. Update documentation as needed
 
-> The repo keeps two guideline docs: [`CODE_REVIEW_GUIDELINES.md`](CODE_REVIEW_GUIDELINES.md) is the human-facing standard for contributors; [`.claude/guidelines.md`](.claude/guidelines.md) is the machine-facing rulebook for the AI code-review agent. Keep them in sync when standards change.
+> The repo keeps two editions of the same standards: [`CODE_REVIEW_GUIDELINES.md`](CODE_REVIEW_GUIDELINES.md) is the human-facing one for contributors and reviewers; [`.claude/guidelines.md`](.claude/guidelines.md) is the machine-facing one, imported by [`CLAUDE.md`](CLAUDE.md) so it loads into every AI agent session, with the situational detail split into [`.claude/guidelines/`](.claude/guidelines/). Keep the two editions in sync when standards change.
 
 ---
 
