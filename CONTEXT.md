@@ -34,6 +34,10 @@ done" means for the temperature range. At 100% it means a genuinely complete cha
 waits for one.
 _Avoid_: charge limit, charge cap (that is the OEM hardware feature), threshold.
 
+**Unplug reminder**:
+The opt-in repeat of the full-battery alert, re-posted every N minutes for as long as the battery stays on the charger at or above the charge target (default off, gap 15 min, range 5–60). It repeats the one alert rather than adding a second one, and the charger coming out is the only thing that ends it.
+_Avoid_: nag, snooze, recurring alert, repeat notification.
+
 **Temperature range**:
 The lowest and highest battery temperature seen since the battery last finished charging, in the
 user's display unit. Accumulated from the readings the monitoring service observes; finishing a

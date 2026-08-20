@@ -36,14 +36,17 @@ public class BatteryLevelReceiverDecisionTest {
 	private static final int WARNING = 40;
 	private static final int THRESHOLD_C = 45;
 	private static final int TARGET_90 = 90;
+	// The unplug reminder's clock (#264). NOW is an arbitrary fixed instant — nothing but the reminder reads it.
+	private static final long NOW = 1_000_000L;
+	private static final long REMINDER_GAP_MS = 15 * 60_000L;
 
 	// Every pre-#263 case runs at the maximum charge target, where the alert waits for a genuinely complete charge — so this suite doubles as the proof that
 	// setting the slider to 100% restores the pre-#263 behaviour exactly. It is deliberately NOT the shipped default: an install that never touches the slider
 	// gets DEFAULT_CHARGE_TARGET (90) and is meant to start alerting there, which is the whole point of #263. The target-driven cases below cover that path.
 	private static final LevelAlertConfig DEFAULTS =
-			new LevelAlertConfig(CRITICAL, WARNING, AppPrefs.MAX_CHARGE_TARGET, true, true, false);
+			config(AppPrefs.MAX_CHARGE_TARGET, true, true, false);
 	private static final LevelAlertConfig TARGET_AT_90 =
-			new LevelAlertConfig(CRITICAL, WARNING, TARGET_90, true, true, false);
+			config(TARGET_90, true, true, false);
 
 	// The charge side of a broadcast. A completed charge reports BATTERY_STATUS_FULL rather than
 	// CHARGING, so the full cases are "not charging" without being a discharge.
@@ -64,18 +67,46 @@ public class BatteryLevelReceiverDecisionTest {
 		return new LevelAlertState(prevLevel, null, true, true);
 	}
 
+	/** The same, mid-charge with the reminder clock already running — the state a charge session is in between reminders (#264). */
+	private static LevelAlertState fullAlertShowing(int prevLevel, long alertAt) {
+		return new LevelAlertState(prevLevel, null, true, true, alertAt);
+	}
+
+	/**
+	 * A config with the unplug reminder off, which is the shipped default and the premise of every case that isn't about the reminder. The two thresholds are
+	 * fixed for the whole suite, so only what a case actually varies is named at the call site.
+	 */
+	private static LevelAlertConfig config(int chargeTarget, boolean warningEnabled, boolean fullNotifyEnabled, boolean alertEveryTick) {
+		return new LevelAlertConfig(CRITICAL, WARNING, chargeTarget, warningEnabled, fullNotifyEnabled, alertEveryTick, false, REMINDER_GAP_MS);
+	}
+
+	/**
+	 * A config with the unplug reminder on (#264), at the given charge target. Everything else matches {@link #config}.
+	 */
+	private static LevelAlertConfig remindingAt(int chargeTarget) {
+		return new LevelAlertConfig(CRITICAL, WARNING, chargeTarget, true, true, false, true, REMINDER_GAP_MS);
+	}
+
+	/**
+	 * The decision at a fixed instant. Only the unplug reminder (#264) reads the clock, so every other case can hold it still and the reminder cases pass their
+	 * own {@code now} to the five-argument core directly.
+	 */
+	private static LevelAlertDecision decide(LevelAlertState state, int percentage, ChargeState power, LevelAlertConfig config) {
+		return BatteryLevelReceiver.decideLevelAlert(state, percentage, power, config, NOW);
+	}
+
 	// --- discharging: critical/warning thresholds and de-dupe -----------------------------------
 
 	@Test
 	public void discharging_belowCritical_firesCriticalOnce() {
-		final LevelAlertDecision first = BatteryLevelReceiver.decideLevelAlert(
+		final LevelAlertDecision first = decide(
 				fresh(16, null), 15, DISCHARGING, DEFAULTS);
 
 		assertEquals(AlertType.CRITICAL, first.notifyType());
 		assertEquals(fresh(15, AlertType.CRITICAL), first.newState());
 
 		// Next tick, still below critical: the persisted prevType suppresses the duplicate.
-		final LevelAlertDecision second = BatteryLevelReceiver.decideLevelAlert(
+		final LevelAlertDecision second = decide(
 				first.newState(), 14, DISCHARGING, DEFAULTS);
 		assertNull(second.notifyType());
 		assertEquals(14, second.newState().prevLevel());
@@ -83,19 +114,19 @@ public class BatteryLevelReceiverDecisionTest {
 
 	@Test
 	public void discharging_inWarningBand_firesWarningOnce() {
-		final LevelAlertDecision first = BatteryLevelReceiver.decideLevelAlert(
+		final LevelAlertDecision first = decide(
 				fresh(41, null), 38, DISCHARGING, DEFAULTS);
 
 		assertEquals(AlertType.WARNING, first.notifyType());
 
-		final LevelAlertDecision second = BatteryLevelReceiver.decideLevelAlert(
+		final LevelAlertDecision second = decide(
 				first.newState(), 35, DISCHARGING, DEFAULTS);
 		assertNull(second.notifyType());
 	}
 
 	@Test
 	public void discharging_aboveWarning_noAlert() {
-		final LevelAlertDecision d = BatteryLevelReceiver.decideLevelAlert(
+		final LevelAlertDecision d = decide(
 				fresh(81, null), 80, DISCHARGING, DEFAULTS);
 
 		assertNull(d.notifyType());
@@ -104,8 +135,8 @@ public class BatteryLevelReceiverDecisionTest {
 
 	@Test
 	public void discharging_warningDisabled_staysSilentInWarningBand() {
-		final LevelAlertConfig noWarning = new LevelAlertConfig(CRITICAL, WARNING, AppPrefs.MAX_CHARGE_TARGET, false, true, false);
-		final LevelAlertDecision d = BatteryLevelReceiver.decideLevelAlert(
+		final LevelAlertConfig noWarning = config(AppPrefs.MAX_CHARGE_TARGET, false, true, false);
+		final LevelAlertDecision d = decide(
 				fresh(41, null), 38, DISCHARGING, noWarning);
 
 		assertNull(d.notifyType());
@@ -113,7 +144,7 @@ public class BatteryLevelReceiverDecisionTest {
 
 	@Test
 	public void discharging_warningThenCritical_escalates() {
-		final LevelAlertDecision d = BatteryLevelReceiver.decideLevelAlert(
+		final LevelAlertDecision d = decide(
 				fresh(35, AlertType.WARNING), 20, DISCHARGING, DEFAULTS);
 
 		assertEquals(AlertType.CRITICAL, d.notifyType());
@@ -121,8 +152,8 @@ public class BatteryLevelReceiverDecisionTest {
 
 	@Test
 	public void discharging_alertEveryTick_repeatsCritical() {
-		final LevelAlertConfig everyTick = new LevelAlertConfig(CRITICAL, WARNING, AppPrefs.MAX_CHARGE_TARGET, true, true, true);
-		final LevelAlertDecision d = BatteryLevelReceiver.decideLevelAlert(
+		final LevelAlertConfig everyTick = config(AppPrefs.MAX_CHARGE_TARGET, true, true, true);
+		final LevelAlertDecision d = decide(
 				fresh(15, AlertType.CRITICAL), 14, DISCHARGING, everyTick);
 
 		assertEquals(AlertType.CRITICAL, d.notifyType());
@@ -131,7 +162,7 @@ public class BatteryLevelReceiverDecisionTest {
 	@Test
 	public void discharging_atRedAlertLevel_reFiresCriticalDespiteDeDupe() {
 		// Already alerted critical this episode, but at/below the red-alert level it must re-fire.
-		final LevelAlertDecision d = BatteryLevelReceiver.decideLevelAlert(
+		final LevelAlertDecision d = decide(
 				fresh(5, AlertType.CRITICAL), NotificationService.RED_ALERT_LEVEL, DISCHARGING, DEFAULTS);
 
 		assertEquals(AlertType.CRITICAL, d.notifyType());
@@ -141,7 +172,7 @@ public class BatteryLevelReceiverDecisionTest {
 	public void unchangedLevel_skipsTheDischargeBranch() {
 		// Same level as last tick routes to the charging-or-full branch (the receiver's historical
 		// split), so a repeated broadcast at the same percentage can't duplicate a level alert.
-		final LevelAlertDecision d = BatteryLevelReceiver.decideLevelAlert(
+		final LevelAlertDecision d = decide(
 				fresh(15, AlertType.CRITICAL), 15, DISCHARGING, DEFAULTS);
 
 		assertNull(d.notifyType());
@@ -151,22 +182,22 @@ public class BatteryLevelReceiverDecisionTest {
 
 	@Test
 	public void charging_full_firesOnceThenHolds() {
-		final LevelAlertDecision first = BatteryLevelReceiver.decideLevelAlert(
+		final LevelAlertDecision first = decide(
 				fresh(100, null), 100, FULL_ON_CHARGER, DEFAULTS);
 
 		assertEquals(AlertType.FULL, first.notifyType());
 		assertTrue(first.newState().fullNotified());
 		assertTrue(first.newState().fullAlertShown());
 
-		final LevelAlertDecision second = BatteryLevelReceiver.decideLevelAlert(
+		final LevelAlertDecision second = decide(
 				first.newState(), 100, FULL_ON_CHARGER, DEFAULTS);
 		assertNull(second.notifyType());
 	}
 
 	@Test
 	public void charging_fullDisabled_staysSilent() {
-		final LevelAlertConfig noFull = new LevelAlertConfig(CRITICAL, WARNING, AppPrefs.MAX_CHARGE_TARGET, true, false, false);
-		final LevelAlertDecision d = BatteryLevelReceiver.decideLevelAlert(
+		final LevelAlertConfig noFull = config(AppPrefs.MAX_CHARGE_TARGET, true, false, false);
+		final LevelAlertDecision d = decide(
 				fresh(100, null), 100, FULL_ON_CHARGER, noFull);
 
 		assertNull(d.notifyType());
@@ -177,7 +208,7 @@ public class BatteryLevelReceiverDecisionTest {
 	@Test
 	public void charging_levelLeavesFullBand_reArmsFullAlert() {
 		// Notified at full, then the level drops to 90 (≤ the 95 re-arm level of a 100 target, above warning): re-armed.
-		final LevelAlertDecision d = BatteryLevelReceiver.decideLevelAlert(
+		final LevelAlertDecision d = decide(
 				fullAlertShowing(90), 90, CHARGING, DEFAULTS);
 
 		assertNull(d.notifyType());
@@ -187,7 +218,7 @@ public class BatteryLevelReceiverDecisionTest {
 	@Test
 	public void charging_belowWarningBand_doesNotReArmFullAlert() {
 		// The re-arm band is (warning, target − margin]: charging low keeps the flag as-is.
-		final LevelAlertDecision d = BatteryLevelReceiver.decideLevelAlert(
+		final LevelAlertDecision d = decide(
 				fullAlertShowing(30), 30, CHARGING, DEFAULTS);
 
 		assertTrue(d.newState().fullNotified());
@@ -197,14 +228,14 @@ public class BatteryLevelReceiverDecisionTest {
 	public void charging_reArmBand_doesNotForgetTheAlertIsStillOnScreen() {
 		// The band re-arms the once-per-charge flag, but the notification is still up — conflating the
 		// two is what left a stale full alert undismissable after a missed unplug.
-		final LevelAlertDecision reArmed = BatteryLevelReceiver.decideLevelAlert(
+		final LevelAlertDecision reArmed = decide(
 				fullAlertShowing(95), 95, CHARGING, DEFAULTS);
 
 		assertFalse(reArmed.newState().fullNotified());
 		assertTrue(reArmed.newState().fullAlertShown());
 
 		// Unplugged in that window, the alert is still dismissed.
-		final LevelAlertDecision unplugged = BatteryLevelReceiver.decideLevelAlert(
+		final LevelAlertDecision unplugged = decide(
 				reArmed.newState(), 95, DISCHARGING, DEFAULTS);
 		assertTrue(unplugged.clearFullAlert());
 		assertFalse(unplugged.newState().fullAlertShown());
@@ -215,7 +246,7 @@ public class BatteryLevelReceiverDecisionTest {
 	@Test
 	public void charging_reachesTheTarget_firesBeforeAFullCharge() {
 		// The point of the feature: at a target of 90 the alert arrives while the battery is still climbing, not once it has already sat at 100%.
-		final LevelAlertDecision d = BatteryLevelReceiver.decideLevelAlert(
+		final LevelAlertDecision d = decide(
 				fresh(89, null), TARGET_90, CHARGING, TARGET_AT_90);
 
 		assertEquals(AlertType.FULL, d.notifyType());
@@ -225,7 +256,7 @@ public class BatteryLevelReceiverDecisionTest {
 
 	@Test
 	public void charging_belowTheTarget_staysSilent() {
-		final LevelAlertDecision d = BatteryLevelReceiver.decideLevelAlert(
+		final LevelAlertDecision d = decide(
 				fresh(88, null), 89, CHARGING, TARGET_AT_90);
 
 		assertNull(d.notifyType());
@@ -240,7 +271,7 @@ public class BatteryLevelReceiverDecisionTest {
 		int fired = 0;
 
 		for (int percentage = TARGET_90; percentage <= 100; percentage++) {
-			final LevelAlertDecision d = BatteryLevelReceiver.decideLevelAlert(state, percentage, CHARGING, TARGET_AT_90);
+			final LevelAlertDecision d = decide(state, percentage, CHARGING, TARGET_AT_90);
 			state = d.newState();
 			if (d.notifyType() == AlertType.FULL) {
 				fired++;
@@ -249,18 +280,18 @@ public class BatteryLevelReceiverDecisionTest {
 		assertEquals(1, fired);
 
 		// And the completed charge doesn't add a second one on top.
-		assertNull(BatteryLevelReceiver.decideLevelAlert(state, 100, FULL_ON_CHARGER, TARGET_AT_90).notifyType());
+		assertNull(decide(state, 100, FULL_ON_CHARGER, TARGET_AT_90).notifyType());
 	}
 
 	@Test
 	public void discharging_pastTheTarget_neverFires() {
 		// decideChargingOrFull is also reached with the level unchanged while discharging, so the trigger has to be gated on charging: sitting at 90% on the
 		// way DOWN is not a finished charge.
-		final LevelAlertDecision changed = BatteryLevelReceiver.decideLevelAlert(
+		final LevelAlertDecision changed = decide(
 				fresh(91, null), TARGET_90, DISCHARGING, TARGET_AT_90);
 		assertNull(changed.notifyType());
 
-		final LevelAlertDecision unchanged = BatteryLevelReceiver.decideLevelAlert(
+		final LevelAlertDecision unchanged = decide(
 				fresh(TARGET_90, null), TARGET_90, DISCHARGING, TARGET_AT_90);
 		assertNull(unchanged.notifyType());
 		assertFalse(unchanged.newState().fullNotified());
@@ -270,7 +301,7 @@ public class BatteryLevelReceiverDecisionTest {
 	public void pluggedAndHoldingAtACap_firesOnTheTarget() {
 		// A device parked at its own charge cap reports NOT_CHARGING, not FULL: cable in, nothing flowing, no completed-charge status ever coming. Requiring
 		// CHARGING left the whole feature silently dead there — on exactly the phones whose owners went looking for a charge target.
-		final LevelAlertDecision d = BatteryLevelReceiver.decideLevelAlert(
+		final LevelAlertDecision d = decide(
 				fresh(95, null), 95, PLUGGED_NOT_CHARGING, TARGET_AT_90);
 
 		assertEquals(AlertType.FULL, d.notifyType());
@@ -285,7 +316,7 @@ public class BatteryLevelReceiverDecisionTest {
 		int fired = 0;
 
 		for (int tick = 0; tick < 5; tick++) {
-			final LevelAlertDecision d = BatteryLevelReceiver.decideLevelAlert(state, 95, PLUGGED_NOT_CHARGING, TARGET_AT_90);
+			final LevelAlertDecision d = decide(state, 95, PLUGGED_NOT_CHARGING, TARGET_AT_90);
 			state = d.newState();
 			if (d.notifyType() == AlertType.FULL) {
 				fired++;
@@ -299,7 +330,7 @@ public class BatteryLevelReceiverDecisionTest {
 		// The cable alone is not enough: a phone drawing more than the charger supplies reports DISCHARGING with the cable in. The battery is going down, so no
 		// charge is finishing.
 		final ChargeState pluggedButDraining = new ChargeState(false, false, false, true);
-		final LevelAlertDecision d = BatteryLevelReceiver.decideLevelAlert(
+		final LevelAlertDecision d = decide(
 				fresh(95, null), 95, pluggedButDraining, TARGET_AT_90);
 
 		assertNull(d.notifyType());
@@ -310,11 +341,11 @@ public class BatteryLevelReceiverDecisionTest {
 	public void pluggedInAboveTheTarget_firesTheAlert() {
 		// Connecting a charger at 95% with a target of 90 has nothing left to reach, so the alert has to come from the level already being there. It rides on
 		// the unplug re-arm, which is why removing that would break this quietly.
-		final LevelAlertDecision unplugged = BatteryLevelReceiver.decideLevelAlert(
+		final LevelAlertDecision unplugged = decide(
 				fullAlertShowing(95), 95, DISCHARGING, TARGET_AT_90);
 		assertFalse(unplugged.newState().fullNotified());
 
-		final LevelAlertDecision replugged = BatteryLevelReceiver.decideLevelAlert(
+		final LevelAlertDecision replugged = decide(
 				unplugged.newState(), 95, CHARGING, TARGET_AT_90);
 		assertEquals(AlertType.FULL, replugged.notifyType());
 	}
@@ -323,11 +354,11 @@ public class BatteryLevelReceiverDecisionTest {
 	public void charging_droppingBelowTheReArmLevel_armsTheNextAlert() {
 		// A top-up without unplugging: the level has to fall a margin below the target before the alert can fire again, so the flag holds at 86 and clears at
 		// 85.
-		final LevelAlertDecision inBand = BatteryLevelReceiver.decideLevelAlert(
+		final LevelAlertDecision inBand = decide(
 				fullAlertShowing(86), 86, CHARGING, TARGET_AT_90);
 		assertTrue(inBand.newState().fullNotified());
 
-		final LevelAlertDecision dropped = BatteryLevelReceiver.decideLevelAlert(
+		final LevelAlertDecision dropped = decide(
 				fullAlertShowing(85), 85, CHARGING, TARGET_AT_90);
 		assertFalse(dropped.newState().fullNotified());
 	}
@@ -336,11 +367,11 @@ public class BatteryLevelReceiverDecisionTest {
 	public void maximumTarget_waitsForACompletedCharge() {
 		// 100% is the opt-out: reaching the level is not enough, the battery must report the charge finished — bit for bit what the app did before the target
 		// existed.
-		final LevelAlertDecision atLevel = BatteryLevelReceiver.decideLevelAlert(
+		final LevelAlertDecision atLevel = decide(
 				fresh(99, null), 100, CHARGING, DEFAULTS);
 		assertNull(atLevel.notifyType());
 
-		final LevelAlertDecision complete = BatteryLevelReceiver.decideLevelAlert(
+		final LevelAlertDecision complete = decide(
 				atLevel.newState(), 100, FULL_ON_CHARGER, DEFAULTS);
 		assertEquals(AlertType.FULL, complete.notifyType());
 	}
@@ -348,7 +379,7 @@ public class BatteryLevelReceiverDecisionTest {
 	@Test
 	public void belowTheTarget_aCompletedChargeStillFires() {
 		// A charge-capped device reports FULL well short of the target. That is still a finished charge.
-		final LevelAlertDecision d = BatteryLevelReceiver.decideLevelAlert(
+		final LevelAlertDecision d = decide(
 				fresh(80, null), 80, FULL_ON_CHARGER, TARGET_AT_90);
 
 		assertEquals(AlertType.FULL, d.notifyType());
@@ -366,13 +397,151 @@ public class BatteryLevelReceiverDecisionTest {
 		int fired = 0;
 
 		for (int tick = 0; tick < 5; tick++) {
-			final LevelAlertDecision d = BatteryLevelReceiver.decideLevelAlert(state, 80, FULL_ON_CHARGER, TARGET_AT_90);
+			final LevelAlertDecision d = decide(state, 80, FULL_ON_CHARGER, TARGET_AT_90);
 			state = d.newState();
 			if (d.notifyType() == AlertType.FULL) {
 				fired++;
 			}
 		}
 		assertEquals(1, fired);
+	}
+
+	// --- the unplug reminder: the opt-in repeat on top of the once-per-charge alert (#264) --------
+
+	@Test
+	public void unplugReminder_offByDefault_leavesTheAlertAtOncePerCharge() {
+		// The shipped default. Hours past any plausible gap, a battery sitting on the charger at the target still gets exactly the one alert.
+		final LevelAlertDecision fired = decide(fresh(89, null), 90, CHARGING, TARGET_AT_90);
+		assertEquals(AlertType.FULL, fired.notifyType());
+
+		final LevelAlertDecision later = BatteryLevelReceiver.decideLevelAlert(
+				fired.newState(), 90, CHARGING, TARGET_AT_90, NOW + 6 * REMINDER_GAP_MS);
+		assertNull(later.notifyType());
+	}
+
+	@Test
+	public void firstAlertOfTheCharge_isNotAReminder_andStartsTheClock() {
+		// The distinction the dispatcher acts on: the first alert of a charge session posts normally, and it is what the reminder gap is then measured from.
+		final LevelAlertDecision d = decide(fresh(89, null), 90, CHARGING, remindingAt(TARGET_90));
+
+		assertEquals(AlertType.FULL, d.notifyType());
+		assertFalse(d.reminder());
+		assertEquals(NOW, d.newState().fullAlertAt());
+	}
+
+	@Test
+	public void unplugReminder_rePostsTheAlertOnceTheGapElapses() {
+		final LevelAlertDecision fired = decide(fresh(89, null), 90, CHARGING, remindingAt(TARGET_90));
+
+		final LevelAlertDecision reminded = BatteryLevelReceiver.decideLevelAlert(
+				fired.newState(), 91, CHARGING, remindingAt(TARGET_90), NOW + REMINDER_GAP_MS);
+
+		assertEquals(AlertType.FULL, reminded.notifyType());
+		assertTrue(reminded.reminder());
+		// Still one episode, not a re-armed one — the repeat rides on the once-per-charge flag rather than replacing it.
+		assertTrue(reminded.newState().fullNotified());
+		assertTrue(reminded.newState().fullAlertShown());
+	}
+
+	@Test
+	public void unplugReminder_staysQuietUntilTheGapHasFullyElapsed() {
+		final LevelAlertDecision fired = decide(fresh(89, null), 90, CHARGING, remindingAt(TARGET_90));
+
+		final LevelAlertDecision early = BatteryLevelReceiver.decideLevelAlert(
+				fired.newState(), 90, CHARGING, remindingAt(TARGET_90), NOW + REMINDER_GAP_MS - 1);
+
+		assertNull(early.notifyType());
+		// The clock is left alone by a tick that didn't remind, so the next one is still due on the original schedule.
+		assertEquals(NOW, early.newState().fullAlertAt());
+	}
+
+	@Test
+	public void unplugReminder_spacesRepeatsFromTheLastPost() {
+		// Measured from the last post, not the first: otherwise every broadcast after the first gap is "overdue" and the reminder becomes a per-tick alarm.
+		final LevelAlertDecision fired = decide(fresh(89, null), 90, CHARGING, remindingAt(TARGET_90));
+		final LevelAlertDecision first = BatteryLevelReceiver.decideLevelAlert(
+				fired.newState(), 90, CHARGING, remindingAt(TARGET_90), NOW + REMINDER_GAP_MS);
+		assertTrue(first.reminder());
+
+		final LevelAlertDecision tooSoon = BatteryLevelReceiver.decideLevelAlert(
+				first.newState(), 90, CHARGING, remindingAt(TARGET_90), NOW + REMINDER_GAP_MS + 1);
+		assertNull(tooSoon.notifyType());
+
+		final LevelAlertDecision second = BatteryLevelReceiver.decideLevelAlert(
+				first.newState(), 90, CHARGING, remindingAt(TARGET_90), NOW + 2 * REMINDER_GAP_MS);
+		assertTrue(second.reminder());
+	}
+
+	@Test
+	public void unplugReminder_keepsGoingAtAnOemChargeCap() {
+		// The device holding at its own cap reports NOT_CHARGING with the cable in and never reports FULL — the case a "still charging" reading of the feature
+		// would go silent on, and the one whose owners asked for the reminder.
+		final LevelAlertDecision fired = decide(fullAlertShowing(88, NOW), 88, PLUGGED_NOT_CHARGING, remindingAt(85));
+
+		assertNull(fired.notifyType()); // not yet due
+
+		final LevelAlertDecision reminded = BatteryLevelReceiver.decideLevelAlert(
+				fired.newState(), 88, PLUGGED_NOT_CHARGING, remindingAt(85), NOW + REMINDER_GAP_MS);
+		assertTrue(reminded.reminder());
+	}
+
+	@Test
+	public void unplugReminder_stopsWhenTheChargerComesOut() {
+		// "Until I unplug" is the whole promise: off the cable the episode is over, the shown alert is dismissed, and no reminder rides along behind it.
+		final LevelAlertDecision d = BatteryLevelReceiver.decideLevelAlert(
+				fullAlertShowing(90, NOW), 90, DISCHARGING, remindingAt(TARGET_90), NOW + 10 * REMINDER_GAP_MS);
+
+		assertNull(d.notifyType());
+		assertTrue(d.clearFullAlert());
+		assertFalse(d.newState().fullNotified());
+		assertEquals(0, d.newState().fullAlertAt());
+	}
+
+	@Test
+	public void unplugReminder_stopsOnceTheLevelFallsBackBelowTheTarget() {
+		// A phone drawing more than the cable supplies slides back out of "the charge you asked for is done", so there is nothing left to be reminded about.
+		// The repeated level is what reaches the full-battery branch here, the same path chargeTarget_whileDischarging_neverAlerts uses.
+		final LevelAlertDecision d = BatteryLevelReceiver.decideLevelAlert(
+				fullAlertShowing(84, NOW), 84, PLUGGED_NOT_CHARGING, remindingAt(TARGET_90), NOW + 10 * REMINDER_GAP_MS);
+
+		assertNull(d.notifyType());
+		// Re-armed by the band, and the reminder clock re-arms with it rather than being left to fire the instant the next charge reaches the target.
+		assertFalse(d.newState().fullNotified());
+		assertEquals(0, d.newState().fullAlertAt());
+	}
+
+	@Test
+	public void unplugReminder_withNoRecordedAlertTime_neverFires() {
+		// What an install upgrading mid-charge reads back: the flag says an alert already fired, with no record of when. Treating that absent time as "long
+		// ago" would greet exactly those users with a reminder the instant they updated.
+		final LevelAlertDecision d = BatteryLevelReceiver.decideLevelAlert(
+				fullAlertShowing(90), 90, CHARGING, remindingAt(TARGET_90), NOW + 100 * REMINDER_GAP_MS);
+
+		assertNull(d.notifyType());
+	}
+
+	@Test
+	public void unplugReminder_neverOutlivesTheChargeSessionItStarted() {
+		// Unplug, then plug back in above the target: that is a new session, so its first alert is a first alert — not a reminder inherited from the last one.
+		final LevelAlertDecision unplugged = BatteryLevelReceiver.decideLevelAlert(
+				fullAlertShowing(95, NOW), 95, DISCHARGING, remindingAt(TARGET_90), NOW + REMINDER_GAP_MS);
+		assertFalse(unplugged.newState().fullNotified());
+
+		final LevelAlertDecision replugged = BatteryLevelReceiver.decideLevelAlert(
+				unplugged.newState(), 95, CHARGING, remindingAt(TARGET_90), NOW + 2 * REMINDER_GAP_MS);
+		assertEquals(AlertType.FULL, replugged.notifyType());
+		assertFalse(replugged.reminder());
+	}
+
+	@Test
+	public void unplugReminder_withTheFullAlertSwitchedOff_saysNothing() {
+		// The reminder repeats the full-battery alert; with that alert off there is nothing to repeat, whatever this switch says.
+		final LevelAlertConfig noFullButReminding =
+				new LevelAlertConfig(CRITICAL, WARNING, TARGET_90, true, false, false, true, REMINDER_GAP_MS);
+		final LevelAlertDecision d = BatteryLevelReceiver.decideLevelAlert(
+				fullAlertShowing(90, NOW), 90, CHARGING, noFullButReminding, NOW + 10 * REMINDER_GAP_MS);
+
+		assertNull(d.notifyType());
 	}
 
 	// --- unplugged: the full alert is bounded by the charger, not by the status --------------------
@@ -382,7 +551,7 @@ public class BatteryLevelReceiverDecisionTest {
 		// The status stays BATTERY_STATUS_FULL at 100% on plenty of devices with the cable already out.
 		// Firing here is what made the alert look like it refused to go away: the unplug handler cleared
 		// it and the very next broadcast posted it straight back.
-		final LevelAlertDecision d = BatteryLevelReceiver.decideLevelAlert(
+		final LevelAlertDecision d = decide(
 				fresh(100, null), 100, UNPLUGGED_STILL_FULL, DEFAULTS);
 
 		assertNull(d.notifyType());
@@ -394,7 +563,7 @@ public class BatteryLevelReceiverDecisionTest {
 	public void unplugged_withFullAlertShown_dismissesItOnce() {
 		// Missed unplug broadcast (process killed mid-charge): the shown alert is dismissed from
 		// EXTRA_PLUGGED instead, then the session is re-armed so nothing dismisses twice.
-		final LevelAlertDecision d = BatteryLevelReceiver.decideLevelAlert(
+		final LevelAlertDecision d = decide(
 				fullAlertShowing(100), 100, UNPLUGGED_STILL_FULL, DEFAULTS);
 
 		assertTrue(d.clearFullAlert());
@@ -402,7 +571,7 @@ public class BatteryLevelReceiverDecisionTest {
 		assertFalse(d.newState().fullNotified());
 		assertFalse(d.newState().fullAlertShown());
 
-		final LevelAlertDecision next = BatteryLevelReceiver.decideLevelAlert(
+		final LevelAlertDecision next = decide(
 				d.newState(), 99, UNPLUGGED_STILL_FULL, DEFAULTS);
 		assertFalse(next.clearFullAlert());
 		assertNull(next.notifyType());
@@ -412,7 +581,7 @@ public class BatteryLevelReceiverDecisionTest {
 	public void unplugged_levelAlreadyDropping_stillDismissesTheFullAlert() {
 		// The discharge branch (changed level) must clear it too — otherwise a restart that first sees
 		// 99% leaves the alert up until the next charge session.
-		final LevelAlertDecision d = BatteryLevelReceiver.decideLevelAlert(
+		final LevelAlertDecision d = decide(
 				fullAlertShowing(100), 98, DISCHARGING, DEFAULTS);
 
 		assertTrue(d.clearFullAlert());
@@ -423,7 +592,7 @@ public class BatteryLevelReceiverDecisionTest {
 	public void unplugged_dischargedToCritical_stillAlertsWhileDismissingTheStaleFull() {
 		// Both at once: the receiver dismisses first and posts after, so the critical alert survives
 		// (they share one notification ID). BatteryLevelReceiverTest pins that ordering.
-		final LevelAlertDecision d = BatteryLevelReceiver.decideLevelAlert(
+		final LevelAlertDecision d = decide(
 				fullAlertShowing(21), 19, DISCHARGING, DEFAULTS);
 
 		assertTrue(d.clearFullAlert());
@@ -435,7 +604,7 @@ public class BatteryLevelReceiverDecisionTest {
 		// The state-driven fallback must land in exactly the state onChargerDisconnected produces.
 		// Re-arming only the full flag left prevType armed, silencing the next session's critical alert.
 		final LevelAlertState afterFullCharge = new LevelAlertState(100, AlertType.CRITICAL, true, true);
-		final LevelAlertDecision d = BatteryLevelReceiver.decideLevelAlert(
+		final LevelAlertDecision d = decide(
 				afterFullCharge, 100, UNPLUGGED_STILL_FULL, DEFAULTS);
 
 		assertNull(d.newState().prevType());
@@ -446,15 +615,15 @@ public class BatteryLevelReceiverDecisionTest {
 	public void unplugged_missedTransition_criticalStillAlertsWithWarningsOff() {
 		// The user-visible consequence of the re-arm above: with warning alerts disabled nothing else
 		// resets prevType on the way down, so a half re-arm stayed silent all the way to RED_ALERT_LEVEL.
-		final LevelAlertConfig noWarning = new LevelAlertConfig(CRITICAL, WARNING, AppPrefs.MAX_CHARGE_TARGET, false, true, false);
+		final LevelAlertConfig noWarning = config(AppPrefs.MAX_CHARGE_TARGET, false, true, false);
 		final LevelAlertState afterFullCharge = new LevelAlertState(100, AlertType.CRITICAL, true, true);
 
-		LevelAlertState state = BatteryLevelReceiver.decideLevelAlert(
+		LevelAlertState state = decide(
 				afterFullCharge, 100, UNPLUGGED_STILL_FULL, noWarning).newState();
 
 		AlertType fired = null;
 		for (int percentage = 99; percentage >= CRITICAL; percentage--) {
-			final LevelAlertDecision d = BatteryLevelReceiver.decideLevelAlert(state, percentage, DISCHARGING, noWarning);
+			final LevelAlertDecision d = decide(state, percentage, DISCHARGING, noWarning);
 			state = d.newState();
 			if (fired == null) {
 				fired = d.notifyType();
@@ -468,7 +637,7 @@ public class BatteryLevelReceiverDecisionTest {
 		// fullNotified survives a critical alert repainting the shared ID, so dismissal must key off
 		// "is a full alert on screen" — otherwise the unplug silently cancels the live critical one.
 		final LevelAlertState criticalOnScreen = new LevelAlertState(19, AlertType.CRITICAL, true, false);
-		final LevelAlertDecision d = BatteryLevelReceiver.decideLevelAlert(
+		final LevelAlertDecision d = decide(
 				criticalOnScreen, 18, DISCHARGING, DEFAULTS);
 
 		assertFalse(d.clearFullAlert());
@@ -478,9 +647,9 @@ public class BatteryLevelReceiverDecisionTest {
 	public void replugged_afterUnplugAtFull_firesAgain() {
 		// The unplug re-arm is what lets a charger connected at 100% alert again, so it must survive
 		// the dismissal path above.
-		final LevelAlertDecision unplugged = BatteryLevelReceiver.decideLevelAlert(
+		final LevelAlertDecision unplugged = decide(
 				fullAlertShowing(100), 100, UNPLUGGED_STILL_FULL, DEFAULTS);
-		final LevelAlertDecision replugged = BatteryLevelReceiver.decideLevelAlert(
+		final LevelAlertDecision replugged = decide(
 				unplugged.newState(), 100, FULL_ON_CHARGER, DEFAULTS);
 
 		assertEquals(AlertType.FULL, replugged.notifyType());
@@ -493,7 +662,7 @@ public class BatteryLevelReceiverDecisionTest {
 	public void restartMidEpisode_persistedStateSuppressesDuplicates() {
 		// Process death loses nothing: the decision on the persisted state after a "restart" is the
 		// same as it would have been in-process — no duplicate critical while still below threshold.
-		final LevelAlertDecision d = BatteryLevelReceiver.decideLevelAlert(
+		final LevelAlertDecision d = decide(
 				fresh(15, AlertType.CRITICAL), 13, DISCHARGING, DEFAULTS);
 
 		assertNull(d.notifyType());

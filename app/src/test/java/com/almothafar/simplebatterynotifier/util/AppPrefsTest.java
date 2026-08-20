@@ -34,8 +34,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Tests for the {@link AppPrefs} facade (#162). The context-backed cases run under Robolectric (typed
  * accessors fall back to the single-owned defaults, read stored values, round-trip writes, and — the
- * drift guard — the XML slider defaults still equal the constants); the pure drain-limit clamp is a
- * plain parameterized test.
+ * drift guard — the XML slider defaults still equal the constants); the pure drain-limit, charge-target and minutes clamps are plain parameterized tests.
  */
 @RunWith(Enclosed.class)
 public class AppPrefsTest {
@@ -119,6 +118,34 @@ public class AppPrefsTest {
 		}
 
 		@Test
+		public void unplugReminder_defaultsOffAndReadsBack() {
+			// Off is the whole point of the default (#264): the alert stays once per charge for everyone who didn't ask to be nagged.
+			assertFalse(AppPrefs.DEFAULT_UNPLUG_REMINDER);
+			assertFalse(AppPrefs.unplugReminderEnabled(context));
+
+			PreferenceManager.getDefaultSharedPreferences(context).edit()
+			                 .putBoolean(context.getString(R.string._pref_key_notify_unplug_reminder), true)
+			                 .apply();
+			assertTrue(AppPrefs.unplugReminderEnabled(context));
+		}
+
+		@Test
+		public void unplugReminderGap_defaultsToTheSliderDefaultAndClampsStoredValues() {
+			assertEquals(AppPrefs.DEFAULT_UNPLUG_REMINDER_MINUTES * 60_000L, AppPrefs.unplugReminderGapMs(context));
+
+			// A 0-minute gap is what a corrupt or downgraded preferences file yields, and it would remind on every battery broadcast.
+			PreferenceManager.getDefaultSharedPreferences(context).edit()
+			                 .putInt(context.getString(R.string._pref_key_unplug_reminder_minutes), 0)
+			                 .apply();
+			assertEquals(AppPrefs.MIN_UNPLUG_REMINDER_MINUTES * 60_000L, AppPrefs.unplugReminderGapMs(context));
+
+			PreferenceManager.getDefaultSharedPreferences(context).edit()
+			                 .putInt(context.getString(R.string._pref_key_unplug_reminder_minutes), 30)
+			                 .apply();
+			assertEquals(30 * 60_000L, AppPrefs.unplugReminderGapMs(context));
+		}
+
+		@Test
 		public void vibrateEnabled_defaultsTrueAndReadsBack() {
 			// Defaults on (matches the switch's android:defaultValue in pref_behaviour.xml).
 			assertTrue(AppPrefs.DEFAULT_VIBRATE);
@@ -172,11 +199,25 @@ public class AppPrefsTest {
 		 */
 		@Test
 		public void chargeTargetSlider_boundsAreTheFacadeConstantsAtRuntime() throws Exception {
-			final SeekBarPreference slider = inflateChargeTargetSlider();
+			final SeekBarPreference slider = inflateSlider(R.string._pref_key_charge_target);
 
 			assertNotNull("charge-target slider missing from pref_alerts.xml", slider);
 			assertEquals(AppPrefs.MIN_CHARGE_TARGET, slider.getMin());
 			assertEquals(AppPrefs.MAX_CHARGE_TARGET, slider.getMax());
+		}
+
+		/**
+		 * The same guard for the unplug-reminder interval (#264), which restates the facade's bounds in XML exactly as the charge target does — including the
+		 * {@code app:min} trap that would otherwise offer gaps down to 0 minutes: a reminder on every broadcast, which is the one behaviour the clamp exists to
+		 * make unreachable.
+		 */
+		@Test
+		public void unplugReminderSlider_boundsAreTheFacadeConstantsAtRuntime() throws Exception {
+			final SeekBarPreference slider = inflateSlider(R.string._pref_key_unplug_reminder_minutes);
+
+			assertNotNull("unplug-reminder slider missing from pref_alerts.xml", slider);
+			assertEquals(AppPrefs.MIN_UNPLUG_REMINDER_MINUTES, slider.getMin());
+			assertEquals(AppPrefs.MAX_UNPLUG_REMINDER_MINUTES, slider.getMax());
 		}
 
 		/**
@@ -185,12 +226,71 @@ public class AppPrefsTest {
 		 */
 		@Test
 		public void xmlChargeTargetDefault_matchesTheFacadeConstant() throws Exception {
-			final XmlResourceParser parser = context.getResources().getXml(R.xml.pref_alerts);
-			Integer xmlDefault = null;
+			final Integer xmlDefault = xmlDefaultOf(R.string._pref_key_charge_target);
 
+			assertNotNull("defaultValue attr missing from the charge-target slider", xmlDefault);
+			assertEquals(AppPrefs.DEFAULT_CHARGE_TARGET, (int) xmlDefault);
+		}
+
+		/**
+		 * The unplug reminder greys out with the alert it repeats, and its interval greys out with the reminder (#264).
+		 * <p>
+		 * The chain is the design decision, not an accident of ordering: there is nothing to repeat when the full-battery alert is off, so leaving these two
+		 * live would offer a user settings that cannot do anything. It is also what separates them from the charge target directly above, which stays live
+		 * precisely because it still governs the Insights temperature range (#260) with the alert switched off.
+		 */
+		@Test
+		public void unplugReminderControls_greyOutWithTheAlertTheyRepeat() throws Exception {
+			assertEquals(R.string._pref_key_notify_for_full_level, xmlDependencyOf(R.string._pref_key_notify_unplug_reminder));
+			assertEquals(R.string._pref_key_notify_unplug_reminder, xmlDependencyOf(R.string._pref_key_unplug_reminder_minutes));
+			// The contrast that makes the rule above a rule rather than a habit.
+			assertEquals("the charge target must stay live with the alert off", 0, xmlDependencyOf(R.string._pref_key_charge_target));
+		}
+
+		@Test
+		public void xmlUnplugReminderDefault_matchesTheFacadeConstant() throws Exception {
+			final Integer xmlDefault = xmlDefaultOf(R.string._pref_key_unplug_reminder_minutes);
+
+			assertNotNull("defaultValue attr missing from the unplug-reminder slider", xmlDefault);
+			assertEquals(AppPrefs.DEFAULT_UNPLUG_REMINDER_MINUTES, (int) xmlDefault);
+		}
+
+		/**
+		 * Builds the charge-target slider from {@code pref_alerts.xml} exactly as the preference framework would, so its bounds are the ones a user's finger
+		 * actually meets.
+		 *
+		 * @param keyRes the slider's preference-key string resource
+	 *
+	 * @return the inflated slider, or {@code null} when the screen no longer declares one
+		 */
+		private SeekBarPreference inflateSlider(int keyRes) throws Exception {
+			final XmlResourceParser parser = context.getResources().getXml(R.xml.pref_alerts);
 			try {
 				for (int event = parser.getEventType(); event != XmlPullParser.END_DOCUMENT; event = parser.next()) {
-					if (event != XmlPullParser.START_TAG || !isChargeTargetSlider(parser)) {
+					if (event == XmlPullParser.START_TAG && hasKey(parser, keyRes)) {
+						return new SeekBarPreference(context, Xml.asAttributeSet(parser));
+					}
+				}
+			} finally {
+				parser.close();
+			}
+			return null;
+		}
+
+		/**
+		 * The {@code android:defaultValue} the framework reads for a slider, straight off the attribute — that <em>is</em> where the framework reads it from,
+		 * so it is the one value {@link AppPrefs} cannot own and the one that has to be compared as text.
+		 *
+		 * @param keyRes the slider's preference-key string resource
+		 *
+		 * @return the declared default, or {@code null} when the slider or its attribute is gone
+		 */
+		private Integer xmlDefaultOf(int keyRes) throws Exception {
+			final XmlResourceParser parser = context.getResources().getXml(R.xml.pref_alerts);
+			Integer xmlDefault = null;
+			try {
+				for (int event = parser.getEventType(); event != XmlPullParser.END_DOCUMENT; event = parser.next()) {
+					if (event != XmlPullParser.START_TAG || !hasKey(parser, keyRes)) {
 						continue;
 					}
 					for (int i = 0; i < parser.getAttributeCount(); i++) {
@@ -202,39 +302,44 @@ public class AppPrefsTest {
 			} finally {
 				parser.close();
 			}
-
-			assertNotNull("defaultValue attr missing from the charge-target slider", xmlDefault);
-			assertEquals(AppPrefs.DEFAULT_CHARGE_TARGET, (int) xmlDefault);
+			return xmlDefault;
 		}
 
 		/**
-		 * Builds the charge-target slider from {@code pref_alerts.xml} exactly as the preference framework would, so its bounds are the ones a user's finger
-		 * actually meets.
+		 * The {@code android:dependency} a preference declares, as the string resource it points at.
 		 *
-		 * @return the inflated slider, or {@code null} when the screen no longer declares one
+		 * @param keyRes the preference's own key string resource
+		 *
+		 * @return the dependency's key resource, or {@code 0} when the preference declares none
 		 */
-		private SeekBarPreference inflateChargeTargetSlider() throws Exception {
+		private int xmlDependencyOf(int keyRes) throws Exception {
 			final XmlResourceParser parser = context.getResources().getXml(R.xml.pref_alerts);
+			int dependency = 0;
 			try {
 				for (int event = parser.getEventType(); event != XmlPullParser.END_DOCUMENT; event = parser.next()) {
-					if (event == XmlPullParser.START_TAG && isChargeTargetSlider(parser)) {
-						return new SeekBarPreference(context, Xml.asAttributeSet(parser));
+					if (event != XmlPullParser.START_TAG || !hasKey(parser, keyRes)) {
+						continue;
+					}
+					for (int i = 0; i < parser.getAttributeCount(); i++) {
+						if (parser.getAttributeNameResource(i) == android.R.attr.dependency) {
+							dependency = parser.getAttributeResourceValue(i, 0);
+						}
 					}
 				}
 			} finally {
 				parser.close();
 			}
-			return null;
+			return dependency;
 		}
 
 		/**
-		 * Whether the tag the parser is on is the charge-target slider, identified by its preference key rather than its position — the screen grows and the
+		 * Whether the tag the parser is on carries the given preference key. Preferences are found by key rather than by position — the screen grows and the
 		 * categories get reordered.
 		 */
-		private boolean isChargeTargetSlider(XmlResourceParser parser) {
+		private boolean hasKey(XmlResourceParser parser, int keyRes) {
 			for (int i = 0; i < parser.getAttributeCount(); i++) {
 				if (parser.getAttributeNameResource(i) == android.R.attr.key
-						&& parser.getAttributeResourceValue(i, 0) == R.string._pref_key_charge_target) {
+						&& parser.getAttributeResourceValue(i, 0) == keyRes) {
 					return true;
 				}
 			}
@@ -269,6 +374,41 @@ public class AppPrefsTest {
 		@Test
 		public void matchesExpected() {
 			assertEquals(expected, AppPrefs.clampChargeTarget(stored));
+		}
+	}
+
+	/**
+	 * {@link AppPrefs#clampMinutesToMs}: the shared guarantee behind every timing preference — the fast-drain window and reminder (#109) and the unplug reminder
+	 * (#264). Moved here with the helper itself, which the sliders' ranges are all enforced through.
+	 */
+	@RunWith(Parameterized.class)
+	public static class ClampMinutesToMs {
+
+		private static final long MINUTE_MS = 60_000L;
+
+		@Parameter(0) public int stored;
+		@Parameter(1) public int minMinutes;
+		@Parameter(2) public int maxMinutes;
+		@Parameter(3) public long expectedMs;
+
+		@Parameters(name = "clampMinutesToMs({0}, {1}, {2}) = {3}ms")
+		public static Collection<Object[]> data() {
+			return Arrays.asList(new Object[][]{
+					{5, 1, 30, 5 * MINUTE_MS},      // in range: unchanged
+					{1, 1, 30, 1 * MINUTE_MS},      // boundaries kept
+					{60, 5, 60, 60 * MINUTE_MS},
+					// 0 sustained minutes would fire on the first above-limit tick — the spike alarm the design forbids; 0 reminder minutes would remind on
+					// every broadcast.
+					{0, 1, 30, 1 * MINUTE_MS},
+					{-7, 1, 30, 1 * MINUTE_MS},
+					{999, 1, 30, 30 * MINUTE_MS},
+					{0, 5, 60, 5 * MINUTE_MS},
+			});
+		}
+
+		@Test
+		public void matchesExpected() {
+			assertEquals(expectedMs, AppPrefs.clampMinutesToMs(stored, minMinutes, maxMinutes));
 		}
 	}
 

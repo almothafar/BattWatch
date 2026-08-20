@@ -22,6 +22,7 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
@@ -61,7 +62,7 @@ public class BatteryLevelReceiverTest {
 
 		try (MockedStatic<NotificationService> ns = mockStatic(NotificationService.class)) {
 			receive();
-			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.CRITICAL), anyInt()));
+			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.CRITICAL), anyInt(), anyBoolean()));
 		}
 	}
 
@@ -71,7 +72,7 @@ public class BatteryLevelReceiverTest {
 
 		try (MockedStatic<NotificationService> ns = mockStatic(NotificationService.class)) {
 			receive();
-			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.WARNING), anyInt()));
+			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.WARNING), anyInt(), anyBoolean()));
 		}
 	}
 
@@ -81,8 +82,8 @@ public class BatteryLevelReceiverTest {
 
 		try (MockedStatic<NotificationService> ns = mockStatic(NotificationService.class)) {
 			receive();
-			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.WARNING), anyInt()), never());
-			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.CRITICAL), anyInt()), never());
+			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.WARNING), anyInt(), anyBoolean()), never());
+			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.CRITICAL), anyInt(), anyBoolean()), never());
 		}
 	}
 
@@ -95,7 +96,7 @@ public class BatteryLevelReceiverTest {
 			publishBattery(BatteryManager.BATTERY_STATUS_DISCHARGING, 35, 100, 0);
 			receive();
 
-			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.WARNING), anyInt()), times(1));
+			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.WARNING), anyInt(), anyBoolean()), times(1));
 		}
 	}
 
@@ -109,7 +110,7 @@ public class BatteryLevelReceiverTest {
 			publishBattery(BatteryManager.BATTERY_STATUS_DISCHARGING, 14, 100, 0);
 			receive();
 
-			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.CRITICAL), anyInt()), times(2));
+			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.CRITICAL), anyInt(), anyBoolean()), times(2));
 		}
 	}
 
@@ -122,7 +123,7 @@ public class BatteryLevelReceiverTest {
 		try (MockedStatic<NotificationService> ns = mockStatic(NotificationService.class)) {
 			receive();
 			receive(); // second identical tick must not re-send
-			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.FULL), anyInt()), times(1));
+			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.FULL), anyInt(), anyBoolean()), times(1));
 		}
 	}
 
@@ -137,7 +138,7 @@ public class BatteryLevelReceiverTest {
 			BatteryLevelReceiver.onChargerDisconnected(context);
 			receive();
 
-			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.FULL), anyInt()), times(2));
+			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.FULL), anyInt(), anyBoolean()), times(2));
 		}
 	}
 
@@ -157,8 +158,8 @@ public class BatteryLevelReceiverTest {
 			receive();
 
 			// Once, and carrying the level it actually fired at — that level is what keeps the copy honest.
-			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.FULL), eq(85)), times(1));
-			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.FULL), anyInt()), times(1));
+			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.FULL), eq(85), anyBoolean()), times(1));
+			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.FULL), anyInt(), anyBoolean()), times(1));
 		}
 	}
 
@@ -174,7 +175,7 @@ public class BatteryLevelReceiverTest {
 			receive();
 			receive(); // it sits there for hours; only the first tick may alert
 
-			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.FULL), eq(88)), times(1));
+			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.FULL), eq(88), anyBoolean()), times(1));
 		}
 	}
 
@@ -189,7 +190,51 @@ public class BatteryLevelReceiverTest {
 			receive();
 			receive();
 
-			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.FULL), anyInt()), never());
+			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.FULL), anyInt(), anyBoolean()), never());
+		}
+	}
+
+	@Test
+	public void unplugReminder_offByDefault_leavesTheAlertAtOncePerCharge() {
+		// The default the feature ships with (#264). The stored state is mid-charge with the alert long since posted — an install that never touches the switch
+		// must still hear nothing more until the cable comes out.
+		saveLevelState(new LevelAlertState(90, null, true, true, 1));
+		publishBattery(BatteryManager.BATTERY_STATUS_CHARGING, 90, 100, BatteryManager.BATTERY_PLUGGED_AC);
+
+		try (MockedStatic<NotificationService> ns = mockStatic(NotificationService.class)) {
+			receive();
+			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.FULL), anyInt(), anyBoolean()), never());
+		}
+	}
+
+	@Test
+	public void unplugReminder_switchedOn_rePostsTheAlertAsAReminder() {
+		// End-to-end for #264: the switch is read from the preference the settings screen writes, and a due reminder re-posts the full alert flagged as a
+		// repeat — which is what stops the dispatcher silencing it with setOnlyAlertOnce.
+		//
+		// The stored alert time is 1 ms after the epoch, i.e. any real gap has elapsed by now; that keeps the assertion off the wall clock.
+		setUnplugReminderEnabled(true);
+		saveLevelState(new LevelAlertState(90, null, true, true, 1));
+		publishBattery(BatteryManager.BATTERY_STATUS_CHARGING, 90, 100, BatteryManager.BATTERY_PLUGGED_AC);
+
+		try (MockedStatic<NotificationService> ns = mockStatic(NotificationService.class)) {
+			receive();
+			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.FULL), eq(90), eq(true)));
+		}
+	}
+
+	@Test
+	public void unplugReminder_switchedOn_stopsAtUnplug() {
+		// The promise the feature is named for. Same due reminder, cable out: the alert is taken down instead of repeated.
+		setUnplugReminderEnabled(true);
+		saveLevelState(new LevelAlertState(90, null, true, true, 1));
+		publishBattery(BatteryManager.BATTERY_STATUS_DISCHARGING, 90, 100, 0);
+
+		try (MockedStatic<NotificationService> ns = mockStatic(NotificationService.class)) {
+			receive();
+
+			ns.verify(() -> NotificationService.sendNotification(any(Context.class), eq(AlertType.FULL), anyInt(), anyBoolean()), never());
+			ns.verify(() -> NotificationService.clearLevelAlert(any(Context.class)));
 		}
 	}
 
@@ -206,7 +251,7 @@ public class BatteryLevelReceiverTest {
 
 			final InOrder ordered = inOrder(NotificationService.class);
 			ordered.verify(ns, () -> NotificationService.clearLevelAlert(any(Context.class)));
-			ordered.verify(ns, () -> NotificationService.sendNotification(any(Context.class), eq(AlertType.CRITICAL), anyInt()));
+			ordered.verify(ns, () -> NotificationService.sendNotification(any(Context.class), eq(AlertType.CRITICAL), anyInt(), anyBoolean()));
 		}
 	}
 
@@ -323,6 +368,13 @@ public class BatteryLevelReceiverTest {
 		PreferenceManager.getDefaultSharedPreferences(context)
 				.edit()
 				.putBoolean(context.getString(R.string._pref_key_notify_every_tick), true)
+				.commit();
+	}
+
+	private void setUnplugReminderEnabled(boolean enabled) {
+		PreferenceManager.getDefaultSharedPreferences(context)
+				.edit()
+				.putBoolean(context.getString(R.string._pref_key_notify_unplug_reminder), enabled)
 				.commit();
 	}
 

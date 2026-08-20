@@ -13,7 +13,8 @@ import static org.junit.Assert.assertTrue;
  * Unit tests for the pure fast-drain decision core {@link FastDrainDetector#decide} (issue #109),
  * unchanged as the behaviour contract after the shared engine was extracted (#163): the
  * sustained-streak trigger, the once-vs-reminder split by screen state, the re-arm hysteresis, the
- * observation-gap lapse rule, and the timing-preference clamp.
+ * observation-gap lapse rule. The timing-preference clamp the detector reads its windows through moved to {@code AppPrefsTest} along with
+ * {@link com.almothafar.simplebatterynotifier.util.AppPrefs#clampMinutesToMs}, which every timing preference now shares.
  * Times in millis; limit in %/h. The streak's {@code lastSeen} sits close to "now" where the scenario
  * implies continuous observation — in production every above-limit tick refreshes it.
  */
@@ -178,22 +179,5 @@ public class FastDrainDetectorTest {
 		final Outcome lapsed = FastDrainDetector.decide(
 				state, true, 30, LIMIT, SUSTAINED_MS, REMINDER_MS, LOCKED, atBoundary + 1);
 		assertEquals(atBoundary + 1, lapsed.newState().start()); // restarted
-	}
-
-	// --- timing-preference clamp ----------------------------------------------------------------
-
-	@Test
-	public void clampMinutes_inRangeUnchanged() {
-		assertEquals(5 * MINUTE_MS, FastDrainDetector.clampMinutesToMs(5, 1, 30));
-		assertEquals(1 * MINUTE_MS, FastDrainDetector.clampMinutesToMs(1, 1, 30));   // boundaries kept
-		assertEquals(60 * MINUTE_MS, FastDrainDetector.clampMinutesToMs(60, 5, 60));
-	}
-
-	@Test
-	public void clampMinutes_outOfRangeClamped() {
-		// 0 sustained minutes would fire on the first above-limit tick — the spike alarm the design forbids.
-		assertEquals(1 * MINUTE_MS, FastDrainDetector.clampMinutesToMs(0, 1, 30));
-		assertEquals(1 * MINUTE_MS, FastDrainDetector.clampMinutesToMs(-7, 1, 30));
-		assertEquals(30 * MINUTE_MS, FastDrainDetector.clampMinutesToMs(999, 1, 30));
 	}
 }
