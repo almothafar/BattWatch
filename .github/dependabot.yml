@@ -15,10 +15,10 @@ updates:
   - package-ecosystem: gradle
     directory: /
     schedule:
-      interval: weekly
-      day: monday
+      interval: "weekly"
+      day: "saturday"
       time: "06:00"
-      timezone: Asia/Amman
+      timezone: "Etc/UTC"
     open-pull-requests-limit: 10
     commit-message:
       prefix: build
@@ -48,20 +48,28 @@ updates:
         update-types:
           - minor
           - patch
+    # Both holds below exist because this project is deliberately still on the AGP 8 line (#81). Without
+    # them Dependabot would re-open the same red PR every week. Remove both when #81 lands.
     ignore:
-      # Held at 1.18.0 until the AGP 9 upgrade in #81 — core 1.19.0 requires AGP 9.1+, so a bump PR
-      # would just fail CI every week. Remove this entry when #81 lands.
+      # core 1.19.0 requires AGP 9.1+ and compileSdk 37 (see the closed attempt in #85).
       - dependency-name: androidx.core:core
         versions:
           - ">= 1.19.0"
+      # Gradle 9.6.0 removed the internal InternalProblems API that AGP 8 calls, so AGP 8.x refuses to
+      # load on 9.6+ ("relies on an API that was removed in Gradle 9.6.0"). 9.5.1 is the ceiling here.
+      - dependency-name: gradle-wrapper
+        versions:
+          - ">= 9.6.0"
 
   # The actions used by android-ci.yml, pr-title-lint.yml and release-please.yml. All are pinned to a
-  # major tag, so this only fires on a new major — monthly is often enough.
+  # major tag, so this only fires on a new major.
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: monthly
-      timezone: Asia/Amman
+      interval: "weekly"
+      day: "saturday"
+      time: "06:00"
+      timezone: "Etc/UTC"
     open-pull-requests-limit: 5
     commit-message:
       prefix: ci
