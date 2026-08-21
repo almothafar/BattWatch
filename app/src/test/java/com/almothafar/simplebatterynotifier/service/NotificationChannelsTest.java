@@ -26,7 +26,7 @@ import java.util.Collection;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -41,6 +41,19 @@ public class NotificationChannelsTest {
 	private static final String PICKED_CRITICAL = "content://media/internal/audio/media/101";
 	private static final String PICKED_WARNING = "content://media/internal/audio/media/202";
 	private static final String PICKED_FULL = "content://media/internal/audio/media/303";
+
+	/**
+	 * The six alert channels, restated rather than read from the production table on purpose: a test that enumerated the
+	 * same list the code iterates could not notice a channel dropping out of it.
+	 */
+	private static final String[] BASE_CHANNEL_IDS = {
+			NotificationChannels.CHANNEL_ID_CRITICAL,
+			NotificationChannels.CHANNEL_ID_WARNING,
+			NotificationChannels.CHANNEL_ID_FULL,
+			NotificationChannels.CHANNEL_ID_TEMPERATURE,
+			NotificationChannels.CHANNEL_ID_FAST_DRAIN,
+			NotificationChannels.CHANNEL_ID_SLOW_CHARGE,
+	};
 
 	/**
 	 * {@link NotificationChannels#versionedChannelId(String, int)} — versioned alert-channel IDs so a changed setting
@@ -186,16 +199,21 @@ public class NotificationChannelsTest {
 		}
 
 		private NotificationChannel channel(String baseChannelId) {
-			return manager.getNotificationChannel(NotificationChannels.channelFor(context, true, baseChannelId));
+			return currentChannel(context, manager, baseChannelId);
 		}
 	}
 
 	/**
-	 * A changed pick has to re-version the channels to take effect (#153/#286).
+	 * A changed setting has to re-version the channels to take effect, and an install on an older definition has to be
+	 * re-versioned without changing any setting at all (#153/#286).
 	 * <p>
 	 * A channel's sound is fixed when it is created, and Android un-deletes a channel recreated under the same ID with
-	 * its old settings — so without the version bump the new pick is stored, shown in the summary, and ignored. That is
-	 * how the Vibrate toggle failed before #153, and how a sound pick would fail with the wiring alone.
+	 * its old settings — so without a version bump the new pick is stored, shown in the summary, and ignored. That is how
+	 * the Vibrate toggle failed before #153, and how a sound pick would fail with the wiring alone.
+	 * <p>
+	 * The re-version is driven through {@link NotificationService#refreshAlertChannelsIfAffected}, which is the single
+	 * call the settings screen makes: testing the predicate and the recreation separately leaves the join untested, and
+	 * the join is the part both #153 and #286 got wrong.
 	 */
 	@RunWith(RobolectricTestRunner.class)
 	@Config(sdk = 34)
@@ -214,56 +232,209 @@ public class NotificationChannelsTest {
 
 		@Test
 		public void changedPick_bumpsTheChannelVersion() {
+			final int before = channelVersion(context);
 			pickSound(context, R.string._pref_key_notifications_alert_sound_ringtone, PICKED_CRITICAL);
 
-			NotificationChannels.refreshAlertChannels(context);
+			assertTrue(NotificationService.refreshAlertChannelsIfAffected(context, key(R.string._pref_key_notifications_alert_sound_ringtone)));
 
-			assertEquals(2, PreferenceManager.getDefaultSharedPreferences(context).getInt("alert_channel_version", 1));
+			// Asserted as a move rather than against a literal, so raising the definition version doesn't rewrite this test.
+			assertTrue("a changed pick that leaves the version alone is a pick the system will ignore", channelVersion(context) > before);
 		}
 
 		@Test
-		public void changedPick_recreatesTheChannelsUnderTheNewIds() {
-			pickSound(context, R.string._pref_key_notifications_alert_sound_ringtone, PICKED_CRITICAL);
+		public void changedPick_recreatesEveryChannelUnderTheNewIds() {
+			pickSound(context, R.string._pref_key_notifications_warning_sound_ringtone, PICKED_WARNING);
 
-			NotificationChannels.refreshAlertChannels(context);
+			NotificationService.refreshAlertChannelsIfAffected(context, key(R.string._pref_key_notifications_warning_sound_ringtone));
 
-			final String newId = NotificationChannels.channelFor(context, true, NotificationChannels.CHANNEL_ID_CRITICAL);
-			assertNotEquals("the alert must move off the ID whose settings the system froze", NotificationChannels.CHANNEL_ID_CRITICAL, newId);
-			assertEquals(Uri.parse(PICKED_CRITICAL), manager.getNotificationChannel(newId).getSound());
+			for (String baseId : BASE_CHANNEL_IDS) {
+				assertNotNull(baseId + " went missing across the re-version", currentChannel(context, manager, baseId));
+			}
+			assertEquals(Uri.parse(PICKED_WARNING), currentChannel(context, manager, NotificationChannels.CHANNEL_ID_FAST_DRAIN).getSound());
 		}
 
 		@Test
 		public void changedPick_leavesNoOrphanBehindInSystemSettings() {
+			final String[] oldIds = currentChannelIds(context);
 			pickSound(context, R.string._pref_key_notifications_alert_sound_ringtone, PICKED_CRITICAL);
 
-			NotificationChannels.refreshAlertChannels(context);
+			NotificationService.refreshAlertChannelsIfAffected(context, key(R.string._pref_key_notifications_alert_sound_ringtone));
 
-			assertNull(manager.getNotificationChannel(NotificationChannels.CHANNEL_ID_CRITICAL));
+			// Every one of the six, not just the first: an orphan is a per-channel failure, so a channel missed out of the
+			// deletion list leaves a stale entry the user sees in system settings and a single-channel assertion passes.
+			for (String oldId : oldIds) {
+				assertNull(oldId + " was left behind in system settings", manager.getNotificationChannel(oldId));
+			}
 		}
 
 		@Test
-		public void everySoundPickIsAChannelSetting() {
-			assertTrue(NotificationChannels.affectsAlertChannels(context, key(R.string._pref_key_notifications_alert_sound_ringtone)));
-			assertTrue(NotificationChannels.affectsAlertChannels(context, key(R.string._pref_key_notifications_warning_sound_ringtone)));
-			assertTrue(NotificationChannels.affectsAlertChannels(context, key(R.string._pref_key_notifications_full_sound_ringtone)));
+		public void theVibrateToggleStillReVersions() {
+			final int before = channelVersion(context);
+
+			assertTrue(NotificationService.refreshAlertChannelsIfAffected(context, key(R.string._pref_key_notifications_vibrate)));
+			assertTrue(channelVersion(context) > before);
 		}
 
 		@Test
-		public void theVibrateToggleIsStillAChannelSetting() {
-			assertTrue(NotificationChannels.affectsAlertChannels(context, key(R.string._pref_key_notifications_vibrate)));
+		public void everySoundPickReVersions() {
+			assertReVersions(R.string._pref_key_notifications_alert_sound_ringtone);
+			assertReVersions(R.string._pref_key_notifications_warning_sound_ringtone);
+			assertReVersions(R.string._pref_key_notifications_full_sound_ringtone);
 		}
 
 		@Test
-		public void anUnrelatedPreferenceIsNot() {
-			// Every preference change on the screen comes through here, so a re-version for one that changes nothing about
+		public void anUnrelatedPreferenceDoesNot() {
+			// Every preference change on the screen comes through here, so re-versioning for one that changes nothing about
 			// the channels would reset the user's per-channel tweaks for nothing.
-			assertFalse(NotificationChannels.affectsAlertChannels(context, key(R.string._pref_key_charge_target)));
-			assertFalse(NotificationChannels.affectsAlertChannels(context, null));
+			final int before = channelVersion(context);
+
+			assertFalse(NotificationService.refreshAlertChannelsIfAffected(context, key(R.string._pref_key_charge_target)));
+			assertFalse(NotificationService.refreshAlertChannelsIfAffected(context, null));
+			assertEquals(before, channelVersion(context));
+		}
+
+		private void assertReVersions(int keyRes) {
+			final int before = channelVersion(context);
+			assertTrue(key(keyRes) + " must re-version the channels", NotificationService.refreshAlertChannelsIfAffected(context, key(keyRes)));
+			assertTrue(key(keyRes) + " must re-version the channels", channelVersion(context) > before);
 		}
 
 		private String key(int keyRes) {
 			return context.getString(keyRes);
 		}
+	}
+
+	/**
+	 * An install that predates #286 has to start playing its pick without touching a setting.
+	 * <p>
+	 * This is the population #286 was filed about: the pick was saved long ago, the channels were created by code that
+	 * never called {@code setSound}, and the user has no reason to go back and pick again. Passing the URI on every alert
+	 * changes nothing there — Android froze the channel's sound when it was created — so unless the app re-versions the
+	 * channels on its own, the fix reaches everyone except the people who reported it.
+	 */
+	@RunWith(RobolectricTestRunner.class)
+	@Config(sdk = 34)
+	public static class DefinitionVersionMigration {
+
+		private Context context;
+		private NotificationManager manager;
+
+		@Before
+		public void setUp() {
+			context = ApplicationProvider.getApplicationContext();
+			manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+			pickSound(context, R.string._pref_key_notifications_alert_sound_ringtone, PICKED_CRITICAL);
+		}
+
+		@Test
+		public void theOldPick_becomesAudibleWithoutTheUserRePicking() {
+			seedPre286Install(1);
+
+			NotificationChannels.ensureChannels(context);
+
+			assertEquals(Uri.parse(PICKED_CRITICAL), currentChannel(context, manager, NotificationChannels.CHANNEL_ID_CRITICAL).getSound());
+		}
+
+		@Test
+		public void theOldChannels_areNotLeftBehind() {
+			seedPre286Install(1);
+
+			NotificationChannels.ensureChannels(context);
+
+			// versionedChannelId(base, 1) is the bare base ID, so this is the pre-#286 channel itself.
+			assertNull(manager.getNotificationChannel(NotificationChannels.CHANNEL_ID_CRITICAL));
+		}
+
+		@Test
+		public void anInstallThatHadAlreadyChangedASetting_isMigratedToo() {
+			// The settings version counts the user's own changes, so a long-standing install sits at 2 or higher while its
+			// channels still predate #286. Keying the migration on that version instead of on the definition generation
+			// would skip exactly these installs — the oldest ones, and the likeliest to have picked a sound years ago.
+			seedPre286Install(4);
+
+			NotificationChannels.ensureChannels(context);
+
+			assertEquals(Uri.parse(PICKED_CRITICAL), currentChannel(context, manager, NotificationChannels.CHANNEL_ID_CRITICAL).getSound());
+			assertNull(manager.getNotificationChannel(NotificationChannels.versionedChannelId(NotificationChannels.CHANNEL_ID_CRITICAL, 4)));
+			assertTrue(channelVersion(context) > 4);
+		}
+
+		@Test
+		public void theMigration_runsOnceAndThenLeavesTheVersionAlone() {
+			seedPre286Install(1);
+
+			NotificationChannels.ensureChannels(context);
+			final int afterMigration = channelVersion(context);
+			NotificationChannels.ensureChannels(context);
+			NotificationChannels.ensureChannels(context);
+
+			// ensureChannels runs on every alert. A migration that re-fired would throw away the user's per-channel tweaks
+			// over and over, which is worse than the bug it exists to fix.
+			assertTrue(afterMigration > 1);
+			assertEquals(afterMigration, channelVersion(context));
+		}
+
+		/**
+		 * Put the install in the state this migration exists for: channels created before #286 (so carrying no sound of
+		 * their own) at a given settings version, and no record of which definition generation made them.
+		 *
+		 * @param version the settings version the install's channels live at
+		 */
+		private void seedPre286Install(int version) {
+			setChannelVersion(context, version);
+			manager.createNotificationChannel(new NotificationChannel(
+					NotificationChannels.versionedChannelId(NotificationChannels.CHANNEL_ID_CRITICAL, version),
+					"Critical", NotificationManager.IMPORTANCE_HIGH));
+		}
+	}
+
+	/**
+	 * The channel whose ID a base ID currently resolves to, at whatever settings version the install is on.
+	 *
+	 * @param context the test's application context
+	 * @param manager the notification manager to read from
+	 * @param baseId  the unversioned channel ID
+	 *
+	 * @return the live channel for that base ID
+	 */
+	private static NotificationChannel currentChannel(Context context, NotificationManager manager, String baseId) {
+		return manager.getNotificationChannel(NotificationChannels.channelFor(context, true, baseId));
+	}
+
+	/**
+	 * The versioned IDs the six alert channels currently live under.
+	 *
+	 * @param context the test's application context
+	 *
+	 * @return the current channel IDs, in the order of {@link #BASE_CHANNEL_IDS}
+	 */
+	private static String[] currentChannelIds(Context context) {
+		final String[] ids = new String[BASE_CHANNEL_IDS.length];
+		for (int i = 0; i < BASE_CHANNEL_IDS.length; i++) {
+			ids[i] = NotificationChannels.channelFor(context, true, BASE_CHANNEL_IDS[i]);
+		}
+		return ids;
+	}
+
+	/**
+	 * The stored alert-channel settings version. Read by its literal key, which is what the persisted state actually is.
+	 *
+	 * @param context the test's application context
+	 *
+	 * @return the current version
+	 */
+	private static int channelVersion(Context context) {
+		return PreferenceManager.getDefaultSharedPreferences(context).getInt("alert_channel_version", 1);
+	}
+
+	/**
+	 * Put the install on a given alert-channel settings version.
+	 *
+	 * @param context the test's application context
+	 * @param version the version to store
+	 */
+	private static void setChannelVersion(Context context, int version) {
+		PreferenceManager.getDefaultSharedPreferences(context).edit().putInt("alert_channel_version", version).commit();
 	}
 
 	/**

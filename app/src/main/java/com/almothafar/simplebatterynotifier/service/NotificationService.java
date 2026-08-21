@@ -301,27 +301,25 @@ public final class NotificationService {
 	}
 
 	/**
-	 * Re-create the alert channels so a changed "Vibrate" (issue #153) or sound (issue #286) preference takes effect.
-	 * Delegates to {@link NotificationChannels#refreshAlertChannels(Context)}.
-	 *
-	 * @param context The application context
-	 */
-	public static void refreshAlertChannels(Context context) {
-		NotificationChannels.refreshAlertChannels(context);
-	}
-
-	/**
-	 * Whether a changed preference is one the alert channels are built from, so {@link #refreshAlertChannels} has to
-	 * run for it to take effect. Delegates to {@link NotificationChannels#affectsAlertChannels(Context, String)}, so
-	 * the settings screen asks which preferences those are instead of keeping its own list of them.
+	 * Re-create the alert channels if the preference that just changed is one they are built from — the "Vibrate"
+	 * toggle (issue #153) or a per-severity sound pick (issue #286).
+	 * <p>
+	 * The test and the effect are one call rather than two, and both live behind this class rather than in the settings
+	 * screen. Split up, each half can be right while the pair does nothing: a picker added to the screen without being
+	 * added to the test saves a choice that never re-versions anything, which is #286 again, and nothing fails. Joined,
+	 * the settings screen has no decision left to get wrong and the whole path is exercised by one test.
 	 *
 	 * @param context The application context
 	 * @param prefKey the preference key that changed, or null
 	 *
-	 * @return true when the alert channels have to be re-created
+	 * @return true when the alert channels were re-created
 	 */
-	public static boolean affectsAlertChannels(Context context, String prefKey) {
-		return NotificationChannels.affectsAlertChannels(context, prefKey);
+	public static boolean refreshAlertChannelsIfAffected(Context context, String prefKey) {
+		if (!NotificationChannels.affectsAlertChannels(context, prefKey)) {
+			return false;
+		}
+		NotificationChannels.refreshAlertChannels(context);
+		return true;
 	}
 
 	/**
@@ -426,7 +424,7 @@ public final class NotificationService {
 
 		if (routing.withinWindow()) {
 			final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-			final String sound = NotificationChannels.alertSoundUri(context, spec.audibleChannelId());
+			final String sound = NotificationChannels.alertSoundUri(context, prefs, spec.audibleChannelId());
 			AlertSounds.playAlarm(context, sound, QuietHours.shouldIgnoreSilentMode(context, prefs), AppPrefs.vibrateEnabled(context));
 		}
 	}

@@ -65,7 +65,7 @@ final class NotificationConfig {
 		this.iconRes = style.iconRes();
 		// The channel this alert posts on is what decides which sound pick applies, so the override-silent playback below can't
 		// end up on a different sound from the one the channel itself plays (#286).
-		this.alarmSound = NotificationChannels.alertSoundUri(context, this.channelId);
+		this.alarmSound = NotificationChannels.alertSoundUri(context, prefs, this.channelId);
 		this.ticker = style.ticker();
 		this.title = style.title();
 		this.content = style.content();
