@@ -38,3 +38,20 @@ Icon?
 !.claude/guidelines/
 app/release/
 *.log
+
+# -------------------------
+# graphify
+# -------------------------
+# The graph itself is tracked: graphify ships a merge driver for graph.json and a
+# post-checkout hook, both of which assume it is under version control. Only the
+# extraction cache stays out - it is large, machine-local, and rebuildable.
+graphify-out/cache/*
+
+# Dated snapshots graphify writes before it overwrites a curated graph. Useful
+# locally for recovering hand-written community names; noise in history.
+graphify-out/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/
+
+# Machine-local sidecars: absolute paths to this machine's Python and checkout.
+# Wrong on every other machine, rewritten on each run.
+graphify-out/.graphify_python
+graphify-out/.graphify_root
