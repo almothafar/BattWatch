@@ -42,8 +42,16 @@ app/release/
 # -------------------------
 # graphify
 # -------------------------
-# Entirely derived from the sources in this repo, so none of it belongs in VCS.
-# graph.json is several MB of single-line JSON rewritten in full on every
-# `graphify update .`, which would add a new blob per run and produce diffs
-# nobody can read. Rebuild locally with /graphify instead.
-graphify-out/
+# The graph itself is tracked: graphify ships a merge driver for graph.json and a
+# post-checkout hook, both of which assume it is under version control. Only the
+# extraction cache stays out - it is large, machine-local, and rebuildable.
+graphify-out/cache/*
+
+# Dated snapshots graphify writes before it overwrites a curated graph. Useful
+# locally for recovering hand-written community names; noise in history.
+graphify-out/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/
+
+# Machine-local sidecars: absolute paths to this machine's Python and checkout.
+# Wrong on every other machine, rewritten on each run.
+graphify-out/.graphify_python
+graphify-out/.graphify_root

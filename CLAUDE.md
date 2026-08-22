@@ -45,7 +45,7 @@ Every user-facing string needs an Arabic translation — the build fails on `Mis
 
 ## graphify
 
-This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships. It is generated and git-ignored, so it is absent on a fresh clone until someone builds it — every rule below is conditional on it actually being there.
+This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
 
 Rules:
 - For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
