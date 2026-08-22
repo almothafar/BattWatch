@@ -38,3 +38,12 @@ Icon?
 !.claude/guidelines/
 app/release/
 *.log
+
+# -------------------------
+# graphify
+# -------------------------
+# Entirely derived from the sources in this repo, so none of it belongs in VCS.
+# graph.json is several MB of single-line JSON rewritten in full on every
+# `graphify update .`, which would add a new blob per run and produce diffs
+# nobody can read. Rebuild locally with /graphify instead.
+graphify-out/
