@@ -284,16 +284,15 @@ public class GenericPreferenceFragment extends CardPreferenceFragment
 	 * @param key               The key of the preference that was changed
 	 */
 	@Override
-	public void onSharedPreferenceChanged(final SharedPreferences sharedPreferences, final String key) {
+	public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
 		// Update summary when preference changes
 		final Preference pref = findPreference(key);
 		updatePreferencesSummary(sharedPreferences, pref);
 
-		// The Vibrate toggle changes channel settings, which Android caches; recreate the alert
-		// channels under new versioned IDs so the new setting takes effect (#153).
-		if (nonNull(key) && key.equals(getString(R.string._pref_key_notifications_vibrate))) {
-			NotificationService.refreshAlertChannels(requireContext());
-		}
+		// The Vibrate toggle and the per-severity sound picks are baked into the alert channels, which Android caches, so
+		// a change to one has to recreate them under new versioned IDs to take effect (#153, #286). Which preferences
+		// those are, and the recreation itself, both belong to the channel registry — this screen only reports the change.
+		NotificationService.refreshAlertChannelsIfAffected(requireContext(), key);
 	}
 
 	/**
