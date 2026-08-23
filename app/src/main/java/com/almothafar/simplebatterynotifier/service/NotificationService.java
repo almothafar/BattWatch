@@ -301,13 +301,25 @@ public final class NotificationService {
 	}
 
 	/**
-	 * Re-create the alert channels so a changed "Vibrate" preference takes effect (issue #153).
-	 * Delegates to {@link NotificationChannels#refreshAlertChannels(Context)}.
+	 * Re-create the alert channels if the preference that just changed is one they are built from — the "Vibrate"
+	 * toggle (issue #153) or a per-severity sound pick (issue #286).
+	 * <p>
+	 * The test and the effect are one call rather than two, and both live behind this class rather than in the settings
+	 * screen. Split up, each half can be right while the pair does nothing: a picker added to the screen without being
+	 * added to the test saves a choice that never re-versions anything, which is #286 again, and nothing fails. Joined,
+	 * the settings screen has no decision left to get wrong and the whole path is exercised by one test.
 	 *
 	 * @param context The application context
+	 * @param prefKey the preference key that changed, or null
+	 *
+	 * @return true when the alert channels were re-created
 	 */
-	public static void refreshAlertChannels(Context context) {
+	public static boolean refreshAlertChannelsIfAffected(Context context, String prefKey) {
+		if (!NotificationChannels.affectsAlertChannels(context, prefKey)) {
+			return false;
+		}
 		NotificationChannels.refreshAlertChannels(context);
+		return true;
 	}
 
 	/**
@@ -393,7 +405,11 @@ public final class NotificationService {
 	 * The single home of the quiet-hours dance shared by the temperature (#18/#111), fast-drain (#109)
 	 * and slow-charge (#123) alerts: rerouting to the silent channel outside the notification window,
 	 * and gating the alarm sound/vibration on the window — so a quiet-hours fix can't be applied to one
-	 * alert and missed on another. All reuse the critical-alert ringtone preference, as before.
+	 * alert and missed on another.
+	 * <p>
+	 * None of the three has a sound picker of its own, so the sound comes from the severity bucket its channel belongs to
+	 * ({@link NotificationChannels#alertSoundUri}) — the same resolution the channel itself was created with, rather than
+	 * the critical pref all three used to reach for regardless of severity (#286).
 	 *
 	 * @param context The application context
 	 * @param spec    What to show: channel, id, icon and text content
@@ -408,9 +424,7 @@ public final class NotificationService {
 
 		if (routing.withinWindow()) {
 			final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-			final String sound = prefs.getString(
-					context.getString(R.string._pref_key_notifications_alert_sound_ringtone),
-					context.getString(R.string._default_notification_sound_uri));
+			final String sound = NotificationChannels.alertSoundUri(context, prefs, spec.audibleChannelId());
 			AlertSounds.playAlarm(context, sound, QuietHours.shouldIgnoreSilentMode(context, prefs), AppPrefs.vibrateEnabled(context));
 		}
 	}

@@ -9,11 +9,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 
 /**
  * The alert sound/vibration playback path (issue #166): plays the user's alarm sound (and optionally
  * vibrates) when the phone is silenced but the user opted to override silent/DND mode. In normal ringer
- * mode the high-importance notification channel plays its own sound, so this stays out of the way.
+ * mode the high-importance notification channel plays its own sound — the same pick, resolved through
+ * {@code NotificationChannels.alertSoundUri} — so this stays out of the way.
  * <p>
  * Split out of {@code NotificationService} so it owns its own thread pool. The single-thread executor
  * runs for the app's lifetime and is reclaimed on process death (there is no {@code Application} to hook
@@ -39,12 +41,12 @@ final class AlertSounds {
 	 * Callers must first check that alerts are allowed right now (quiet hours / critical override).
 	 *
 	 * @param context      The application context
-	 * @param soundUriStr  The alarm sound URI string
+	 * @param soundUriStr  The alarm sound URI string, empty when the user picked "Silent"
 	 * @param ignoreSilent Whether the user opted to override silent/DND mode
 	 * @param vibrate      Whether the user enabled vibration
 	 */
 	static void playAlarm(Context context, String soundUriStr, boolean ignoreSilent, boolean vibrate) {
-		final Uri soundUri = Uri.parse(soundUriStr);
+		final Uri soundUri = soundUriOrSilent(soundUriStr);
 		final AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
 		if (isNull(audioManager)) {
 			return;
@@ -54,12 +56,32 @@ final class AlertSounds {
 
 		if (ignoreSilent && isNotNormalRingerMode) {
 			soundExecutor.execute(() -> {
-				SystemService.playSound(context, soundUri);
+				// A "Silent" pick still buzzes if the user asked for vibration, which is how the channel behaves too:
+				// setSound(null, …) alongside enableVibration(true). Silent is a choice about the sound, not about the alert.
+				if (nonNull(soundUri)) {
+					SystemService.playSound(context, soundUri);
+				}
 				if (vibrate) {
 					SystemService.vibratePhone(context);
 				}
 			});
 		}
+	}
+
+	/**
+	 * What a stored sound preference means: the picked sound, or null when the user chose "Silent".
+	 * <p>
+	 * The ringtone picker persists Silent as an empty string, so the empty string is a first-class choice rather than a
+	 * missing value (#286). Both consumers have to read it the same way — the channel expresses it as
+	 * {@code setSound(null, …)} and this class as "nothing to play". Parsing it instead yields an empty {@link Uri} that
+	 * resolves to nothing at post time, which honours the choice by accident rather than on purpose.
+	 *
+	 * @param soundUriStr the persisted sound URI, possibly empty or null
+	 *
+	 * @return the sound to play, or null for no sound
+	 */
+	static Uri soundUriOrSilent(String soundUriStr) {
+		return isNull(soundUriStr) || soundUriStr.isEmpty() ? null : Uri.parse(soundUriStr);
 	}
 
 	/**
