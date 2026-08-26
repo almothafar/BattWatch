@@ -1,5 +1,6 @@
 package com.almothafar.simplebatterynotifier.service;
 
+import android.app.ForegroundServiceStartNotAllowedException;
 import android.app.Notification;
 import android.app.Service;
 import android.content.Intent;
@@ -66,6 +67,13 @@ public class PowerConnectionService extends Service {
 	 * Required on Android 8+: a plain background service (and its runtime-registered battery
 	 * receivers) is reaped shortly after the app leaves the foreground. The ongoing notification
 	 * keeps monitoring alive so alerts are delivered while the app is closed.
+	 * <p>
+	 * The promotion can be refused. {@code onStartCommand} returns {@code START_STICKY}, so the system
+	 * recreates this service on its own after killing the process, and that restart carries none of the
+	 * exemptions that let a background start promote to foreground (#295). Android 12+ answers with
+	 * {@link ForegroundServiceStartNotAllowedException}, which is fatal if it escapes {@code onCreate}.
+	 * Monitoring is already down at that point, so the recovery is to stop rather than to crash: the next
+	 * launch of {@code MainActivity} starts the service again from the foreground, where it is allowed.
 	 */
 	private void startForegroundWithStatus() {
 		final BatteryDO batteryDO = SystemService.getBatteryInfo(this);
@@ -75,8 +83,21 @@ public class PowerConnectionService extends Service {
 		final int serviceType = Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE
 		                        ? ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
 		                        : 0;
+		final int id = NotificationService.getOngoingNotificationId();
 
-		ServiceCompat.startForeground(this, NotificationService.getOngoingNotificationId(), notification, serviceType);
+		// Below Android 12 the promotion cannot be refused, so there is nothing to catch — and the exception
+		// class does not exist on those versions to catch either.
+		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+			ServiceCompat.startForeground(this, id, notification, serviceType);
+			return;
+		}
+
+		try {
+			ServiceCompat.startForeground(this, id, notification, serviceType);
+		} catch (ForegroundServiceStartNotAllowedException e) {
+			Log.w(TAG, "Foreground start refused from the background, stopping until the app is opened again", e);
+			stopSelf();
+		}
 	}
 
 	/**
