@@ -9,6 +9,7 @@ import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
 import com.almothafar.simplebatterynotifier.R;
 import com.almothafar.simplebatterynotifier.ui.fragment.CardPreferenceFragment;
+import com.almothafar.simplebatterynotifier.ui.fragment.GenericPreferenceFragment;
 
 import java.util.Set;
 
@@ -63,6 +64,16 @@ public class SettingsActivity extends BaseActivity implements PreferenceFragment
 
 	/**
 	 * Handle preference fragment navigation
+	 * <p>
+	 * Constructs {@link GenericPreferenceFragment} directly rather than resolving {@code pref.getFragment()}
+	 * through {@link androidx.fragment.app.FragmentFactory} (#294). Every header in {@code pref_headers_root.xml}
+	 * names that one class — which screen you get is decided by the {@code category} extra, not by the class — so
+	 * the lookup bought nothing, and it cost the class its only reference: R8 cannot see a name that exists solely
+	 * as XML attribute text, so it shrank the fragment out of every release build and each sub-screen died on
+	 * {@code Fragment.InstantiationException}. A direct {@code new} is a reference R8 can see.
+	 * <p>
+	 * The {@code android:fragment} attribute still has to stay in the XML: {@code PreferenceFragmentCompat} only
+	 * routes a click here when {@code getFragment()} is non-null. Its value is no longer read.
 	 *
 	 * @param caller The calling preference fragment
 	 * @param pref   The preference that was clicked
@@ -70,10 +81,9 @@ public class SettingsActivity extends BaseActivity implements PreferenceFragment
 	 */
 	@Override
 	public boolean onPreferenceStartFragment(@NonNull final PreferenceFragmentCompat caller, final Preference pref) {
-		// Instantiate the new Fragment
+		// The category extra picks which preference screen this instance loads.
 		final Bundle args = pref.getExtras();
-		final Fragment fragment = getSupportFragmentManager().getFragmentFactory()
-		                                                     .instantiate(getClassLoader(), pref.getFragment());
+		final Fragment fragment = new GenericPreferenceFragment();
 		fragment.setArguments(args);
 		// setTargetFragment() removed - deprecated API, no longer needed for fragment navigation
 
