@@ -8,8 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
+import android.graphics.drawable.Icon;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
@@ -26,8 +25,6 @@ import com.almothafar.simplebatterynotifier.ui.MainActivity;
 import com.almothafar.simplebatterynotifier.util.AppPrefs;
 import com.almothafar.simplebatterynotifier.util.BatteryPercentFormatter;
 import com.almothafar.simplebatterynotifier.util.TemperatureUtils;
-
-import java.lang.ref.WeakReference;
 
 import static com.almothafar.simplebatterynotifier.util.BidiText.isolate;
 import static java.util.Objects.isNull;
@@ -71,13 +68,6 @@ public final class NotificationService {
 	static final String CHARGE_STYLE_TOAST = "toast";
 	static final String CHARGE_STYLE_NOTIFICATION = "notification";
 	static final String CHARGE_STYLE_NONE = "none";
-
-	/**
-	 * Cached launcher icon bitmap (performance optimization). Uses a {@link WeakReference} so it can be
-	 * garbage-collected if memory is tight; it is reloaded on next access if that happens, which avoids
-	 * holding a strong reference to a potentially large bitmap for the app's lifetime.
-	 */
-	private static WeakReference<Bitmap> cachedLauncherIcon;
 
 	private NotificationService() {
 		// Utility class - prevent instantiation
@@ -516,7 +506,7 @@ public final class NotificationService {
 				.setContentTitle(display.title())
 				.setContentText(display.content())
 				.setWhen(System.currentTimeMillis())
-				.setLargeIcon(getLauncherIcon(context))
+				.setLargeIcon(Icon.createWithResource(context, R.mipmap.ic_launcher))
 				.setContentIntent(createMainActivityIntent(context))
 				.setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
 				.setStyle(new NotificationCompat.BigTextStyle().bigText(display.bigContent()));
@@ -693,29 +683,6 @@ public final class NotificationService {
 	 */
 	private static NotificationManager getNotificationManager(Context context) {
 		return (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-	}
-
-	/**
-	 * Get cached launcher icon bitmap (performance optimization)
-	 * <p>
-	 * Uses WeakReference to allow garbage collection if memory is needed.
-	 * The bitmap will be automatically reloaded if it was garbage collected.
-	 *
-	 * @param context The application context
-	 * @return Launcher icon bitmap
-	 */
-	private static Bitmap getLauncherIcon(Context context) {
-		Bitmap bitmap = null;
-		if (nonNull(cachedLauncherIcon)) {
-			bitmap = cachedLauncherIcon.get();
-		}
-
-		if (isNull(bitmap)) {
-			bitmap = BitmapFactory.decodeResource(context.getResources(), R.mipmap.ic_launcher);
-			cachedLauncherIcon = new WeakReference<>(bitmap);
-		}
-
-		return bitmap;
 	}
 
 	/**
