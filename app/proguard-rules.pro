@@ -1,20 +1,8 @@
-# Add project specific ProGuard rules here.
-# By default, the flags in this file are appended to flags specified
-# in D:\Android\sdk/tools/proguard/proguard-android.txt
-# You can edit the include path and order by changing the proguardFiles
-# directive in build.gradle.
+# Project-specific R8 rules. These are appended to the default proguard-android-optimize.txt that
+# app/build.gradle names in its proguardFiles directive, so only rules the defaults don't already
+# cover belong here.
 #
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
-
-# Add any project specific keep options here:
-
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# See https://developer.android.com/build/shrink-code
 
 # Preference screens name their fragment as a string in android:fragment (res/xml/pref_headers_root.xml),
 # and SettingsActivity instantiates it reflectively via FragmentFactory.instantiate. R8 cannot see a class
