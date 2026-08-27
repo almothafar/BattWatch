@@ -65,8 +65,13 @@ final class NotificationChannels {
 	 * install that had already picked a sound would have gone on playing the device default forever: the pick is passed
 	 * on every alert and the system ignores it, and nothing else would ever re-version the channels. That is the exact
 	 * population #286 was filed about, so the fix is inert without this.
+	 * <p>
+	 * Generation 2 is issue #303, and exists for the same reason one step along: generation 1 shipped, but the refresh it
+	 * relies on never fired for a sound pick, so those installs recorded the pick in preferences and built their channels
+	 * from the default anyway. Their stored value is already correct, and a re-version is only ever triggered by a
+	 * <em>change</em>, so without a second generation the fix would reach only users who happen to pick a new sound.
 	 */
-	private static final int ALERT_CHANNEL_DEFINITION = 1;
+	private static final int ALERT_CHANNEL_DEFINITION = 2;
 
 	private NotificationChannels() {
 		// Utility class - prevent instantiation

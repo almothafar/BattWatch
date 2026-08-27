@@ -77,8 +77,7 @@ public class GenericPreferenceFragment extends CardPreferenceFragment
 						final Intent data = result.getData();
 						if (nonNull(data)) {
 							final Uri uri = extractRingtoneUri(data);
-							final String uriString = nonNull(uri) ? uri.toString() : "";
-							currentRingtonePreference.setRingtoneUri(uriString);
+							applyRingtonePick(requireContext(), currentRingtonePreference, nonNull(uri) ? uri.toString() : "");
 							currentRingtonePreference = null;
 						}
 					}
@@ -359,6 +358,29 @@ public class GenericPreferenceFragment extends CardPreferenceFragment
 		} else if (key.equals(getString(R.string._pref_key_charge_target))) {
 			applyChargeTargetWording(seekBarPref);
 		}
+	}
+
+	/**
+	 * Apply a sound the user just chose in the system ringtone picker: persist it on the preference, and re-create the alert channels so it becomes
+	 * audible.
+	 * <p>
+	 * The refresh is reported from here rather than left to {@link #onSharedPreferenceChanged}, which is where every other channel setting reports its
+	 * change from. The Activity Result API delivers a picker result once the fragment reaches STARTED, and this screen only registers its
+	 * preference-change listener in {@code onResume} — so the write below lands in the one window where nothing is listening, and the pick was saved to
+	 * preferences without ever reaching a channel (#303). Since Android freezes a channel's sound at creation and only a <em>change</em> re-versions the
+	 * channels, that made the pick permanently inaudible rather than merely late.
+	 * <p>
+	 * Reported unconditionally, exactly as {@link #onSharedPreferenceChanged} reports the Vibrate toggle. Whether a setting is worth re-creating the
+	 * channels for is decided by key, in {@code NotificationChannels.affectsAlertChannels}, and never by comparing values at a call site — a second
+	 * opinion here would be the two report sites disagreeing about what a refresh means.
+	 *
+	 * @param context    context to resolve the channel settings against
+	 * @param preference the picker that was clicked
+	 * @param pickedUri  the chosen sound URI, empty when the user chose "Silent"
+	 */
+	static void applyRingtonePick(Context context, RingtonePreference preference, String pickedUri) {
+		preference.setRingtoneUri(pickedUri);
+		NotificationService.refreshAlertChannelsIfAffected(context, preference.getKey());
 	}
 
 	/**
