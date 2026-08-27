@@ -120,9 +120,9 @@
     "semantic_hash": "c2f5c8d2a74baa176a6ccaead052609d"
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/service/NotificationChannels.java": {
-    "mtime": 1787840452.298982,
-    "seen": 1787852667.9660857,
-    "ast_hash": "357bbeca5182a3aac2317ab68f603f09",
+    "mtime": 1787855356.1005282,
+    "seen": 1787855572.720366,
+    "ast_hash": "a100ca03411665563dcbbc26795fd8a7",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/service/NotificationConfig.java": {
@@ -228,9 +228,9 @@
     "semantic_hash": "bf87a3058f03be04735ffdab9c424f44"
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/ui/fragment/GenericPreferenceFragment.java": {
-    "mtime": 1787842455.191156,
-    "seen": 1787852667.9661078,
-    "ast_hash": "4dc5aae5218e3d8505e7200ed04f22e2",
+    "mtime": 1787855429.6416688,
+    "seen": 1787855572.7203946,
+    "ast_hash": "38c8ab7d687284b2fcda5177cf6d2fcf",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/ui/fragment/SignatureFragment.java": {
@@ -258,9 +258,9 @@
     "semantic_hash": "2987330427c3e5cb3784dbc9a7b1c3e0"
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/ui/preference/RingtonePreference.java": {
-    "mtime": 1787852373.3195176,
-    "seen": 1787852667.9661138,
-    "ast_hash": "ee24dee2852ca1f26cc916d55a5da029",
+    "mtime": 1787855399.3636203,
+    "seen": 1787855572.7204022,
+    "ast_hash": "a785699068d2b2039b253c77b2ecca03",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/ui/preference/TimePickerPreference.java": {
@@ -426,9 +426,9 @@
     "semantic_hash": "59188df015d602b73f0cc4e763c307f4"
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/service/NotificationChannelsTest.java": {
-    "mtime": 1787777466.0674746,
-    "seen": 1787852667.9661455,
-    "ast_hash": "121ff79be974a0134f7591620953e6f8",
+    "mtime": 1787855358.9202712,
+    "seen": 1787855572.7204428,
+    "ast_hash": "00c115edc6d4a34c45be38e7fe87d1fa",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/service/NotificationConfigTest.java": {
@@ -755,12 +755,6 @@
     "ast_hash": "e49a5632c4fe82f9d16d3ca568e692a0",
     "semantic_hash": ""
   },
-  "app/src/test/java/com/almothafar/simplebatterynotifier/ui/fragment/AlertSoundScopeTest.java": {
-    "mtime": 1787852545.1947975,
-    "seen": 1787852667.9661593,
-    "ast_hash": "cd622a6015c15013764a7246ddcb6d1a",
-    "semantic_hash": ""
-  },
   "app/src/test/java/com/almothafar/simplebatterynotifier/ui/fragment/RingtonePickApplyTest.java": {
     "mtime": 1787840452.2994819,
     "seen": 1787852667.9661627,
@@ -768,9 +762,21 @@
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/ui/fragment/RingtonePickSurvivesRecreationTest.java": {
-    "mtime": 1787852482.6378026,
-    "seen": 1787852667.9661639,
-    "ast_hash": "3a1f74b155baf22ff6026ca02036aca9",
+    "mtime": 1787855506.4764855,
+    "seen": 1787855572.720464,
+    "ast_hash": "9b98483f4ae965c7eaac6ab5fab958bb",
+    "semantic_hash": ""
+  },
+  "app/src/test/java/com/almothafar/simplebatterynotifier/ui/fragment/AlertSoundBucketTest.java": {
+    "mtime": 1787855475.7070408,
+    "seen": 1787855572.720458,
+    "ast_hash": "4a7c5a5e9b61e83f2f1f5e03ead18caa",
+    "semantic_hash": ""
+  },
+  "app/src/test/java/com/almothafar/simplebatterynotifier/ui/fragment/SettingsScreen.java": {
+    "mtime": 1787855442.2818663,
+    "seen": 1787855572.7204652,
+    "ast_hash": "159bf843d94fdccae924074f3f375c8d",
     "semantic_hash": ""
   }
 }
