@@ -370,19 +370,17 @@ public class GenericPreferenceFragment extends CardPreferenceFragment
 	 * preferences without ever reaching a channel (#303). Since Android freezes a channel's sound at creation and only a <em>change</em> re-versions the
 	 * channels, that made the pick permanently inaudible rather than merely late.
 	 * <p>
-	 * Unchanged picks are skipped: re-versioning deletes and recreates the channels, which discards any per-channel override the user set in system
-	 * settings, so it is not something to do for a pick that chose the sound already in force.
+	 * Reported unconditionally, exactly as {@link #onSharedPreferenceChanged} reports the Vibrate toggle. Whether a setting is worth re-creating the
+	 * channels for is decided by key, in {@code NotificationChannels.affectsAlertChannels}, and never by comparing values at a call site — a second
+	 * opinion here would be the two report sites disagreeing about what a refresh means.
 	 *
 	 * @param context    context to resolve the channel settings against
 	 * @param preference the picker that was clicked
 	 * @param pickedUri  the chosen sound URI, empty when the user chose "Silent"
 	 */
 	static void applyRingtonePick(Context context, RingtonePreference preference, String pickedUri) {
-		final String previousUri = preference.getRingtoneUri();
 		preference.setRingtoneUri(pickedUri);
-		if (!pickedUri.equals(previousUri)) {
-			NotificationService.refreshAlertChannelsIfAffected(context, preference.getKey());
-		}
+		NotificationService.refreshAlertChannelsIfAffected(context, preference.getKey());
 	}
 
 	/**
