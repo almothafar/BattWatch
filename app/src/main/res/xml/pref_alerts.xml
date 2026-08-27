@@ -1,8 +1,9 @@
 <!-- The "Alerts" screen (#112): WHAT to be notified about. One category per alert event, in
      battery-lifecycle order (levels → warning → critical → full → temperature → drain → charging).
-     Cross-cutting delivery options (sound in silent mode, vibration, quiet hours, stickiness)
-     and the charge-announcement style live on the "Notification behaviour" screen
-     (pref_behaviour.xml). -->
+     Cross-cutting delivery options (the per-severity alert sounds, sound in silent mode, vibration,
+     quiet hours, stickiness) and the charge-announcement style live on the "Notification behaviour"
+     screen (pref_behaviour.xml). The sounds joined them in #307: one picker sets a whole severity
+     bucket, so it belongs with the settings that span alerts rather than under any one event. -->
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
@@ -43,26 +44,11 @@
             android:title="@string/notify_for_warning_level"
             app:iconSpaceReserved="false" />
 
-        <com.almothafar.simplebatterynotifier.ui.preference.RingtonePreference
-            android:defaultValue="content://settings/system/notification_sound"
-            android:dependency="@string/_pref_key_notify_for_warning_level"
-            android:key="@string/_pref_key_notifications_warning_sound_ringtone"
-            android:ringtoneType="notification"
-            android:title="@string/notifications_warning_sound_ringtone"
-            app:iconSpaceReserved="false" />
-
     </PreferenceCategory>
 
     <PreferenceCategory
         android:title="@string/pref_cat_title_critical"
         app:iconSpaceReserved="false">
-
-        <com.almothafar.simplebatterynotifier.ui.preference.RingtonePreference
-            android:defaultValue="content://settings/system/notification_sound"
-            android:key="@string/_pref_key_notifications_alert_sound_ringtone"
-            android:ringtoneType="notification"
-            android:title="@string/notifications_alert_sound_ringtone"
-            app:iconSpaceReserved="false" />
 
         <SwitchPreference
             android:defaultValue="false"
@@ -144,14 +130,6 @@
             style="@style/PreferenceSeekBar"
             app:showSeekBarValue="true"
             app:adjustable="true"
-            app:iconSpaceReserved="false" />
-
-        <com.almothafar.simplebatterynotifier.ui.preference.RingtonePreference
-            android:defaultValue="content://settings/system/notification_sound"
-            android:dependency="@string/_pref_key_notify_for_full_level"
-            android:key="@string/_pref_key_notifications_full_sound_ringtone"
-            android:ringtoneType="notification"
-            android:title="@string/notifications_full_sound_ringtone"
             app:iconSpaceReserved="false" />
 
     </PreferenceCategory>

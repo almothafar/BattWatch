@@ -12,6 +12,8 @@ import androidx.preference.Preference;
 
 import com.almothafar.simplebatterynotifier.R;
 
+import static com.almothafar.simplebatterynotifier.util.BidiText.isolate;
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 
 /**
@@ -23,6 +25,9 @@ public class RingtonePreference extends Preference {
 
 	private int ringtoneType = RingtoneManager.TYPE_NOTIFICATION;
 	private String currentRingtoneUri;
+
+	/** The alerts this picker's severity bucket drives, shown after the sound name — see {@code R.styleable.RingtonePreference_bucketSummary} (#307). */
+	private String bucketSummary;
 
 	/**
 	 * Constructor with all parameters
@@ -186,19 +191,36 @@ public class RingtonePreference extends Preference {
 			if (type != -1) {
 				ringtoneType = type;
 			}
+			// Resolved through a TypedArray rather than read off the AttributeSet like ringtoneType above: bucketSummary is always a @string reference, and the
+			// raw attribute value for one is the unresolved "@2131…" rather than the text. Not try-with-resources — TypedArray only became AutoCloseable in
+			// API 31 and minSdk here is 26.
+			final TypedArray styled = getContext().obtainStyledAttributes(attrs, R.styleable.RingtonePreference);
+			try {
+				bucketSummary = styled.getString(R.styleable.RingtonePreference_bucketSummary);
+			} finally {
+				styled.recycle();
+			}
 		}
 	}
 
 	/**
-	 * Update the preference summary with the ringtone title
+	 * Update the preference summary with the ringtone title, followed by the alerts this picker's bucket drives when it declares any.
 	 */
 	private void updateSummary() {
+		setSummary(withBucketSummary(selectedSoundName()));
+	}
+
+	/**
+	 * The selected sound as the user would name it.
+	 *
+	 * @return the ringtone's title, or the "Silent" label when nothing is selected or it cannot be resolved
+	 */
+	private String selectedSoundName() {
 		if (nonNull(currentRingtoneUri) && !currentRingtoneUri.isEmpty()) {
 			try {
 				final Ringtone ringtone = RingtoneManager.getRingtone(getContext(), Uri.parse(currentRingtoneUri));
 				if (nonNull(ringtone)) {
-					setSummary(ringtone.getTitle(getContext()));
-					return;
+					return ringtone.getTitle(getContext());
 				}
 			} catch (RuntimeException e) {
 				// Resolving the ringtone can fail (e.g. SecurityException on a revoked media URI).
@@ -206,6 +228,24 @@ public class RingtonePreference extends Preference {
 			}
 		}
 		// Empty or null URI means no ringtone selected — matches the picker's own "Silent" option (#165)
-		setSummary(getContext().getString(R.string.pref_ringtone_silent));
+		return getContext().getString(R.string.pref_ringtone_silent);
+	}
+
+	/**
+	 * Append what this picker's severity bucket drives to the sound's name, so a row that sets two or three channels says so (#307). A picker that declares
+	 * no bucket keeps the bare sound name it has always shown.
+	 * <p>
+	 * The sound name is bidi-isolated (#275): it comes from the device's ringtone list and is usually Latin, so unisolated it reaches an Arabic reader with
+	 * its words reordered against the surrounding prose.
+	 *
+	 * @param soundName the selected sound's display name
+	 *
+	 * @return the summary line to show on the preference row
+	 */
+	private String withBucketSummary(String soundName) {
+		if (isNull(bucketSummary)) {
+			return soundName;
+		}
+		return getContext().getString(R.string.pref_ringtone_summary_with_bucket, isolate(soundName), bucketSummary);
 	}
 }

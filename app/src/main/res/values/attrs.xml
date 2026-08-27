@@ -20,6 +20,12 @@
         <attr name="gaugeLevelDescription" format="string"/>
     </declare-styleable>
 
+    <declare-styleable name="RingtonePreference">
+        <!-- The alerts this picker's severity bucket drives, e.g. "Critical battery, overheating" (#307). Appended to the selected sound's name in the
+             summary, because one picker sets the sound for two or three channels and the row alone cannot say which. -->
+        <attr name="bucketSummary" format="string"/>
+    </declare-styleable>
+
     <declare-styleable name="MinMaxRangeView">
         <!-- Size of the two value cells; the "min"/"max" captions above them are fixed -->
         <attr name="rangeValueTextSize" format="dimension"/>

@@ -72,7 +72,7 @@
     <string name="pref_header_behaviour">Notification Behaviour</string>
     <string name="pref_header_summary_general">App language, temperature unit, and the status notification</string>
     <string name="pref_header_summary_alerts">What to be notified about — battery levels, full charge, temperature, fast drain, charging</string>
-    <string name="pref_header_summary_behaviour">How alerts sound and appear, and when they are allowed — silent mode, vibration, quiet hours</string>
+    <string name="pref_header_summary_behaviour">How alerts sound and appear, and when they are allowed — alert sounds, silent mode, vibration, quiet hours</string>
 
     <string name="pref_ringtone_silent">Silent</string>
     <string name="pref_title_vibrate">Vibrate</string>
@@ -102,7 +102,20 @@
     <string name="notifications_vibrate_summary_on">Notifications Vibration Enabled</string>
     <string name="notifications_alert_sound_ringtone">Critical Level Sound</string>
     <string name="notifications_warning_sound_ringtone">Warning Level Sound</string>
-    <string name="notifications_full_sound_ringtone">Full Level Sound</string>
+    <!-- "Default" rather than "Full" (#307): this bucket carries the full-charge alert, but also the charge-connected message, which is a neutral status
+         report rather than a happy one, and it is where any alert with no bucket of its own lands. Its preference key still says "full" — that key is
+         persisted on every install, so renaming it would silently reset the user's pick. -->
+    <string name="notifications_default_sound_ringtone">Default Sound</string>
+    <!-- What each picker's severity bucket drives (#307). One picker sets the sound for two or three channels, which the row's own title cannot convey.
+         Worded from the shipped alert titles — "Fast-drain alert", "Slow-charging warning", "High Temperature Alert" — so the row names alerts the user can
+         actually find on the Alerts screen. The default bucket deliberately does not name the charge-connected message: it only becomes audible when the
+         charge notification style is set to "notification", and the default style is a silent toast, so naming it would repeat the very inaccuracy this
+         issue exists to remove. -->
+    <string name="notifications_critical_sound_bucket">Critical battery, high temperature</string>
+    <string name="notifications_warning_sound_bucket">Low battery, fast-drain, slow-charging</string>
+    <string name="notifications_default_sound_bucket">Full charge, and alerts without a sound of their own</string>
+    <!-- Sound name, then the alerts it covers -->
+    <string name="pref_ringtone_summary_with_bucket">%1$s · %2$s</string>
     <string name="notify_for_warning_level">Notify for Warning level</string>
     <string name="notify_for_warning_level_summary_on">Warning Sound Enabled</string>
     <string name="notify_for_warning_level_summary_off">Warning Sound Disabled</string>
@@ -391,6 +404,7 @@
     <string name="pref_cat_title_critical">Critical Alert</string>
     <string name="pref_cat_title_charging">Charging</string>
     <string name="pref_cat_title_sound_vibration">Sound &amp; Vibration</string>
+    <string name="pref_cat_title_alert_sounds">Alert Sounds</string>
     <string name="pref_cat_title_quiet_hours">Quiet Hours</string>
     <string name="pref_cat_title_appearance">Appearance</string>
 

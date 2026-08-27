@@ -29,9 +29,10 @@ import static java.util.Objects.isNull;
  * {@link #ALERT_CHANNEL_DEFINITION} does the same for installs that never change a setting at all.
  * <p>
  * From Android 8 the <em>channel</em> owns the alert sound, so the user's per-severity sound picks are applied here as
- * well. Until they were, every alert channel was created with the framework default and the three pickers on
- * Settings › Alerts saved a choice that changed nothing audible (issue #286). A sound pick is therefore as much a
- * channel setting as the Vibrate toggle — see {@link #affectsAlertChannels}.
+ * well. Until they were, every alert channel was created with the framework default and the three pickers saved a choice
+ * that changed nothing audible (issue #286). A sound pick is therefore as much a channel setting as the Vibrate toggle —
+ * see {@link #affectsAlertChannels}. Those pickers moved to Settings › Notification Behaviour in #307, since each one
+ * sets a whole severity bucket rather than the single alert it used to sit under.
  */
 final class NotificationChannels {
 
@@ -272,9 +273,11 @@ final class NotificationChannels {
 				return definition.soundKeyRes();
 			}
 		}
-		// Deliberately the critical bucket rather than nothing, for a channel added without an entry above: an alert on a
-		// neighbouring severity's sound is a far smaller failure than one that loses its sound.
-		return R.string._pref_key_notifications_alert_sound_ringtone;
+		// Deliberately a real bucket rather than nothing, for a channel added without an entry above: an alert on a neighbouring
+		// severity's sound is a far smaller failure than one that loses its sound. The default bucket rather than the critical one
+		// since #307, which is what its name now promises the user — an unmapped alert is of unknown severity, so borrowing the
+		// critical sound overstates it, and the pick the user made for "alerts without a sound of their own" is the honest answer.
+		return R.string._pref_key_notifications_full_sound_ringtone;
 	}
 
 	/**

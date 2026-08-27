@@ -57,6 +57,12 @@ public class GenericPreferenceFragment extends CardPreferenceFragment
 	/** Saved-state key holding {@link #pendingRingtoneKey} across a recreation — see {@link #onSaveInstanceState}. */
 	private static final String PENDING_RINGTONE_KEY = "pendingRingtoneKey";
 
+	/**
+	 * Fragment argument naming which preference screen to inflate. Set in production from the {@code <extra android:name="category">} on each row of
+	 * {@code pref_headers_root.xml}, which is why the name is spelled here rather than taken from a resource.
+	 */
+	static final String ARG_CATEGORY = "category";
+
 	private String pendingRingtoneKey;
 	private ActivityResultLauncher<Intent> ringtonePickerLauncher;
 
@@ -161,7 +167,7 @@ public class GenericPreferenceFragment extends CardPreferenceFragment
 		// Get category from arguments
 		final Bundle args = getArguments();
 		if (nonNull(args)) {
-			final String category = args.getString("category");
+			final String category = args.getString(ARG_CATEGORY);
 			if (nonNull(category)) {
 				if (category.equals(getString(R.string.pref_category_general))) {
 					setPreferencesFromResource(R.xml.pref_general, rootKey);
