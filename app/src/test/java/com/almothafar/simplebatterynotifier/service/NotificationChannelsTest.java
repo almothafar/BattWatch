@@ -90,8 +90,8 @@ public class NotificationChannelsTest {
 	 * The sound each alert channel is created with (#286).
 	 * <p>
 	 * On Android 8+ the channel owns the sound, and {@code createOrUpdateAlertChannel} never set one — so the three
-	 * pickers on Settings › Alerts saved a choice and every alert went on playing the framework default. These pin
-	 * that the pick reaches the channel, and which of the three picks each of the six channels takes.
+	 * pickers saved a choice and every alert went on playing the framework default. These pin that the pick reaches the
+	 * channel, and which of the three picks each of the six channels takes.
 	 */
 	@RunWith(RobolectricTestRunner.class)
 	@Config(sdk = 34)

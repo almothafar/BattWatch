@@ -5,7 +5,6 @@ import android.app.NotificationManager;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.net.Uri;
-import android.os.Bundle;
 
 import androidx.fragment.app.Fragment;
 import androidx.preference.Preference;
@@ -29,7 +28,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertTrue;
 
 /**
  * The sound picker's result has to survive the settings screen being destroyed while the system ringtone picker is in front of it (#305).
@@ -68,7 +66,7 @@ public class RingtonePickSurvivesRecreationTest {
 		NotificationService.refreshAlertChannelsIfAffected(context, context.getString(R.string._pref_key_notifications_alert_sound_ringtone));
 
 		controller = Robolectric.buildActivity(SettingsActivity.class).setup();
-		showBehaviourScreen();
+		SettingsScreen.show(controller, R.string.pref_category_behaviour);
 	}
 
 	@After
@@ -82,9 +80,9 @@ public class RingtonePickSurvivesRecreationTest {
 		// a switch first and performClick actually reaches the listener.
 		criticalSoundPreference().performClick();
 
-		final Fragment before = behaviourFragment();
+		final Fragment before = SettingsScreen.current(controller);
 		controller.recreate();
-		final GenericPreferenceFragment after = behaviourFragment();
+		final GenericPreferenceFragment after = SettingsScreen.current(controller);
 		assertNotSame("the fragment was not actually recreated, so this test proves nothing", before, after);
 
 		final String idBefore = currentCriticalChannel().getId();
@@ -107,7 +105,7 @@ public class RingtonePickSurvivesRecreationTest {
 		controller.recreate();
 
 		assertNotSame("the hierarchy was not re-inflated, so resolving by key is untested here", clicked, criticalSoundPreference());
-		behaviourFragment().applyPendingRingtonePick(PICKED);
+		SettingsScreen.current(controller).applyPendingRingtonePick(PICKED);
 
 		assertEquals(Uri.parse(PICKED), currentCriticalChannel().getSound());
 	}
@@ -120,41 +118,17 @@ public class RingtonePickSurvivesRecreationTest {
 	public void aResultWithNothingPending_changesNothing() {
 		final String idBefore = currentCriticalChannel().getId();
 
-		behaviourFragment().applyPendingRingtonePick(PICKED);
+		SettingsScreen.current(controller).applyPendingRingtonePick(PICKED);
 
 		assertEquals("no picker was waiting, so nothing should have been rebuilt", idBefore, currentCriticalChannel().getId());
 		assertEquals(Uri.parse(PREVIOUS), currentCriticalChannel().getSound());
 	}
 
 	/**
-	 * Put the Notification Behaviour preference screen on the activity, which is the screen the sound pickers live on since #307.
-	 */
-	private void showBehaviourScreen() {
-		final GenericPreferenceFragment fragment = new GenericPreferenceFragment();
-		final Bundle args = new Bundle();
-		args.putString("category", context.getString(R.string.pref_category_behaviour));
-		fragment.setArguments(args);
-		controller.get()
-		          .getSupportFragmentManager()
-		          .beginTransaction()
-		          .replace(R.id.settings_container, fragment)
-		          .commitNow();
-	}
-
-	/**
-	 * @return the Notification Behaviour fragment the activity currently holds
-	 */
-	private GenericPreferenceFragment behaviourFragment() {
-		final Fragment fragment = controller.get().getSupportFragmentManager().findFragmentById(R.id.settings_container);
-		assertTrue("the Notification Behaviour screen is not showing", fragment instanceof GenericPreferenceFragment);
-		return (GenericPreferenceFragment) fragment;
-	}
-
-	/**
 	 * @return the critical alert's sound picker on the screen as it currently stands
 	 */
 	private Preference criticalSoundPreference() {
-		final Preference preference = behaviourFragment().findPreference(context.getString(R.string._pref_key_notifications_alert_sound_ringtone));
+		final Preference preference = SettingsScreen.current(controller).findPreference(context.getString(R.string._pref_key_notifications_alert_sound_ringtone));
 		assertNotNull("the critical sound picker is missing from the Notification Behaviour screen", preference);
 		return preference;
 	}

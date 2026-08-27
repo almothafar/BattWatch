@@ -46,7 +46,7 @@
          Their own category rather than joining Sound & Vibration below: these three are per-severity, while mute-in-
          silent-mode and vibrate apply to every alert. One category holding both reintroduces the same scope confusion.
 
-         The warning and full pickers dropped the android:dependency they carried on the Alerts screen. It could not
+         The warning and default pickers dropped the android:dependency they carried on the Alerts screen. It could not
          survive the move (a dependency only resolves inside one hierarchy, and the toggles stayed behind), and it was
          already wrong: switching off the low-battery alert greyed out the sound fast-drain and slow-charge still use. -->
     <PreferenceCategory
@@ -59,7 +59,7 @@
             android:ringtoneType="notification"
             android:title="@string/notifications_alert_sound_ringtone"
             app:iconSpaceReserved="false"
-            app:scopeSummary="@string/notifications_alert_sound_scope" />
+            app:bucketSummary="@string/notifications_critical_sound_bucket" />
 
         <com.almothafar.simplebatterynotifier.ui.preference.RingtonePreference
             android:defaultValue="content://settings/system/notification_sound"
@@ -67,15 +67,15 @@
             android:ringtoneType="notification"
             android:title="@string/notifications_warning_sound_ringtone"
             app:iconSpaceReserved="false"
-            app:scopeSummary="@string/notifications_warning_sound_scope" />
+            app:bucketSummary="@string/notifications_warning_sound_bucket" />
 
         <com.almothafar.simplebatterynotifier.ui.preference.RingtonePreference
             android:defaultValue="content://settings/system/notification_sound"
             android:key="@string/_pref_key_notifications_full_sound_ringtone"
             android:ringtoneType="notification"
-            android:title="@string/notifications_full_sound_ringtone"
+            android:title="@string/notifications_default_sound_ringtone"
             app:iconSpaceReserved="false"
-            app:scopeSummary="@string/notifications_full_sound_scope" />
+            app:bucketSummary="@string/notifications_default_sound_bucket" />
 
     </PreferenceCategory>
 

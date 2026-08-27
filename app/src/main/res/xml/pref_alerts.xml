@@ -1,8 +1,9 @@
 <!-- The "Alerts" screen (#112): WHAT to be notified about. One category per alert event, in
      battery-lifecycle order (levels → warning → critical → full → temperature → drain → charging).
-     Cross-cutting delivery options (sound in silent mode, vibration, quiet hours, stickiness)
-     and the charge-announcement style live on the "Notification behaviour" screen
-     (pref_behaviour.xml). -->
+     Cross-cutting delivery options (the per-severity alert sounds, sound in silent mode, vibration,
+     quiet hours, stickiness) and the charge-announcement style live on the "Notification behaviour"
+     screen (pref_behaviour.xml). The sounds joined them in #307: one picker sets a whole severity
+     bucket, so it belongs with the settings that span alerts rather than under any one event. -->
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 

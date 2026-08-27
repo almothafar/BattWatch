@@ -1,16 +1,16 @@
-# Graph Report - BattWatch  (2026-08-22)
+# Graph Report - BattWatch  (2026-08-27)
 
 ## Corpus Check
-- 106 files · ~225,689 words
+- 110 files · ~232,874 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1820 nodes · 5294 edges · 100 communities (71 shown, 29 thin omitted)
-- Extraction: 93% EXTRACTED · 6% INFERRED · 0% AMBIGUOUS · INFERRED: 344 edges (avg confidence: 0.82)
+- 1909 nodes · 5665 edges · 91 communities (62 shown, 29 thin omitted)
+- Extraction: 94% EXTRACTED · 6% INFERRED · 0% AMBIGUOUS · INFERRED: 354 edges (avg confidence: 0.82)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `75a67c11`
+- Built from commit: `c9e999d4`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -20,21 +20,21 @@
 - Streak
 - BatteryDetailsFragment
 - Sample
-- org.junit.runners.Parameterized
-- BattWatch (Android battery monitor app)
-- org.junit.Test
-- BatteryDO
-- .fold
-- HorseshoeProgressBar
-- QuietHoursTest.java
-- Build & Test Job
-- android.content.Context
-- Alerts Preference Screen
 - org.junit.runner.RunWith
+- BattWatch (Android battery monitor app)
+- BatteryLevelReceiverDecisionTest
+- BatteryDO
+- org.junit.Test
+- HorseshoeProgressBar
 - android.content.SharedPreferences
+- Build & Test Job
+- .isolate
+- Alerts Preference Screen
+- org.robolectric.annotation.Config
+- LevelAlertState
 - Battery Details Label-Value Table
-- android.os.Bundle
-- BatteryLevelReceiverTest
+- SettingsActivity
+- NotificationService
 - Battery Details Table (label : value rows)
 - .assertRendersAsWritten
 - CapacityStats
@@ -45,68 +45,61 @@
 - Observation
 - ContextBacked
 - BatteryInsightsActivity
-- BatteryHealthTracker
+- BatteryHealthGrade
+- android.content.Context
 - BatteryRate
 - Battery Insights Screen
 - TimePickerPreference
 - .formatWhole
 - GaugeValueSmoother
 - BattWatch Ongoing Status Notification
-- android.content.Intent
 - SystemService
 - PreferenceCardDecoration
 - Adaptive Icon Foreground Layer Asset Family (ic_launcher_foreground)
 - NotificationConfigTest
 - BatteryHealthStatus
 - SystemService.getBatteryCapacity
-- BatteryRateTrackerTest
 - .ensureChannels
 - RingtonePreference
 - BatteryHealthTrackerStateTest
 - FormatDuration
 - HorseshoeProgressBarTest
 - Arabic values-ar Parity
-- .getPrecisePercentage
-- SnapshotCycleCount
+- .getBatteryPercentageInt
+- SystemServiceTest
 - StringResourceDigitsTest
-- GeneralHelper
+- ArabicLiteralQuantityTest
 - BattWatch Domain Glossary
 - Robolectric @Config(sdk = 34) Constraint
 - android.util.AttributeSet
-- .onDraw
+- QuietHoursRouting
 - BattWatch Development Guidelines (machine-facing rulebook)
 - Numbers Are Always Western Digits
 - Conventional Commit PR Title Convention
-- TimePickerPreferenceDialogFragmentCompat
+- BatteryHealthTracker
 - Motion
 - .formatLive
 - .show
 - .formatSocModern
-- .applyChargeTargetWording
 - Issue Template Config (Blank Issues Disabled, Email Contact)
-- .playAlarm
-- AlertTypeTest
+- android.net.Uri
 - release-please-config.json
 - 160-Character Line Width
 - .accruePartialCycles
-- .onCreateView
+- android.app.NotificationManager
 - Allocation & Draw-Loop Performance Rules
 - Modern Java (JDK 25) Feature Use
-- .targetIsAFullCharge
-- PreferenceCardDecoration.java
 - When to Extract Methods
 - Minimal, Documented Permissions
 - Main-Looper Handler Threading Rules
 - Markdown Is Never Hard-Wrapped
 - Never Swallow Exceptions Silently
-- AlertType
 - Avoid Always-Inverted Boolean Methods
 - Accessibility Requirements (content descriptions, 48dp targets)
 - Edge-to-Edge Display & Modern UI APIs
 - Code Organization & Member Order
 - Declare Variables Close to Usage
 - No Fully Qualified Names
-- AppPrefsTest
 - .refreshBatteryUi
 - AGENTS.md
 
@@ -116,11 +109,11 @@
 3. `Streak` - 51 edges
 4. `HorseshoeProgressBar` - 45 edges
 5. `Sample` - 43 edges
-6. `NotificationService` - 40 edges
+6. `NotificationService` - 39 edges
 7. `BatteryHealthTracker` - 36 edges
 8. `MainActivity` - 36 edges
 9. `LevelAlertState` - 35 edges
-10. `SystemService` - 34 edges
+10. `GenericPreferenceFragment` - 35 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `Adaptive Icon Foreground Layer Asset Family (ic_launcher_foreground)` --semantically_similar_to--> `Play Store Listing Icon (512x512)`  [INFERRED] [semantically similar]
@@ -162,83 +155,79 @@
 - **Discharge Metrics Feeding the Remaining-Time Estimate** — play_screenshots_6_notification_discharging_state, play_screenshots_6_notification_average_current_line, play_screenshots_6_notification_drain_rate_percent_per_hour, play_screenshots_6_notification_time_remaining_line [INFERRED 0.85]
 - **Health Percentage Derived from Measured vs Design Capacity** — play_screenshots_3_insights_health_percent_metric, play_screenshots_3_insights_measured_capacity_metric, play_screenshots_3_insights_design_capacity_metric, play_screenshots_3_insights_health_basis_ladder [INFERRED 0.95]
 
-## Communities (100 total, 29 thin omitted)
+## Communities (91 total, 29 thin omitted)
 
 ### Community 0 - "MainActivity.java"
-Cohesion: 0.16
-Nodes (10): android.annotation.SuppressLint, android.app.PendingIntent, android.net.Uri, androidx.activity.result.ActivityResultLauncher, AppPrefs, BatteryPercentFormatter, BidiText, TemperatureUtils (+2 more)
+Cohesion: 0.17
+Nodes (7): android.os.Bundle, android.view.MenuItem, androidx.activity.result.ActivityResultLauncher, androidx.appcompat.widget.Toolbar, BatteryPercentFormatter, BidiText, TemperatureUtils
 
 ### Community 1 - "ChargeSpeed"
 Cohesion: 0.06
-Nodes (17): ChargeSpeed, ChargeSpeedTier, FAST, NORMAL, SUPER_FAST, SUPER_FAST_PLUS, TRICKLE, UNKNOWN (+9 more)
+Nodes (20): android.app.Service, android.os.IBinder, ChargeSpeed, ChargeSpeedTier, FAST, NORMAL, SUPER_FAST, SUPER_FAST_PLUS (+12 more)
 
 ### Community 2 - "Streak"
-Cohesion: 0.06
-Nodes (15): FastDrainDetector, SlowChargeDetector, Editor, Outcome, Repeat, RepeatPolicy, Streak, StreakStore (+7 more)
+Cohesion: 0.08
+Nodes (13): SlowChargeDetector, Editor, Outcome, Repeat, RepeatPolicy, Streak, StreakStore, SustainedConditionTracker (+5 more)
 
 ### Community 3 - "BatteryDetailsFragment"
 Cohesion: 0.09
-Nodes (11): android.view.View, android.widget.TableLayout, android.widget.TableRow, android.widget.TextView, BatteryDetailsFragment, Override, TableRow, TextView (+3 more)
+Nodes (15): android.view.LayoutInflater, android.view.View, android.view.ViewGroup, android.widget.TableLayout, android.widget.TableRow, android.widget.TextView, BatteryDetailsFragment, Override (+7 more)
 
 ### Community 4 - "Sample"
-Cohesion: 0.07
-Nodes (8): BatteryRateTracker, Sample, TransientState, AveragedCurrent, ComputeRate, Serialization, TrimToWindow, Windowing
+Cohesion: 0.08
+Nodes (7): BatteryRateTracker, Sample, AveragedCurrent, ComputeRate, Serialization, TrimToWindow, Windowing
 
-### Community 5 - "org.junit.runners.Parameterized"
-Cohesion: 0.07
-Nodes (32): BatteryDOTest, GetBatteryPercentage, GetBatteryPercentageInt, ChargeSpeedTest, Classify, PowerMilliwatts, BatteryCapacityTrackerTest, StableCapacityMah (+24 more)
+### Community 5 - "org.junit.runner.RunWith"
+Cohesion: 0.05
+Nodes (45): BatteryDOTest, GetBatteryPercentage, GetBatteryPercentageInt, ChargeSpeedTest, Classify, PowerMilliwatts, BatteryCapacityTrackerTest, StableCapacityMah (+37 more)
 
 ### Community 6 - "BattWatch (Android battery monitor app)"
 Cohesion: 0.06
 Nodes (37): Arabic translation build gate (MissingTranslation), CODE_REVIEW_GUIDELINES.md reference (no final on parameters), Conventional Commit PR titles (Copilot rule), Domain vocabulary from CONTEXT.md (drain rate, charge rate, design capacity), Versioning rule: never hand-edit the version, Anti-tivoization / installation information for User Products, Copyleft obligation, GNU General Public License v3.0 (+29 more)
 
 ### Community 8 - "BatteryDO"
-Cohesion: 0.07
-Nodes (3): BatteryDO, Behaviour, UsableLevel
+Cohesion: 0.09
+Nodes (3): BatteryDO, PrecisePercentage, UsableLevel
 
-### Community 9 - ".fold"
-Cohesion: 0.11
-Nodes (4): BatteryTemperatureTracker, TemperatureRange, TemperatureStats, BatteryTemperatureTrackerTest
+### Community 9 - "org.junit.Test"
+Cohesion: 0.09
+Nodes (4): AlertTypeTest, BatteryTemperatureTrackerTest, TargetDerivations, org.junit.Test
 
 ### Community 10 - "HorseshoeProgressBar"
-Cohesion: 0.15
-Nodes (6): android.animation.ValueAnimator, android.graphics.Matrix, android.graphics.Paint, android.graphics.RectF, android.graphics.SweepGradient, HorseshoeProgressBar
+Cohesion: 0.12
+Nodes (9): android.animation.ValueAnimator, android.graphics.Canvas, android.graphics.Matrix, android.graphics.Paint, android.graphics.RectF, android.graphics.SweepGradient, HorseshoeProgressBar, Override (+1 more)
 
-### Community 11 - "QuietHoursTest.java"
-Cohesion: 0.33
-Nodes (3): AlertsAllowedNow, QuietHoursTest, TimeRange
+### Community 11 - "android.content.SharedPreferences"
+Cohesion: 0.18
+Nodes (5): android.content.SharedPreferences, BatteryTemperatureTracker, TemperatureRange, TemperatureStats, TransientState
 
 ### Community 12 - "Build & Test Job"
 Cohesion: 0.07
 Nodes (36): AGP 8 Version Holds (androidx.core, gradle-wrapper), AndroidX Update Group, Non-Bumping Commit Prefixes (build / ci), Dependabot Configuration, Release Cooldown Window, GitHub Actions Ecosystem Updates, Google Maven Resolution via dependencyResolutionManagement, Gradle Ecosystem Updates (+28 more)
 
-### Community 13 - "android.content.Context"
-Cohesion: 0.17
-Nodes (6): android.content.Context, android.graphics.Bitmap, AlertSpec, AlertRouting, NotificationService, WeakReference
-
 ### Community 14 - "Alerts Preference Screen"
 Cohesion: 0.08
 Nodes (35): Alerts Settings Screen (screenshot), Alerts Preference Screen, Battery Levels Category, Critical Alert Category, Full Battery Category, Warning Alert Category, Critical Level Sound (Default Orion), Critical Level Threshold (13%) (+27 more)
 
-### Community 15 - "org.junit.runner.RunWith"
-Cohesion: 0.15
-Nodes (17): ArabicLiteralQuantityTest, ChargeConnectedDigits, NotificationServiceTest, BoundOrDefaultMinutes, SustainedConditionTrackerTest, CapacityRangeMessageTest, UnderAnLtrLocale, UnderAnRtlLocale (+9 more)
+### Community 15 - "org.robolectric.annotation.Config"
+Cohesion: 0.16
+Nodes (15): ChargeConnectedDigits, ChargeConnectedWiring, NotificationServiceTest, PowerConnectionServiceForegroundStartTest, SustainedConditionTrackerTest, CapacityRangeMessageTest, UnderAnLtrLocale, UnderAnRtlLocale (+7 more)
 
-### Community 16 - "android.content.SharedPreferences"
-Cohesion: 0.17
-Nodes (9): android.content.SharedPreferences, BatteryLevelReceiver, ChargeState, Editor, Override, LevelAlertConfig, LevelAlertDecision, LevelAlertState (+1 more)
+### Community 16 - "LevelAlertState"
+Cohesion: 0.11
+Nodes (14): BatteryLevelReceiver, ChargeState, Editor, Override, LevelAlertConfig, LevelAlertDecision, LevelAlertState, TemperatureDecision (+6 more)
 
 ### Community 17 - "Battery Details Label-Value Table"
 Cohesion: 0.09
 Nodes (34): Play Store Screenshot: Discharging State, BattWatch App Bar, Average Current Sub-Value (avg -750 mA), Battery Health from Capacity vs Design Capacity, Battery Level Percentage (41.93%), Android BatteryManager Data Source, Current Capacity Metric (4434 mAh), Charge Cycles Metric (23) (+26 more)
 
-### Community 18 - "android.os.Bundle"
+### Community 18 - "SettingsActivity"
 Cohesion: 0.16
-Nodes (10): android.os.Bundle, android.view.MenuItem, androidx.appcompat.app.AppCompatActivity, androidx.appcompat.widget.Toolbar, BaseActivity, Override, HeaderFragment, Override (+2 more)
+Nodes (7): androidx.appcompat.app.AppCompatActivity, BaseActivity, Override, HeaderFragment, Override, SettingsActivity, OnPreferenceStartFragmentCallback
 
-### Community 19 - "BatteryLevelReceiverTest"
-Cohesion: 0.15
-Nodes (4): android.app.Notification, BatteryLevelReceiverTest, Intent, ReminderAlertsAgain
+### Community 19 - "NotificationService"
+Cohesion: 0.07
+Nodes (9): android.app.Notification, android.app.PendingIntent, AlertSpec, AlertRouting, NotificationService, BatteryLevelReceiverTest, Intent, FastDrainDetectorCleanupTest (+1 more)
 
 ### Community 20 - "Battery Details Table (label : value rows)"
 Cohesion: 0.09
@@ -246,103 +235,99 @@ Nodes (31): Play Store Screenshot: Charging State, App Bar (BattWatch title, set
 
 ### Community 21 - ".assertRendersAsWritten"
 Cohesion: 0.11
-Nodes (5): BidiVisualOrder, Run, ArabicAlertRenderingTest, ChargeTargetSummaryTest, UnderAnRtlLocale
+Nodes (6): BidiVisualOrder, Run, ArabicAlertRenderingTest, ChargeTargetSummaryTest, BatteryRangeSliderHelperTest, ClampPair
 
 ### Community 22 - "CapacityStats"
-Cohesion: 0.15
+Cohesion: 0.16
 Nodes (6): BatteryCapacityTracker, CapacityStats, CapacitySummary, Learn, ObserveAndAverage, Summarize
 
 ### Community 23 - "GenericPreferenceFragment"
-Cohesion: 0.15
-Nodes (7): androidx.preference.EditTextPreference, androidx.preference.ListPreference, androidx.preference.MultiSelectListPreference, androidx.preference.Preference, GenericPreferenceFragment, Override, OnSharedPreferenceChangeListener
+Cohesion: 0.09
+Nodes (9): androidx.preference.EditTextPreference, androidx.preference.ListPreference, androidx.preference.MultiSelectListPreference, androidx.preference.SeekBarPreference, GenericPreferenceFragment, Override, AlertSoundScopeTest, FloatAndRoundTrip (+1 more)
 
 ### Community 24 - "LevelThresholds"
 Cohesion: 0.13
-Nodes (7): androidx.preference.PreferenceViewHolder, LevelThresholds, BatteryRangeSliderHelper, BatteryRangeSliderPreference, Override, Invariants, Label
+Nodes (7): androidx.preference.PreferenceViewHolder, LevelThresholds, BatteryRangeSliderHelper, BatteryRangeSliderPreference, Override, Invariants, com.google.android.material.slider.RangeSlider
 
 ### Community 26 - "MainActivity"
-Cohesion: 0.17
+Cohesion: 0.12
 Nodes (5): android.view.Menu, Intent, Override, MainActivity, com.google.android.material.button.MaterialButton
 
 ### Community 27 - "Observation"
-Cohesion: 0.14
+Cohesion: 0.15
 Nodes (5): CurrentUnitCalibrator, Observation, Observe, ObserveAndScale, ScaledMicroAmps
 
 ### Community 28 - "ContextBacked"
-Cohesion: 0.12
+Cohesion: 0.11
 Nodes (4): android.content.res.XmlResourceParser, AttrReader, ContextBacked, SeekBarPreference
 
 ### Community 29 - "BatteryInsightsActivity"
-Cohesion: 0.16
+Cohesion: 0.17
 Nodes (3): android.widget.ImageView, BatteryInsightsActivity, Override
 
-### Community 30 - "BatteryHealthTracker"
-Cohesion: 0.12
-Nodes (7): androidx.annotation.StringRes, BatteryHealthGrade, EXCELLENT, FAIR, GOOD, POOR, BatteryHealthTracker
+### Community 30 - "BatteryHealthGrade"
+Cohesion: 0.16
+Nodes (6): androidx.annotation.StringRes, BatteryHealthGrade, EXCELLENT, FAIR, GOOD, POOR
 
-### Community 32 - "BatteryRate"
-Cohesion: 0.15
-Nodes (3): BatteryRate, IconBand, OngoingStatusContent
+### Community 31 - "android.content.Context"
+Cohesion: 0.19
+Nodes (3): android.content.Context, FastDrainDetector, AppPrefs
 
 ### Community 33 - "Battery Insights Screen"
 Cohesion: 0.13
 Nodes (22): About Your Battery Advice Card, Battery Insights Screen, BatteryManager Capacity and Cycle-Count Data Source, Persisted Capacity Sample History, Charge Cycles (24), Days in Use (17), Design Capacity (4700 mAh), Health Basis Caption: Averaged Measured Capacity vs Design (+14 more)
 
 ### Community 34 - "TimePickerPreference"
-Cohesion: 0.18
-Nodes (3): androidx.preference.DialogPreference, Override, TimePickerPreference
+Cohesion: 0.06
+Nodes (11): android.widget.TimePicker, androidx.preference.DialogPreference, androidx.preference.PreferenceDialogFragmentCompat, QuietHours, Override, TimePickerPreference, Override, TimePickerPreferenceDialogFragmentCompat (+3 more)
 
 ### Community 35 - ".formatWhole"
-Cohesion: 0.15
-Nodes (3): AlertStyle, NotificationConfig, QuietHours
+Cohesion: 0.26
+Nodes (3): AlertStyle, NotificationConfig, Label
 
 ### Community 37 - "BattWatch Ongoing Status Notification"
 Cohesion: 0.14
 Nodes (18): Notification App Name: BattWatch, Body Line: Average Current and Drain Rate (Average: -623 mA . 14%/h), Battery Change Broadcast Triggering the Status Update, BattWatch Ongoing Status Notification, Discharging Charging State, Drain Rate in Percent Per Hour (14%/h), Expandable Multi-Line Notification Body (BigTextStyle), Ongoing Monitoring Notification Channel (+10 more)
 
-### Community 38 - "android.content.Intent"
-Cohesion: 0.15
-Nodes (10): android.app.Service, android.content.BroadcastReceiver, android.content.Intent, android.os.Handler, android.os.IBinder, BootCompletedIntentReceiver, Intent, Override (+2 more)
-
 ### Community 39 - "SystemService"
-Cohesion: 0.15
-Nodes (3): android.content.res.Resources, BatteryExtras, SystemService
+Cohesion: 0.09
+Nodes (13): android.annotation.SuppressLint, android.content.BroadcastReceiver, android.content.Intent, android.content.res.Resources, android.media.AudioAttributes, android.os.Handler, BootCompletedIntentReceiver, Intent (+5 more)
 
 ### Community 40 - "PreferenceCardDecoration"
-Cohesion: 0.37
-Nodes (5): androidx.recyclerview.widget.RecyclerView, Override, PreferenceCardDecoration, ItemDecoration, State
+Cohesion: 0.22
+Nodes (9): android.graphics.Rect, androidx.preference.PreferenceFragmentCompat, androidx.recyclerview.widget.RecyclerView, CardPreferenceFragment, Override, Override, PreferenceCardDecoration, ItemDecoration (+1 more)
 
 ### Community 41 - "Adaptive Icon Foreground Layer Asset Family (ic_launcher_foreground)"
 Cohesion: 0.36
 Nodes (11): xxxhdpi Density Bucket (192px legacy / 432px foreground), Legacy Launcher Icon Asset Family (ic_launcher), Adaptive Icon Foreground/Background Layer Split, Background Artwork Baked Into The Foreground Layer, Adaptive Icon Foreground Layer Asset Family (ic_launcher_foreground), Play Store Feature Graphic (1024x500), Store Listing Value Proposition Copy, BattWatch Wordmark (+3 more)
 
 ### Community 43 - "BatteryHealthStatus"
-Cohesion: 0.22
-Nodes (5): BatteryHealthStatus, CRITICAL, GOOD, UNKNOWN, WARNING
+Cohesion: 0.15
+Nodes (6): BatteryHealthStatus, CRITICAL, GOOD, UNKNOWN, WARNING, Behaviour
 
 ### Community 44 - "SystemService.getBatteryCapacity"
 Cohesion: 0.15
 Nodes (13): Gradle & ProGuard/R8 Build Rules, Reflection Ban (non-SDK restrictions), SystemService.getBatteryCapacity, Graceful Degradation for Non-Critical Features, isNull/nonNull Null-Safety Rule, BatteryDO, BatteryExtras (immutable internal data class), Builder Pattern (method chaining, return this) (+5 more)
 
-### Community 45 - "BatteryRateTrackerTest"
-Cohesion: 0.12
-Nodes (8): AmberThreshold, BatteryRateTrackerTest, CurrentPlausibility, CurrentSign, Direction, EstimateMinutesToEmpty, EstimateMinutesToFull, FormatAverageCurrentLine
+### Community 46 - ".ensureChannels"
+Cohesion: 0.08
+Nodes (9): AlertChannel, NotificationChannel, NotificationChannels, ChannelSounds, DefinitionVersionMigration, NotificationChannel, NotificationChannelsTest, SettingChangesReVersion (+1 more)
 
 ### Community 47 - "RingtonePreference"
-Cohesion: 0.17
-Nodes (4): android.content.res.TypedArray, Intent, Override, RingtonePreference
+Cohesion: 0.20
+Nodes (5): android.content.res.TypedArray, androidx.preference.Preference, Intent, Override, RingtonePreference
 
 ### Community 51 - "Arabic values-ar Parity"
 Cohesion: 0.17
 Nodes (12): RTL Layout Support, Arabic values-ar Parity, BatteryHealthStatus Enum, determineHealthStatus, Enums Over Boolean Flags, getHealthString, Method Separation Decision (2025), Single Responsibility Principle (+4 more)
 
-### Community 53 - "SnapshotCycleCount"
-Cohesion: 0.21
-Nodes (5): DesignCapacityFromMicroAmpHours, EstimateFullCapacity, Intent, SnapshotCycleCount, SystemServiceTest
+### Community 53 - "SystemServiceTest"
+Cohesion: 0.40
+Nodes (3): DesignCapacityFromMicroAmpHours, EstimateFullCapacity, SystemServiceTest
 
 ### Community 54 - "StringResourceDigitsTest"
-Cohesion: 0.30
-Nodes (5): StringResourceDigitsTest, java.util.regex.Pattern, javax.xml.parsers.DocumentBuilder, javax.xml.parsers.DocumentBuilderFactory, org.w3c.dom.Element
+Cohesion: 0.33
+Nodes (4): StringResourceDigitsTest, javax.xml.parsers.DocumentBuilder, javax.xml.parsers.DocumentBuilderFactory, org.w3c.dom.Element
 
 ### Community 56 - "BattWatch Domain Glossary"
 Cohesion: 0.31
@@ -353,12 +338,8 @@ Cohesion: 0.22
 Nodes (9): SDK Level Targets (min 26 / target 36), API-Level Branching with Fallback, Deprecation Handling Policy, Locale Tests Must Use a Region Tag (ar-rEG), NotificationService.isWithinTimeRange, Receiver Tests via Sticky ACTION_BATTERY_CHANGED, Robolectric @Config(sdk = 34) Constraint, Build Configuration (Gradle 9.2.1, JDK 25) (+1 more)
 
 ### Community 58 - "android.util.AttributeSet"
-Cohesion: 0.48
-Nodes (3): android.util.AttributeSet, android.widget.LinearLayout, MinMaxRangeView
-
-### Community 60 - ".onDraw"
-Cohesion: 0.22
-Nodes (3): android.graphics.Canvas, Override, SweepGradient
+Cohesion: 0.13
+Nodes (4): android.util.AttributeSet, android.widget.LinearLayout, MinMaxRangeView, GeneralHelper
 
 ### Community 61 - "BattWatch Development Guidelines (machine-facing rulebook)"
 Cohesion: 0.39
@@ -372,12 +353,8 @@ Nodes (8): BatteryPercentFormatter, getString(id, int) Configuration-Locale Trap
 Cohesion: 0.25
 Nodes (8): Short-Lived Branch Strategy, Conventional Commit PR Title Convention, Manual Upload APK Build, PR Title CI Check, release-please Version Ownership, Squash-Merge Workflow, versionCode Derivation Formula, Single-Source Version Manifest
 
-### Community 64 - "TimePickerPreferenceDialogFragmentCompat"
-Cohesion: 0.36
-Nodes (5): android.widget.TimePicker, androidx.preference.PreferenceDialogFragmentCompat, Override, TimePickerPreferenceDialogFragmentCompat, TimePicker
-
 ### Community 66 - "Motion"
-Cohesion: 0.29
+Cohesion: 0.25
 Nodes (7): Motion, BREATH_CRITICAL, BREATH_FILLING, NONE, PULSE_IDLE, WAVE_FORWARD, WAVE_REVERSE
 
 ### Community 71 - "Issue Template Config (Blank Issues Disabled, Email Contact)"
@@ -392,9 +369,9 @@ Nodes (5): include-component-in-tag, packages, pull-request-title-pattern, relea
 Cohesion: 0.40
 Nodes (5): Chained Call Wrapping Rule, More Than 4 Parameters, One Per Line, 160-Character Line Width, JavaDoc & Comment Format Standard, Always Use Curly Brackets
 
-### Community 77 - ".onCreateView"
-Cohesion: 0.33
-Nodes (5): android.view.LayoutInflater, android.view.ViewGroup, androidx.fragment.app.Fragment, Override, SignatureFragment
+### Community 77 - "android.app.NotificationManager"
+Cohesion: 0.13
+Nodes (7): android.app.NotificationChannel, android.app.NotificationManager, androidx.fragment.app.Fragment, RingtonePickApplyTest, RingtonePickSurvivesRecreationTest, org.junit.After, org.robolectric.android.controller.ActivityController
 
 ### Community 78 - "Allocation & Draw-Loop Performance Rules"
 Cohesion: 0.50
@@ -404,24 +381,12 @@ Nodes (4): Allocation & Draw-Loop Performance Rules, Cache Expensive Operations 
 Cohesion: 0.50
 Nodes (4): Modern Java (JDK 25) Feature Use, No final on Method Parameters, try-with-resources Resource Cleanup, final on Locals, Never on Parameters
 
-### Community 82 - "PreferenceCardDecoration.java"
-Cohesion: 0.36
-Nodes (4): android.graphics.Rect, androidx.preference.PreferenceFragmentCompat, CardPreferenceFragment, Override
-
 ### Community 83 - "When to Extract Methods"
 Cohesion: 0.67
 Nodes (3): Avoid Over-Engineering, When to Extract Methods, Method Size Limit (~50 lines)
 
-### Community 88 - "AlertType"
-Cohesion: 0.32
-Nodes (6): AlertType, CRITICAL, FULL, WARNING, fromPersistedId(), persistedId()
-
-### Community 96 - "AppPrefsTest"
-Cohesion: 0.29
-Nodes (4): AppPrefsTest, ClampChargeTarget, ClampDrainLimit, ClampMinutesToMs
-
 ### Community 97 - ".refreshBatteryUi"
-Cohesion: 0.33
+Cohesion: 0.29
 Nodes (4): Flow, DRAINING, FILLING, FULL
 
 ## Ambiguous Edges - Review These

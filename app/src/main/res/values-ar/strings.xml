@@ -105,12 +105,12 @@
     <string name="notifications_vibrate_summary_on">التنبيه بالرجاج مفعل</string>
     <string name="notifications_alert_sound_ringtone">صوت المستوى الحرج</string>
     <string name="notifications_warning_sound_ringtone">صوت مستوى التنبيه</string>
-    <string name="notifications_full_sound_ringtone">صوت تنبيه اكتمال الشحن</string>
+    <string name="notifications_default_sound_ringtone">الصوت الافتراضي</string>
     <!-- ما الذي تشمله كل فئة من أصوات التنبيهات (#307) -->
-    <string name="notifications_alert_sound_scope">البطارية الحرجة، ارتفاع الحرارة</string>
-    <string name="notifications_warning_sound_scope">انخفاض البطارية، الاستنزاف السريع، الشحن البطيء</string>
-    <string name="notifications_full_sound_scope">اكتمال الشحن، توصيل الشاحن</string>
-    <string name="pref_ringtone_summary_with_scope">%1$s · %2$s</string>
+    <string name="notifications_critical_sound_bucket">البطارية الحرجة، ارتفاع الحرارة</string>
+    <string name="notifications_warning_sound_bucket">انخفاض البطارية، الاستنزاف السريع، الشحن البطيء</string>
+    <string name="notifications_default_sound_bucket">اكتمال الشحن، والتنبيهات التي ليس لها صوت خاص بها</string>
+    <string name="pref_ringtone_summary_with_bucket">%1$s · %2$s</string>
     <string name="notify_for_warning_level">التنبيه لمستوى التحذير</string>
     <string name="notify_for_warning_level_summary_on">مستوى التحذير مفعل</string>
     <string name="notify_for_warning_level_summary_off">مستوى التحذير معطل</string>
