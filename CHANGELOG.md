@@ -1,5 +1,38 @@
 # Changelog
 
+## [3.2.0](https://github.com/almothafar/BattWatch/compare/v3.1.0...v3.2.0) (2026-08-27)
+
+
+### Features
+
+* add a monochrome layer to the launcher icon ([#252](https://github.com/almothafar/BattWatch/issues/252)) ([6948cbe](https://github.com/almothafar/BattWatch/commit/6948cbe02fa71dfd2db9eff4cbc6ad12ef247acc))
+* adopt the BattWatch launcher icon and add Play listing assets ([#236](https://github.com/almothafar/BattWatch/issues/236)) ([1ecdfa0](https://github.com/almothafar/BattWatch/commit/1ecdfa00aba1c40a9d1caf1d58d6658befda4120))
+* let the user set the charge target the full-battery alert fires at ([#272](https://github.com/almothafar/BattWatch/issues/272)) ([700e8f6](https://github.com/almothafar/BattWatch/commit/700e8f68b4da98ce499ab04ac6d17529381dff4f))
+* repeat the full-battery alert until the charger comes out ([#277](https://github.com/almothafar/BattWatch/issues/277)) ([10fa9cd](https://github.com/almothafar/BattWatch/commit/10fa9cd3ac2f5b9dd867618b1d883bce4645ac75))
+* restore a complete landscape layout for the main screen ([#253](https://github.com/almothafar/BattWatch/issues/253)) ([07f902c](https://github.com/almothafar/BattWatch/commit/07f902ccc5ec8d077e927b0c2da2a707eb91bdfc))
+* semantic alert icons and a level-mirroring ongoing icon ([#240](https://github.com/almothafar/BattWatch/issues/240)) ([e9b8e4e](https://github.com/almothafar/BattWatch/commit/e9b8e4e8a025af6922b883d9e2a27518d9a2f858))
+* show the battery temperature range since the last full charge ([#262](https://github.com/almothafar/BattWatch/issues/262)) ([ebabce0](https://github.com/almothafar/BattWatch/commit/ebabce083ceef7bf6b9a9023a120e19afe81ea28))
+
+
+### Bug Fixes
+
+* bidi-isolate the Latin numbers embedded in Arabic notification copy ([#276](https://github.com/almothafar/BattWatch/issues/276)) ([ea0f2f9](https://github.com/almothafar/BattWatch/commit/ea0f2f9b1213d1fad5bd8096dc2191a018e96c8c))
+* clear the RestrictedApi lint errors and run lint in CI ([#250](https://github.com/almothafar/BattWatch/issues/250)) ([0798a80](https://github.com/almothafar/BattWatch/commit/0798a80648ce780890f7a053f96e4a9c3b54c5c5))
+* close the whole charge session when the unplug broadcast is missed ([#269](https://github.com/almothafar/BattWatch/issues/269)) ([6ee0df1](https://github.com/almothafar/BattWatch/commit/6ee0df13b257db46435a27c4cb3bbda4421ad4af))
+* dismiss the full-battery alert when the charger comes out ([#266](https://github.com/almothafar/BattWatch/issues/266)) ([17cc1c3](https://github.com/almothafar/BattWatch/commit/17cc1c3ad45bf09f249113b356f0aa978652da21))
+* dismiss the overheat notification once the battery cools ([#261](https://github.com/almothafar/BattWatch/issues/261)) ([379cd54](https://github.com/almothafar/BattWatch/commit/379cd540fefb8951b4a64cb5feb379823559421b))
+* format quiet-hours time with the shared locale-safe helper ([#247](https://github.com/almothafar/BattWatch/issues/247)) ([db64c6b](https://github.com/almothafar/BattWatch/commit/db64c6b391b9006a76a4e4bcdf1ecb24d1c3d0c8))
+* instantiate the preference fragment directly so R8 cannot strip it ([#297](https://github.com/almothafar/BattWatch/issues/297)) ([00d3b2e](https://github.com/almothafar/BattWatch/commit/00d3b2e16323114229b3c66547d67aade843fb85))
+* keep every user-facing number in Western digits on Arabic locales ([#274](https://github.com/almothafar/BattWatch/issues/274)) ([9301b11](https://github.com/almothafar/BattWatch/commit/9301b119fcb21ed3f71fa749267b62d46514c986))
+* keep the pending sound picker across a screen recreation ([#306](https://github.com/almothafar/BattWatch/issues/306)) ([f44c1a2](https://github.com/almothafar/BattWatch/commit/f44c1a2eba01321fa08f35e7f35eb12a11b307e1))
+* make the "alert is showing" flag survive a process kill ([#270](https://github.com/almothafar/BattWatch/issues/270)) ([159885f](https://github.com/almothafar/BattWatch/commit/159885fc64606ba101d46d397980a9c7185ee470))
+* play the picked notification sound on the alert channels ([#287](https://github.com/almothafar/BattWatch/issues/287)) ([8033584](https://github.com/almothafar/BattWatch/commit/8033584bb0510230cbf5208b6989e70b7247f0cf))
+* refresh the alert channels when a sound is picked ([#304](https://github.com/almothafar/BattWatch/issues/304)) ([2d7a794](https://github.com/almothafar/BattWatch/commit/2d7a794a798dce0bc06c258e6414db7e444b9248))
+* restore the notification large icon lost to the adaptive launcher icon ([#299](https://github.com/almothafar/BattWatch/issues/299)) ([15b4662](https://github.com/almothafar/BattWatch/commit/15b4662c8ad01d13aaa53b5815b058094179c6a3))
+* stop shipping hardcoded English placeholders on Battery Insights ([#251](https://github.com/almothafar/BattWatch/issues/251)) ([27b148e](https://github.com/almothafar/BattWatch/commit/27b148e19c10ef7bdd04f6bfead07dc09bafca7f))
+* stop the Insights cards being clipped, and clear the layout lint nits ([#255](https://github.com/almothafar/BattWatch/issues/255)) ([41dfed4](https://github.com/almothafar/BattWatch/commit/41dfed4121307dc6943693e85c56d5bc6095e4b8))
+* stop the service instead of crashing when foreground promotion is refused ([#301](https://github.com/almothafar/BattWatch/issues/301)) ([952959a](https://github.com/almothafar/BattWatch/commit/952959ab7422a1a575bcffcf9d5e5044da4fd7b6))
+
 ## [3.1.0](https://github.com/almothafar/BattWatch/compare/v3.0.1...v3.1.0) (2026-07-24)
 
 
