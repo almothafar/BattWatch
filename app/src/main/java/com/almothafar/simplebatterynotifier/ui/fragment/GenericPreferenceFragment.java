@@ -54,7 +54,10 @@ public class GenericPreferenceFragment extends CardPreferenceFragment
 
 	private static final String TAG = "GenericPreferenceFrag";
 
-	private RingtonePreference currentRingtonePreference;
+	/** Saved-state key holding {@link #pendingRingtoneKey} across a recreation — see {@link #onSaveInstanceState}. */
+	private static final String PENDING_RINGTONE_KEY = "pendingRingtoneKey";
+
+	private String pendingRingtoneKey;
 	private ActivityResultLauncher<Intent> ringtonePickerLauncher;
 
 	/**
@@ -69,20 +72,60 @@ public class GenericPreferenceFragment extends CardPreferenceFragment
 	public void onCreate(final Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
+		if (nonNull(savedInstanceState)) {
+			pendingRingtoneKey = savedInstanceState.getString(PENDING_RINGTONE_KEY);
+		}
+
 		// Register the activity result launcher for the ringtone picker
 		ringtonePickerLauncher = registerForActivityResult(
 				new ActivityResultContracts.StartActivityForResult(),
 				result -> {
-					if (result.getResultCode() == Activity.RESULT_OK && nonNull(currentRingtonePreference)) {
+					if (result.getResultCode() == Activity.RESULT_OK) {
 						final Intent data = result.getData();
 						if (nonNull(data)) {
 							final Uri uri = extractRingtoneUri(data);
-							applyRingtonePick(requireContext(), currentRingtonePreference, nonNull(uri) ? uri.toString() : "");
-							currentRingtonePreference = null;
+							applyPendingRingtonePick(nonNull(uri) ? uri.toString() : "");
 						}
 					}
 				}
 		);
+	}
+
+	/**
+	 * Remember which sound picker is waiting on the system ringtone picker, so the answer still has somewhere to go if this screen does not survive it.
+	 * <p>
+	 * The picker is a separate activity, and while it is in front this fragment can be destroyed and rebuilt — a rotation, a font-size change, or the
+	 * process being reclaimed, which is routine on the OEMs this app is most used on. Held only in a field, the waiting preference came back null, the
+	 * result was dropped, and the user returned to a screen still showing the old sound with nothing to explain it (#305).
+	 * <p>
+	 * The key is saved rather than the {@link RingtonePreference} itself, and not only because a {@code Preference} cannot be parcelled: the hierarchy is
+	 * re-inflated on the way back, so the object that was clicked no longer exists. A key survives that and re-resolves to the new instance.
+	 *
+	 * @param outState Bundle to save state into
+	 */
+	@Override
+	public void onSaveInstanceState(@NonNull final Bundle outState) {
+		super.onSaveInstanceState(outState);
+		outState.putString(PENDING_RINGTONE_KEY, pendingRingtoneKey);
+	}
+
+	/**
+	 * Hand a sound the user just chose to whichever picker opened the system ringtone picker, resolved by key against the current hierarchy.
+	 * <p>
+	 * Resolving here rather than holding the clicked {@code Preference} is what makes the result survive a recreation (#305): after one, the saved key
+	 * still names a preference on the rebuilt screen, while any retained reference points at a discarded object.
+	 * <p>
+	 * A result with nothing pending is dropped rather than guessed at — there is no safe default, and applying a sound to the wrong severity would be
+	 * worse than the pick being lost.
+	 *
+	 * @param pickedUri the chosen sound URI, empty when the user chose "Silent"
+	 */
+	void applyPendingRingtonePick(String pickedUri) {
+		final Preference pending = nonNull(pendingRingtoneKey) ? findPreference(pendingRingtoneKey) : null;
+		pendingRingtoneKey = null;
+		if (pending instanceof final RingtonePreference ringtone) {
+			applyRingtonePick(requireContext(), ringtone, pickedUri);
+		}
 	}
 
 	/**
@@ -540,8 +583,8 @@ public class GenericPreferenceFragment extends CardPreferenceFragment
 	 */
 	private void setupRingtonePreferenceListener(final RingtonePreference ringtonePref) {
 		ringtonePref.setOnPreferenceClickListener(pref -> {
-			currentRingtonePreference = (RingtonePreference) pref;
-			final Intent intent = currentRingtonePreference.createRingtonePickerIntent();
+			pendingRingtoneKey = pref.getKey();
+			final Intent intent = ringtonePref.createRingtonePickerIntent();
 			ringtonePickerLauncher.launch(intent);
 			return true;
 		});
