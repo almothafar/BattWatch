@@ -72,7 +72,7 @@
     <string name="pref_header_behaviour">Notification Behaviour</string>
     <string name="pref_header_summary_general">App language, temperature unit, and the status notification</string>
     <string name="pref_header_summary_alerts">What to be notified about — battery levels, full charge, temperature, fast drain, charging</string>
-    <string name="pref_header_summary_behaviour">How alerts sound and appear, and when they are allowed — silent mode, vibration, quiet hours</string>
+    <string name="pref_header_summary_behaviour">How alerts sound and appear, and when they are allowed — alert sounds, silent mode, vibration, quiet hours</string>
 
     <string name="pref_ringtone_silent">Silent</string>
     <string name="pref_title_vibrate">Vibrate</string>
@@ -103,6 +103,12 @@
     <string name="notifications_alert_sound_ringtone">Critical Level Sound</string>
     <string name="notifications_warning_sound_ringtone">Warning Level Sound</string>
     <string name="notifications_full_sound_ringtone">Full Level Sound</string>
+    <!-- What each picker's severity bucket drives (#307). One picker sets the sound for two or three channels, which the row's own title cannot convey. -->
+    <string name="notifications_alert_sound_scope">Critical battery, overheating</string>
+    <string name="notifications_warning_sound_scope">Low battery, fast drain, slow charging</string>
+    <string name="notifications_full_sound_scope">Full charge, charger connected</string>
+    <!-- Sound name, then the alerts it covers -->
+    <string name="pref_ringtone_summary_with_scope">%1$s · %2$s</string>
     <string name="notify_for_warning_level">Notify for Warning level</string>
     <string name="notify_for_warning_level_summary_on">Warning Sound Enabled</string>
     <string name="notify_for_warning_level_summary_off">Warning Sound Disabled</string>
@@ -391,6 +397,7 @@
     <string name="pref_cat_title_critical">Critical Alert</string>
     <string name="pref_cat_title_charging">Charging</string>
     <string name="pref_cat_title_sound_vibration">Sound &amp; Vibration</string>
+    <string name="pref_cat_title_alert_sounds">Alert Sounds</string>
     <string name="pref_cat_title_quiet_hours">Quiet Hours</string>
     <string name="pref_cat_title_appearance">Appearance</string>
 

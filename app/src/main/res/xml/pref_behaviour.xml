@@ -1,10 +1,12 @@
 <!-- The "Notification behaviour" screen (#112): HOW alerts sound and appear, and WHEN they are
-     allowed. These options apply to all alerts; the per-event settings (toggles, thresholds,
-     sounds) live on the "Alerts" screen (pref_alerts.xml).
+     allowed. The per-event settings — which alerts fire, and their thresholds — live on the
+     "Alerts" screen (pref_alerts.xml). Sounds used to as well, and moved here in #307: a picker
+     sets a whole severity bucket rather than one alert, which is this screen's level, not that one's.
 
      Appearance leads (#265): its two settings are the ones users change and then verify right
      away, while sound and quiet hours are set once and forgotten. Below the four-row Quiet Hours
-     block it fell off-screen on shorter devices. -->
+     block it fell off-screen on shorter devices. Alert Sounds sits above Sound & Vibration for the
+     same reason — it is the block most likely to be looked for, and Quiet Hours stays last. -->
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
@@ -33,6 +35,47 @@
             android:title="@string/charge_notification_style_title"
             app:useSimpleSummaryProvider="true"
             app:iconSpaceReserved="false" />
+
+    </PreferenceCategory>
+
+    <!-- The three per-severity sound pickers (#307). They live here rather than on the Alerts screen because each one
+         drives a whole severity bucket rather than the single alert it used to sit under: the critical picker also sets
+         the overheat sound, and the warning picker also sets fast-drain and slow-charge. Under a per-event category that
+         scope was invisible, so each carries a summary naming every alert it drives.
+
+         Their own category rather than joining Sound & Vibration below: these three are per-severity, while mute-in-
+         silent-mode and vibrate apply to every alert. One category holding both reintroduces the same scope confusion.
+
+         The warning and full pickers dropped the android:dependency they carried on the Alerts screen. It could not
+         survive the move (a dependency only resolves inside one hierarchy, and the toggles stayed behind), and it was
+         already wrong: switching off the low-battery alert greyed out the sound fast-drain and slow-charge still use. -->
+    <PreferenceCategory
+        android:title="@string/pref_cat_title_alert_sounds"
+        app:iconSpaceReserved="false">
+
+        <com.almothafar.simplebatterynotifier.ui.preference.RingtonePreference
+            android:defaultValue="content://settings/system/notification_sound"
+            android:key="@string/_pref_key_notifications_alert_sound_ringtone"
+            android:ringtoneType="notification"
+            android:title="@string/notifications_alert_sound_ringtone"
+            app:iconSpaceReserved="false"
+            app:scopeSummary="@string/notifications_alert_sound_scope" />
+
+        <com.almothafar.simplebatterynotifier.ui.preference.RingtonePreference
+            android:defaultValue="content://settings/system/notification_sound"
+            android:key="@string/_pref_key_notifications_warning_sound_ringtone"
+            android:ringtoneType="notification"
+            android:title="@string/notifications_warning_sound_ringtone"
+            app:iconSpaceReserved="false"
+            app:scopeSummary="@string/notifications_warning_sound_scope" />
+
+        <com.almothafar.simplebatterynotifier.ui.preference.RingtonePreference
+            android:defaultValue="content://settings/system/notification_sound"
+            android:key="@string/_pref_key_notifications_full_sound_ringtone"
+            android:ringtoneType="notification"
+            android:title="@string/notifications_full_sound_ringtone"
+            app:iconSpaceReserved="false"
+            app:scopeSummary="@string/notifications_full_sound_scope" />
 
     </PreferenceCategory>
 

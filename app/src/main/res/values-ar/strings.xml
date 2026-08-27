@@ -76,7 +76,7 @@
     <string name="pref_header_behaviour">سلوك التنبيهات</string>
     <string name="pref_header_summary_general">لغة التطبيق، ووحدة الحرارة، وإشعار الحالة</string>
     <string name="pref_header_summary_alerts">ما الذي يُنبَّه له — مستويات البطارية، اكتمال الشحن، الحرارة، الاستهلاك السريع، الشحن</string>
-    <string name="pref_header_summary_behaviour">كيف تُصدر التنبيهات صوتاً وكيف تظهر ومتى يُسمح بها — وضع الصامت، الاهتزاز، ساعات الهدوء</string>
+    <string name="pref_header_summary_behaviour">كيف تُصدر التنبيهات صوتاً وكيف تظهر ومتى يُسمح بها — أصوات التنبيهات، وضع الصامت، الاهتزاز، ساعات الهدوء</string>
 
     <string name="pref_ringtone_silent">صامت</string>
     <string name="pref_title_vibrate">الرجاج</string>
@@ -106,6 +106,11 @@
     <string name="notifications_alert_sound_ringtone">صوت المستوى الحرج</string>
     <string name="notifications_warning_sound_ringtone">صوت مستوى التنبيه</string>
     <string name="notifications_full_sound_ringtone">صوت تنبيه اكتمال الشحن</string>
+    <!-- ما الذي تشمله كل فئة من أصوات التنبيهات (#307) -->
+    <string name="notifications_alert_sound_scope">البطارية الحرجة، ارتفاع الحرارة</string>
+    <string name="notifications_warning_sound_scope">انخفاض البطارية، الاستنزاف السريع، الشحن البطيء</string>
+    <string name="notifications_full_sound_scope">اكتمال الشحن، توصيل الشاحن</string>
+    <string name="pref_ringtone_summary_with_scope">%1$s · %2$s</string>
     <string name="notify_for_warning_level">التنبيه لمستوى التحذير</string>
     <string name="notify_for_warning_level_summary_on">مستوى التحذير مفعل</string>
     <string name="notify_for_warning_level_summary_off">مستوى التحذير معطل</string>
@@ -357,6 +362,7 @@
     <string name="pref_cat_title_critical">التنبيه الحرج</string>
     <string name="pref_cat_title_charging">الشحن</string>
     <string name="pref_cat_title_sound_vibration">الصوت والاهتزاز</string>
+    <string name="pref_cat_title_alert_sounds">أصوات التنبيهات</string>
     <string name="pref_cat_title_quiet_hours">ساعات الهدوء</string>
     <string name="pref_cat_title_appearance">المظهر</string>
 </resources>
