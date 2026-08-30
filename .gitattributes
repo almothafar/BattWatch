@@ -15,3 +15,7 @@
 *.PDF	 diff=astextplain
 *.rtf	 diff=astextplain
 *.RTF	 diff=astextplain
+
+# graphify writes graphify-out/ - a generated knowledge graph, not hand-written source. Marking it generated keeps a 3 MB graph.html from making GitHub
+# call this an HTML project, and collapses the directory in pull-request diffs so a 4 MB graph.json rewrite stops burying the real change beside it.
+graphify-out/** linguist-generated=true

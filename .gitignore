@@ -42,10 +42,13 @@ app/release/
 # -------------------------
 # graphify
 # -------------------------
-# The graph itself is tracked: graphify ships a merge driver for graph.json and a
-# post-checkout hook, both of which assume it is under version control. Only the
-# extraction cache stays out - it is large, machine-local, and rebuildable.
+# The graph itself is tracked: graphify ships a merge driver for graph.json and a post-checkout hook, both of which assume it is under version control.
+# The extraction cache stays out - it is large, machine-local, and rebuildable.
 graphify-out/cache/*
+
+# The generated graph viewer: 3 MB of HTML, rebuilt on every run and referenced by nothing - not CLAUDE.md, not AGENTS.md, not a workflow. Tracked, it
+# made GitHub read the repo as an HTML project and added its 3 MB to history on every update. Rebuild it with `graphify cluster-only .` to look at it.
+graphify-out/graph.html
 
 # Dated snapshots graphify writes before it overwrites a curated graph. Useful
 # locally for recovering hand-written community names; noise in history.
