@@ -81,6 +81,12 @@ android {
         // localization gaps are caught at build time rather than shipping English fallbacks.
         // Internal identifiers/defaults are marked translatable="false" so they're exempt.
         error 'MissingTranslation'
+
+        // The "keep it there" half of #245 (get lintDebug to zero warnings and keep it there): lint aborts on errors only, so without this a new
+        // warning lands silently and the count creeps back up. Deliberately no lint-baseline.xml, which would hide the debt instead of paying it.
+        // Accepted cost: an AGP or lint upgrade can add checks and turn CI red with no code change; the answer is to clear or narrowly suppress the
+        // new warning, never to switch this off.
+        warningsAsErrors true
     }
 }
 
