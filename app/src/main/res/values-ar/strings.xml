@@ -325,6 +325,10 @@
     <string name="notifications_permission_rationale">التنبيهات مهمة لكي يعمل التطبيق بشكل صحيح</string>
     <string name="open_settings">فتح الإعدادات</string>
 
+    <!-- #302: shown once, at the first launch after the system stopped background monitoring -->
+    <string name="monitoring_stopped_rationale">أوقف النظام مراقبة البطارية في الخلفية. إيقاف تحسين البطارية لتطبيق BattWatch يجعل تكرار ذلك أقل.</string>
+    <string name="no_battery_settings">إعدادات تحسين البطارية غير متوفرة على هذا الجهاز</string>
+
     <!-- Feedback / report an issue -->
     <string name="action_send_feedback">إرسال ملاحظات</string>
     <string name="feedback_dialog_title">إرسال ملاحظات</string>

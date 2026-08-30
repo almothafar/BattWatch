@@ -3,8 +3,12 @@ package com.almothafar.simplebatterynotifier.service;
 import android.app.ForegroundServiceStartNotAllowedException;
 import android.app.Notification;
 import android.app.Service;
+import android.content.Context;
 
 import androidx.core.app.ServiceCompat;
+import androidx.test.core.app.ApplicationProvider;
+
+import com.almothafar.simplebatterynotifier.util.AppPrefs;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -30,6 +34,9 @@ import static org.robolectric.Shadows.shadowOf;
  * Android 12+ refuses it with {@link ForegroundServiceStartNotAllowedException}, which used to escape
  * {@code onCreate} and crash the process. The service must stop instead.
  * <p>
+ * Stopping is not the whole answer, because monitoring is then off with nothing on screen to say so: the refusal is also recorded in {@link AppPrefs} for
+ * {@code MainActivity} to explain at the next launch (#302), and a promotion that succeeds must leave nothing to explain.
+ * <p>
  * {@link ServiceCompat} is mocked statically so the refusal can be provoked without a real platform
  * decision; the assertions are about what {@code onCreate} does with it, not about when Android throws.
  */
@@ -38,8 +45,9 @@ import static org.robolectric.Shadows.shadowOf;
 public class PowerConnectionServiceForegroundStartTest {
 
 	@Test
-	public void promotionRefused_stopsServiceInsteadOfCrashing() {
+	public void promotionRefused_stopsServiceAndRecordsTheInterruption() {
 		final ServiceController<PowerConnectionService> controller = Robolectric.buildService(PowerConnectionService.class);
+		final Context context = ApplicationProvider.getApplicationContext();
 
 		try (MockedStatic<ServiceCompat> serviceCompat = mockStatic(ServiceCompat.class)) {
 			serviceCompat.when(() -> ServiceCompat.startForeground(any(Service.class), anyInt(), any(Notification.class), anyInt()))
@@ -50,12 +58,14 @@ public class PowerConnectionServiceForegroundStartTest {
 
 			final ShadowService shadow = shadowOf(controller.get());
 			assertTrue("service should stop itself when the promotion is refused", shadow.isStoppedBySelf());
+			assertTrue("the refusal should be left for MainActivity to explain (#302)", AppPrefs.monitoringStopped(context));
 		}
 	}
 
 	@Test
-	public void promotionAllowed_keepsServiceRunning() {
+	public void promotionAllowed_keepsServiceRunningAndLeavesNothingToExplain() {
 		final ServiceController<PowerConnectionService> controller = Robolectric.buildService(PowerConnectionService.class);
+		final Context context = ApplicationProvider.getApplicationContext();
 
 		try (MockedStatic<ServiceCompat> serviceCompat = mockStatic(ServiceCompat.class)) {
 			controller.create();
@@ -64,6 +74,7 @@ public class PowerConnectionServiceForegroundStartTest {
 
 			final ShadowService shadow = shadowOf(controller.get());
 			assertFalse("service should keep running when the promotion succeeds", shadow.isStoppedBySelf());
+			assertFalse("monitoring was never interrupted, so there is nothing to tell the user", AppPrefs.monitoringStopped(context));
 		}
 	}
 }

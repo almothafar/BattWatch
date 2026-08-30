@@ -14,6 +14,7 @@ import androidx.core.app.ServiceCompat;
 import com.almothafar.simplebatterynotifier.model.BatteryDO;
 import com.almothafar.simplebatterynotifier.receiver.BatteryLevelReceiver;
 import com.almothafar.simplebatterynotifier.receiver.PowerConnectionReceiver;
+import com.almothafar.simplebatterynotifier.util.AppPrefs;
 
 import java.util.Locale;
 
@@ -68,12 +69,11 @@ public class PowerConnectionService extends Service {
 	 * receivers) is reaped shortly after the app leaves the foreground. The ongoing notification
 	 * keeps monitoring alive so alerts are delivered while the app is closed.
 	 * <p>
-	 * The promotion can be refused. {@code onStartCommand} returns {@code START_STICKY}, so the system
-	 * recreates this service on its own after killing the process, and that restart carries none of the
-	 * exemptions that let a background start promote to foreground (#295). Android 12+ answers with
-	 * {@link ForegroundServiceStartNotAllowedException}, which is fatal if it escapes {@code onCreate}.
-	 * Monitoring is already down at that point, so the recovery is to stop rather than to crash: the next
-	 * launch of {@code MainActivity} starts the service again from the foreground, where it is allowed.
+	 * The promotion can be refused. {@code onStartCommand} returns {@code START_STICKY}, so the system recreates this service on its own after killing the
+	 * process, and that restart carries none of the exemptions that let a background start promote to foreground (#295). Android 12+ answers with
+	 * {@link ForegroundServiceStartNotAllowedException}, which is fatal if it escapes {@code onCreate}. Monitoring is already down at that point, so the
+	 * recovery is to stop rather than to crash: the next launch of {@code MainActivity} starts the service again from the foreground, where it is allowed. The
+	 * refusal is recorded on the way out so that launch can also tell the user monitoring was interrupted, and how to make it less likely (#302).
 	 */
 	private void startForegroundWithStatus() {
 		final BatteryDO batteryDO = SystemService.getBatteryInfo(this);
@@ -96,6 +96,8 @@ public class PowerConnectionService extends Service {
 			ServiceCompat.startForeground(this, id, notification, serviceType);
 		} catch (ForegroundServiceStartNotAllowedException e) {
 			Log.w(TAG, "Foreground start refused from the background, stopping until the app is opened again", e);
+			// Monitoring is off from here, and a service has no way to say so. Leave a mark for MainActivity to explain it at the next launch (#302).
+			AppPrefs.setMonitoringStopped(this, true);
 			stopSelf();
 		}
 	}

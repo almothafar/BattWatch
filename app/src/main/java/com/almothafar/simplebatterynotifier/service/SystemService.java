@@ -615,6 +615,23 @@ public final class SystemService {
 	}
 
 	/**
+	 * Whether the user has exempted the app from battery optimization.
+	 * <p>
+	 * Read by the "monitoring stopped" hint (#302) so it never repeats advice the user has already followed: with the exemption in place the kill came from
+	 * somewhere the standard settings screen cannot reach — an OEM's own protected-app list, most often — and pointing at that screen would only mislead.
+	 * Needs no permission (unlike asking for the exemption directly). A missing PowerManager reads as "not exempt", so the hint still shows rather than being
+	 * silently dropped.
+	 *
+	 * @param context The application context
+	 *
+	 * @return true when the app is on the system's battery-optimization exemption list
+	 */
+	public static boolean isIgnoringBatteryOptimizations(Context context) {
+		final PowerManager powerManager = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+		return nonNull(powerManager) && powerManager.isIgnoringBatteryOptimizations(context.getPackageName());
+	}
+
+	/**
 	 * Vibrate the phone with a predefined pattern
 	 *
 	 * @param context The application context

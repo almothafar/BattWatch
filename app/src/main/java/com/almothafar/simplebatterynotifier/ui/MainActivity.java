@@ -205,6 +205,10 @@ public class MainActivity extends BaseActivity {
 		// Start the power connection service as a foreground service so monitoring
 		// survives the app being closed (required on Android 8+).
 		ContextCompat.startForegroundService(this, new Intent(this, PowerConnectionService.class));
+
+		// Monitoring may have been down since the system last killed the process: the service has no UI to say so, and this is the first screen there is to
+		// explain it on (#302).
+		showMonitoringStoppedHintIfNeeded();
 	}
 
 	/**
@@ -458,6 +462,49 @@ public class MainActivity extends BaseActivity {
 		intent.putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName());
 
 		startActivity(intent);
+	}
+
+	/**
+	 * Explain a background-monitoring interruption, once, at the first launch after it happened (#302).
+	 * <p>
+	 * {@code PowerConnectionService} stops itself when Android refuses the foreground promotion after a {@code START_STICKY} restart (#295), which leaves
+	 * monitoring off with nothing on screen to say so — the service has no UI, and a notification about a missing notification helps nobody. The flag is
+	 * cleared whichever way this goes, so the interruption is reported once instead of at every launch until the user acts on it.
+	 * <p>
+	 * Nothing is shown when the app is already exempt from battery optimization: the advice has been followed, and the kill then came from somewhere the
+	 * settings screen cannot reach — an OEM's own protected-app list, most often — so the hint would only mislead.
+	 */
+	private void showMonitoringStoppedHintIfNeeded() {
+		if (!AppPrefs.monitoringStopped(this)) {
+			return;
+		}
+		AppPrefs.setMonitoringStopped(this, false);
+
+		if (SystemService.isIgnoringBatteryOptimizations(this)) {
+			Log.d(TAG, "Monitoring was interrupted while the app is already exempt from battery optimization; no hint to give");
+			return;
+		}
+
+		Snackbar.make(
+				findViewById(R.id.containerLayout),
+				R.string.monitoring_stopped_rationale,
+				Snackbar.LENGTH_LONG
+		).setAction(R.string.open_settings, v -> openBatteryOptimizationSettings()).show();
+	}
+
+	/**
+	 * Open the system's battery-optimization list, where the app can be exempted.
+	 * <p>
+	 * {@code ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS} rather than the one-tap {@code ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS} prompt: the prompt needs
+	 * the {@code REQUEST_IGNORE_BATTERY_OPTIMIZATIONS} permission, which Play grants only to apps whose core function genuinely requires it. The list needs no
+	 * permission and costs the user one extra tap.
+	 */
+	private void openBatteryOptimizationSettings() {
+		try {
+			startActivity(new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS));
+		} catch (ActivityNotFoundException e) {
+			Toast.makeText(this, R.string.no_battery_settings, Toast.LENGTH_SHORT).show();
+		}
 	}
 
 	/**
