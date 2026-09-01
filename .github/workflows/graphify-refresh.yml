@@ -41,11 +41,13 @@ jobs:
         with:
           # graphifyy declares requires-python >=3.10; this is just a current, cached runner version.
           python-version: "3.13"
-
       # Pinned, and pinned to the version that wrote the tracked graph: graphify owns graph.json's format, so an unannounced upgrade would rewrite the whole
+      # file inside a routine refresh. Bumping this is a deliberate change. Move the locally installed copy with it — not because a mismatch could corrupt the
+      # committed graph any more (the pre-commit hook and Graphify Guard stop a local rebuild reaching the repo at all), but so that a local `graphify query`
+      # reads a graph written by a version it understands. Note the local copy is a `uv tool install`, which `pip install -U` does not touch.
       # file inside a routine refresh. Bumping this is a deliberate change, and it should move together with the version developers run locally.
       - name: Install graphify
-        run: pip install graphifyy==0.9.48
+        run: pip install graphifyy==0.9.53
 
       # AST-only — no API key, no cost. `graphify label` is the LLM half and deliberately stays out of a scheduled job, because renaming communities spends
       # money on every run; its cadence is tracked separately. No --force either: if the rebuild finds fewer nodes than the tracked graph, graphify refuses to
