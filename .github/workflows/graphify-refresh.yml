@@ -1,0 +1,77 @@
+name: Graphify Refresh
+
+# graphify-out/ holds a generated knowledge graph, tracked since #291 ("track the graphify knowledge graph and wire up its agent instructions") so a fresh
+# clone does not have to pay the LLM cost of rebuilding its community labels. Regenerating it inside a feature branch buried the real change: #314 ("tell the
+# user when the system stopped background monitoring") opened at +6,105/-5,432 when the code in it was +167/-11. `linguist-generated=true` in .gitattributes
+# collapses those files in the diff view, but GitHub always counts them in a pull request's +/- header, so the only thing that works is keeping the graph out
+# of feature branches. It is refreshed here instead.
+#
+# Weekly, not on every push to master. The "Main branch" ruleset requires a pull request plus the `Build & Test` and `Conventional Commit title` checks for any
+# change to master, and its bypass list is empty — a bot commit is not exempt. Per-merge would therefore mean a pull request and a full Android build after
+# every merge, to revalidate a JSON file nothing compiles against. Weekly costs one pull request; the graph then trails master by at most a week, and because
+# `graphify update` is AST-only a stale graph is incomplete rather than wrong — an agent falls back to grep for the symbols it does not know about yet. To
+# switch to per-merge, add `push:` with `branches: [master]` and `paths-ignore: graphify-out/**` to the triggers below; nothing else has to change.
+#
+# The pull request is opened with GITHUB_TOKEN, so its checks arrive held for approval — the same behaviour pr-title-lint.yml documents for release-please's
+# pull request. Click "Approve workflows to run" once and it merges normally. Handing the action a personal access token would remove that click, at the cost
+# of storing a secret; not worth it for a weekly job.
+
+on:
+  schedule:
+    # Mondays 03:00 UTC. Dependabot owns Saturday, so the two never open pull requests on the same day.
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+# One refresh at a time — two runs would race to push the same chore/graphify-refresh branch.
+concurrency:
+  group: graphify-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    name: Refresh the knowledge graph
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          # graphifyy declares requires-python >=3.10; this is just a current, cached runner version.
+          python-version: "3.13"
+
+      # Pinned, not latest: graphify owns graph.json's format, so an unannounced upgrade would rewrite the
+      # whole file inside a routine refresh. Bumping this is a deliberate, reviewable change.
+      - name: Install graphify
+        run: pip install graphifyy==0.9.48
+
+      # AST-only — no API key, no cost. `graphify label` is the LLM half and deliberately stays out of a
+      # scheduled job, because renaming communities spends money on every run.
+      #
+      # No --force: if the rebuild finds fewer nodes than the tracked graph, graphify refuses to overwrite
+      # it. That is the safe outcome — the tree stays clean and the step below opens no pull request.
+      - name: Refresh the graph
+        run: graphify update .
+
+      # .gitignore already excludes the untracked members of graphify-out/ (graph.html, cache/, the dated
+      # snapshots), so add-paths picks up only the tracked artifacts.
+      - name: Open a pull request
+        uses: peter-evans/create-pull-request@v8
+        with:
+          add-paths: graphify-out
+          branch: chore/graphify-refresh
+          delete-branch: true
+          title: "chore: refresh the knowledge graph"
+          commit-message: "chore: refresh the knowledge graph"
+          body: |
+            Scheduled refresh of the generated graph in `graphify-out/`, so that feature branches do not have to carry it.
+
+            AST-only (`graphify update .`): this moves structure, not community names. Renaming communities is `graphify label`, a separate LLM-backed step that this workflow does not run.
+
+            Nothing compiles against these files. The diff is expected to be large and does not need reading.
