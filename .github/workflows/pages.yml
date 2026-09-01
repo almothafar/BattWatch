@@ -56,12 +56,17 @@ jobs:
           mkdir -p _site
           cp graphify-out/graph.html _site/index.html
 
-      # enablement: true creates the Pages site on the first run, so this needs no manual Settings step. If the
-      # token is ever refused, the fallback is Settings -> Pages -> Source: GitHub Actions.
+      # Prerequisite, not something this workflow does: Pages has to already exist with its source set to GitHub Actions — Settings -> Pages -> Build and
+      # deployment -> Source: GitHub Actions, or `gh api repos/<owner>/<repo>/pages -X PUT -f build_type=workflow`. This step only reads that configuration.
+      #
+      # `enablement: true` was tried here and removed. Creating a Pages site is admin-level and GITHUB_TOKEN cannot do it whatever `permissions:` declares:
+      # `pages: write` covers deploying to a site that exists, not bringing one into being. It failed with "Create Pages site failed. Error: Resource not
+      # accessible by integration", which is what that message means if Pages is ever turned off again.
+      #
+      # Watch the source specifically. Enabling Pages from the Settings UI defaults to "Deploy from a branch" (`build_type: legacy`), which this workflow
+      # cannot deploy to at all — and which quietly tries to build the repository root as a Jekyll site instead.
       - name: Configure Pages
         uses: actions/configure-pages@v6
-        with:
-          enablement: true
 
       - name: Upload the site
         uses: actions/upload-pages-artifact@v5
