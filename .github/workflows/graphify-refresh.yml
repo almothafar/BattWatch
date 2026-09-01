@@ -41,11 +41,12 @@ jobs:
         with:
           # graphifyy declares requires-python >=3.10; this is just a current, cached runner version.
           python-version: "3.13"
+
       # Pinned, and pinned to the version that wrote the tracked graph: graphify owns graph.json's format, so an unannounced upgrade would rewrite the whole
-      # file inside a routine refresh. Bumping this is a deliberate change. Move the locally installed copy with it — not because a mismatch could corrupt the
-      # committed graph any more (the pre-commit hook and Graphify Guard stop a local rebuild reaching the repo at all), but so that a local `graphify query`
-      # reads a graph written by a version it understands. Note the local copy is a `uv tool install`, which `pip install -U` does not touch.
-      # file inside a routine refresh. Bumping this is a deliberate change, and it should move together with the version developers run locally.
+      # file inside a routine refresh. Bumping this is a deliberate change, and pages.yml pins the same version — move the two together, or the published
+      # viewer and the committed graph end up built by different tools. Move the locally installed copy with them too: not because a mismatch could corrupt
+      # the committed graph any more (the pre-commit hook and Graphify Guard stop a local rebuild reaching the repo at all), but so that a local
+      # `graphify query` reads a graph written by a version it understands. Note the local copy is a `uv tool install`, which `pip install -U` does not touch.
       - name: Install graphify
         run: pip install graphifyy==0.9.53
 
