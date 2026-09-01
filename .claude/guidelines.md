@@ -119,6 +119,11 @@ This file carries the rules that apply to any edit. The rest live alongside it a
 - Because the branch is short-lived and its name never reaches `master`, the name is a convenience rather than a contract: `feature/<feature-name>`, `fix/<bug-description>`, or the `claude/<topic>` branch an agent session is assigned.
 - Never bump a version by editing a file — release-please owns the number. See [`../CLAUDE.md`](../CLAUDE.md).
 
+### Generated Files
+- **Never commit `graphify-out/` in a feature branch.** The `Graphify Refresh` workflow regenerates it weekly — and on demand, via *Run workflow* — and opens its own `chore:` pull request, so no feature branch has to carry it. One that does buries the change it is meant to show: #314 ("tell the user when the system stopped background monitoring") opened at +6,105/-5,432 for +167/-11 of real code, because a 91,455-line `graph.json` was rewritten beside it. `linguist-generated=true` in `.gitattributes` collapses those files in the diff view but never in the pull request's `+/-` header, so leaving them out of the branch is the only thing that actually helps.
+- Running `graphify update .` locally stays fine and useful — just leave the result out of the commit. This overrides the "After modifying code, run `graphify update .`" line in the graphify sections of [`../CLAUDE.md`](../CLAUDE.md) and [`../AGENTS.md`](../AGENTS.md): those blocks are written by graphify's own installer and are rewritten whenever it reinstalls, so the rule lives here, where an edit survives.
+- Two mechanisms enforce this, so it does not rest on anyone having read the paragraph above. Server-side, the `Graphify Guard` workflow fails any pull request that touches `graphify-out/` from a branch other than `chore/graphify-refresh`. Locally, [`.githooks/pre-commit`](../.githooks/pre-commit) unstages those files for you — it leaves the refreshed graph in the working tree, so `graphify query` is unaffected — and it needs activating once per clone with `git config core.hooksPath .githooks`. The hook is the convenience; the workflow is the guarantee, because `git commit --no-verify` and `git commit -- <paths>` both slip past a hook and a fresh clone has no hooks configured at all.
+
 ## Questions or Clarifications?
 
 When in doubt:

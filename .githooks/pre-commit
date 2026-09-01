@@ -1,0 +1,32 @@
+#!/bin/sh
+#
+# Keep the generated knowledge graph out of feature-branch commits.
+#
+# graphify-out/ is refreshed on master by the Graphify Refresh workflow, never in a feature branch — see the "Generated Files" section of
+# .claude/guidelines.md. Running `graphify update .` locally is still worth doing, because it keeps `graphify query` accurate between the weekly
+# refreshes; the result just does not belong in a commit.
+#
+# This UNSTAGES rather than discards, so the fresh graph stays in the working tree and stays queryable.
+#
+# Activate once per clone:  git config core.hooksPath .githooks
+#
+# Two gaps it cannot cover, which is why the Graphify Guard workflow checks the same thing server-side:
+#   - `git commit --no-verify` skips every hook
+#   - `git commit -- <paths>` builds a temporary index that this reset does not reach
+
+branch=$(git rev-parse --abbrev-ref HEAD)
+if [ "$branch" = "chore/graphify-refresh" ]; then
+	exit 0
+fi
+
+if [ -z "$(git diff --cached --name-only -- graphify-out/)" ]; then
+	exit 0
+fi
+
+if ! git reset -q HEAD -- graphify-out/; then
+	echo "pre-commit: could not unstage graphify-out/ — unstage it yourself before committing." >&2
+	exit 1
+fi
+
+echo "pre-commit: unstaged graphify-out/. It is refreshed on master, not in a feature branch."
+echo "pre-commit: the working copy keeps the fresh graph, so graphify query is unaffected."
