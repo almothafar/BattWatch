@@ -1,3 +1,9 @@
+# BattWatch — agent guide
+
+The full rulebook for this repo is [`.claude/guidelines.md`](.claude/guidelines.md) (coding standards, git workflow, the Arabic-translation and Western-digits rules) and [`CLAUDE.md`](CLAUDE.md) (commit/PR title convention and versioning). Read those first; despite the filename, nothing in `.claude/` is Claude-specific.
+
+One rule from there overrides the generated section below: **never commit `graphify-out/` in a feature branch.** A scheduled `Graphify Refresh` workflow regenerates it on master and opens its own `chore:` pull request. Running `graphify update .` locally is still fine and still useful — the result just does not belong in your commit. See the "Generated Files" section of the guidelines for why.
+
 ## graphify
 
 This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
