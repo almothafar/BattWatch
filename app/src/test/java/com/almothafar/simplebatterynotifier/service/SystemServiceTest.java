@@ -3,6 +3,7 @@ package com.almothafar.simplebatterynotifier.service;
 import android.content.Context;
 import android.content.Intent;
 import android.os.BatteryManager;
+import android.os.PowerManager;
 
 import androidx.test.core.app.ApplicationProvider;
 
@@ -15,16 +16,20 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
+import org.robolectric.shadows.ShadowPowerManager;
 
 import java.util.Arrays;
 import java.util.Collection;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.robolectric.Shadows.shadowOf;
 
 /**
- * Unit tests for the pure capacity-estimation helpers in {@link SystemService}, and the snapshot's
- * cycle-count extraction (#161).
+ * Unit tests for the pure capacity-estimation helpers in {@link SystemService}, the snapshot's cycle-count extraction (#161), and the battery-optimization
+ * exemption the "monitoring stopped" hint reads (#302).
  */
 @RunWith(Enclosed.class)
 public class SystemServiceTest {
@@ -194,6 +199,26 @@ public class SystemServiceTest {
 			assertNull(SystemService.formatSocLegacy("unknown"));
 			assertNull(SystemService.formatSocLegacy(""));
 			assertNull(SystemService.formatSocLegacy(null));
+		}
+	}
+
+	/**
+	 * The battery-optimization exemption read, which decides whether the "monitoring stopped" hint has anything worth suggesting (#302).
+	 */
+	@RunWith(RobolectricTestRunner.class)
+	@Config(sdk = 34)
+	public static class BatteryOptimizationExemption {
+
+		@Test
+		public void reportsWhatTheSystemHolds() {
+			final Context context = ApplicationProvider.getApplicationContext();
+			final ShadowPowerManager powerManager = shadowOf((PowerManager) context.getSystemService(Context.POWER_SERVICE));
+
+			assertFalse("an app is optimized until the user says otherwise", SystemService.isIgnoringBatteryOptimizations(context));
+
+			powerManager.setIgnoringBatteryOptimizations(context.getPackageName(), true);
+
+			assertTrue("the exemption the user granted has to be visible here", SystemService.isIgnoringBatteryOptimizations(context));
 		}
 	}
 }

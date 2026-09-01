@@ -363,6 +363,10 @@
     <string name="notifications_permission_rationale">Notifications are important for this app to work properly</string>
     <string name="open_settings">Open Settings</string>
 
+    <!-- #302: shown once, at the first launch after the system stopped background monitoring -->
+    <string name="monitoring_stopped_rationale">Background monitoring was stopped by the system. Turning off battery optimization for BattWatch makes that less likely.</string>
+    <string name="no_battery_settings">Battery optimization settings are not available on this device</string>
+
     <!-- Feedback / report an issue -->
     <string name="action_send_feedback">Send feedback</string>
     <string name="feedback_dialog_title">Send feedback</string>
@@ -453,6 +457,8 @@
     <!-- #123: slow-charge warning enable -->
     <string name="_pref_key_notify_slow_charge" translatable="false">key_notify_slow_charge</string>
     <string name="_pref_key_language" translatable="false">key_language</string>
+    <!-- #302: set when Android refused the foreground promotion; cleared once the hint has been shown -->
+    <string name="_pref_key_monitoring_stopped" translatable="false">key_monitoring_stopped</string>
 
     <string name="_pref_value_temperatures_unit_c" translatable="false">celsius</string>
     <string name="_pref_value_temperatures_unit_f" translatable="false">fahrenheit</string>

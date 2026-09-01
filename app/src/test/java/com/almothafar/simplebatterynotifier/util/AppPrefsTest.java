@@ -192,6 +192,21 @@ public class AppPrefsTest {
 		}
 
 		/**
+		 * The one value here that is no setting: the flag {@code PowerConnectionService} leaves when Android refuses the foreground promotion, and
+		 * {@code MainActivity} clears once it has explained the interruption (#302).
+		 */
+		@Test
+		public void monitoringStopped_defaultsToNothingToReportAndRoundTrips() {
+			assertFalse("nothing to report until an interruption actually happens", AppPrefs.monitoringStopped(context));
+
+			AppPrefs.setMonitoringStopped(context, true);
+			assertTrue("the interruption has to outlive the process that recorded it", AppPrefs.monitoringStopped(context));
+
+			AppPrefs.setMonitoringStopped(context, false);
+			assertFalse("reporting it clears it, so the hint shows once", AppPrefs.monitoringStopped(context));
+		}
+
+		/**
 		 * The drift guard for the one restatement the facade can't own: the range slider's XML-declared
 		 * defaults in {@code pref_alerts.xml} must equal the {@link AppPrefs} constants, since the
 		 * framework instantiates the slider from XML and its attr wins as that control's default.

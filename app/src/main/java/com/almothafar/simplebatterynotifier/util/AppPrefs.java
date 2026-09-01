@@ -32,7 +32,8 @@ import com.almothafar.simplebatterynotifier.model.LevelThresholds;
  * </ul>
  * The one restatement that remains is each slider's XML-declared default in {@code pref_alerts.xml}, which the framework instantiates from XML and so cannot
  * share a constant with — a comment ties each pair, and {@code AppPrefsTest} asserts they stay equal. Remaining settings migrate incrementally; new ones (the
- * charge target #263, the unplug reminder #264) are born here.
+ * charge target #263, the unplug reminder #264) are born here, along with the one value here that is no setting at all: the pending "monitoring stopped"
+ * report (#302).
  */
 public final class AppPrefs {
 
@@ -326,6 +327,34 @@ public final class AppPrefs {
 	 */
 	public static boolean vibrateEnabled(Context context) {
 		return prefs(context).getBoolean(context.getString(R.string._pref_key_notifications_vibrate), DEFAULT_VIBRATE);
+	}
+
+	/**
+	 * Whether Android refused to promote {@code PowerConnectionService} to the foreground and the user has not been told about it yet (#302).
+	 * <p>
+	 * Set by the service when the promotion is refused — monitoring is down from that moment — and cleared by {@code MainActivity} at the next launch, once
+	 * there is a screen to explain it on. A flag rather than a count: a device whose process is killed several times a day still explains itself once, at the
+	 * launch after the first kill, instead of once per kill.
+	 *
+	 * @param context Application context
+	 *
+	 * @return true when an interruption is still waiting to be reported
+	 */
+	public static boolean monitoringStopped(Context context) {
+		return prefs(context).getBoolean(context.getString(R.string._pref_key_monitoring_stopped), false);
+	}
+
+	/**
+	 * Record — or clear — the pending "the system stopped background monitoring" report (#302).
+	 * <p>
+	 * Written with {@code apply()} like every other write here, even though the service that sets it calls {@code stopSelf()} on the next line: the framework
+	 * flushes pending {@code apply()} work before it hands a service its stop, so the flag still reaches disk if the process then goes away.
+	 *
+	 * @param context Application context
+	 * @param stopped true to record an interruption, false once it has been reported
+	 */
+	public static void setMonitoringStopped(Context context, boolean stopped) {
+		prefs(context).edit().putBoolean(context.getString(R.string._pref_key_monitoring_stopped), stopped).apply();
 	}
 
 	private static SharedPreferences prefs(Context context) {
