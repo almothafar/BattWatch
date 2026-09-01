@@ -10,9 +10,9 @@
 #
 # Activate once per clone:  git config core.hooksPath .githooks
 #
-# Two gaps it cannot cover, which is why the Graphify Guard workflow checks the same thing server-side:
-#   - `git commit --no-verify` skips every hook
-#   - `git commit -- <paths>` builds a temporary index that this reset does not reach
+# `git commit --no-verify` skips every hook, so this is the convenience and the Graphify Guard workflow is the guarantee. A path-limited
+# `git commit -- <paths>` was expected to slip past as well, on the theory that it builds its own temporary index — measured on git
+# 2.55.0.windows.3 it does not, and the reset reaches that commit too. Treat that one as version-dependent rather than relied upon.
 
 branch=$(git rev-parse --abbrev-ref HEAD)
 if [ "$branch" = "chore/graphify-refresh" ]; then
@@ -25,6 +25,15 @@ fi
 
 if ! git reset -q HEAD -- graphify-out/; then
 	echo "pre-commit: could not unstage graphify-out/ — unstage it yourself before committing." >&2
+	exit 1
+fi
+
+# Git decides whether a commit would be empty BEFORE any hook runs. Without this check it sees a non-empty
+# index, runs this hook, and then records the emptied tree anyway — a commit whose message describes work it
+# does not contain (#319).
+if git diff --cached --quiet; then
+	echo "pre-commit: graphify-out/ was the only thing staged, so there is nothing left to commit." >&2
+	echo "pre-commit: the graph is refreshed on master by the Graphify Refresh workflow." >&2
 	exit 1
 fi
 
