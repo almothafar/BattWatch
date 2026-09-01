@@ -1,0 +1,73 @@
+name: Graph Viewer
+
+# Publishes graphify's interactive graph.html to GitHub Pages, so the visual view of this codebase has a URL instead of existing only on whichever machine
+# last ran graphify (#312).
+#
+# The HTML is deliberately not in the repo: .gitignore excludes it, because a regenerated 3 MB blob on every update is what made GitHub read this as an HTML
+# project in the first place (#311/#313). It is rebuilt here and thrown away — this workflow commits nothing.
+#
+# Rebuilt with `graphify update .` rather than the cheaper `cluster-only`, so the page reflects the code on master right now instead of the committed
+# graph.json, which only refreshes weekly. #312 asked whether a page that silently lags master would mislead more than no page at all; rebuilding from source
+# on every push is the answer to that question.
+
+on:
+  push:
+    branches: [ master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time, and never cancel one in flight: a half-replaced Pages site is worse than a late one.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish the graph viewer
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+
+      # The same pin as graphify-refresh.yml, and it has to stay the same: otherwise the published viewer and
+      # the committed graph are built by different versions of the tool. Bump the two together.
+      - name: Install graphify
+        run: pip install graphifyy==0.9.53
+
+      - name: Rebuild the graph and its viewer
+        run: graphify update .
+
+      - name: Assemble the site
+        run: |
+          mkdir -p _site
+          cp graphify-out/graph.html _site/index.html
+
+      # enablement: true creates the Pages site on the first run, so this needs no manual Settings step. If the
+      # token is ever refused, the fallback is Settings -> Pages -> Source: GitHub Actions.
+      - name: Configure Pages
+        uses: actions/configure-pages@v6
+        with:
+          enablement: true
+
+      - name: Upload the site
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+
+      - name: Deploy to Pages
+        id: deploy
+        uses: actions/deploy-pages@v5

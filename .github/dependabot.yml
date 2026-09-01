@@ -61,8 +61,8 @@ updates:
         versions:
           - ">= 9.6.0"
 
-  # The actions used by android-ci.yml, pr-title-lint.yml, release-please.yml and graphify-refresh.yml. All are pinned to a
-  # major tag, so this only fires on a new major.
+  # The actions used by android-ci.yml, pr-title-lint.yml, release-please.yml, graphify-refresh.yml and pages.yml. (graphify-guard.yml
+  # uses none — it is a single run step.) All are pinned to a major tag, so this only fires on a new major.
   - package-ecosystem: github-actions
     directory: /
     schedule:
