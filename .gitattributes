@@ -19,3 +19,6 @@
 # graphify writes graphify-out/ - a generated knowledge graph, not hand-written source. Marking it generated keeps a 3 MB graph.html from making GitHub
 # call this an HTML project, and collapses the directory in pull-request diffs so a 4 MB graph.json rewrite stops burying the real change beside it.
 graphify-out/** linguist-generated=true
+
+# Hook scripts must stay LF: `* text=auto` above would hand them CRLF on a Windows checkout, and /bin/sh fails on a CRLF shebang.
+.githooks/** text eol=lf

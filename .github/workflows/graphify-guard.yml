@@ -1,0 +1,55 @@
+name: Graphify Guard
+
+# graphify-out/ is generated, and it is refreshed on master by graphify-refresh.yml — never in a feature branch. The reasoning is in the "Generated Files"
+# section of .claude/guidelines.md; this workflow is the part that does not rely on anyone having read it.
+#
+# Deliberately no `paths:` filter. A workflow that only runs when graphify-out/ changes can never be a required check, because a required check that does not
+# report blocks the pull request forever — the same trap that makes a bot-opened pull request sit at `action_required`. Running always, and passing cheaply,
+# is what lets `Graphify Guard` be added to the "Main branch" ruleset's required checks and become a real block rather than a red X people can merge past.
+#
+# It costs one API call and no checkout, so it is a few seconds per pull request.
+
+on:
+  pull_request:
+    branches: [ master ]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: graphify-guard-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  guard:
+    name: No generated graph in feature branches
+    runs-on: ubuntu-latest
+
+    steps:
+      # github.head_ref is attacker-controllable on a fork, so it travels via env rather than being
+      # interpolated into the shell.
+      - name: Check the pull request for generated files
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_REF: ${{ github.head_ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+          REFRESH_BRANCH: chore/graphify-refresh
+        run: |
+          if [ "$HEAD_REF" = "$REFRESH_BRANCH" ]; then
+            echo "This is the refresh branch — the regenerated graph belongs here."
+            exit 0
+          fi
+
+          changed=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json files --jq '.files[].path' | grep '^graphify-out/' || true)
+
+          if [ -n "$changed" ]; then
+            # A ::error:: annotation has to be one line — the workflow-command protocol has no continuation.
+            echo "::error::graphify-out/ is generated and must not be in a feature branch. Restore it with git checkout, then push; see .claude/guidelines.md."
+            echo "Files that must not be here:"
+            echo "$changed"
+            exit 1
+          fi
+
+          echo "No generated graph files in this pull request."
