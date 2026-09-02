@@ -15,7 +15,10 @@
         <item name="colorError">@color/md_theme_error</item>
         <item name="colorOnError">@color/md_theme_onError</item>
         <!-- Pin the status bar to the toolbar it sits above. Left to the platform it resolves to colorPrimary, which
-             matched the toolbar in light only by coincidence and broke the moment primary lightened for dark. -->
+             matched the toolbar in light only by coincidence and broke the moment primary lightened for dark.
+             Deprecated in API 35 and ignored at targetSdk 35+, so this covers API 26-34 only; from 35 the enforced
+             edge-to-edge Toolbar paints that strip itself, out of the same colour and its toolbar_status_bar_padding.
+             There is no non-deprecated replacement for the older range, which is why the attribute stays. -->
         <item name="android:statusBarColor">@color/title_bar_background_color</item>
     </style>
 
@@ -33,6 +36,15 @@
         <item name="gaugeStatusColor">@color/circular_progress_default_subtitle</item>
         <item name="gaugeStatusTextSize">20dp</item>
         <item name="gaugeLevelDescription">@string/battery_progress_description</item>
+    </style>
+
+    <!-- Shared look for the eight Battery Insights cards, so a surface or elevation tweak lands in one place.
+         The background has to be stated: androidx.cardview otherwise picks its own #424242 on a dark theme,
+         lighter than every other surface in the app. contentPadding and layout params stay per-card. -->
+    <style name="Widget.App.InsightCard" parent="Widget">
+        <item name="cardBackgroundColor">?attr/colorSurface</item>
+        <item name="cardCornerRadius">8dp</item>
+        <item name="cardElevation">4dp</item>
     </style>
 
     <!-- Toolbar style for Material3 -->

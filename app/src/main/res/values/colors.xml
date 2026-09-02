@@ -30,6 +30,11 @@
     <color name="accent_teal">#32BEA6</color>
     <color name="accent_blue">#059bbf</color>
 
+    <!-- Label drawn on top of the teal fill (the Battery Insights button). White survives the deepened night
+         teal at 6.3:1, but reaches only 2.3:1 on the light mint, under the 4.5:1 a button label needs; light
+         takes a deep teal ink instead, at 5.9:1. -->
+    <color name="on_brand_fill">#00352C</color>
+
     <!-- Details-table and insight-card text. Sits on the page, not the header, so it inverts for dark. -->
     <color name="battery_details_label_color">#004A5B</color>
     <color name="battery_details_value_color">#01708A</color>
@@ -37,8 +42,9 @@
 
     <!-- The on-surface twins of the gauge's warning/alert hues: the same signal drawn as text on a page
          background rather than as an arc on the coloured header — drain rate in the details table (#108)
-         and the critical/warning threshold captions. Same values as the gauge in light, but these lighten
-         for dark (#225) where the gauge deliberately does not. -->
+         and the critical/warning threshold captions. Both pairs happen to hold the same values today, in both
+         modes, but they answer to different backdrops: separating them lets a page-contrast fix move on its own
+         (#225 lifted the red to a coral for 4.5:1 on a dark surface) without dragging the arc with it. -->
     <color name="battery_rate_warn">#FFB100</color>
     <color name="battery_rate_high">#E01A00</color>
 

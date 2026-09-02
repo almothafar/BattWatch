@@ -47,9 +47,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
-                    app:cardBackgroundColor="?attr/colorSurface"
-                    app:cardCornerRadius="8dp"
-                    app:cardElevation="4dp"
+                    style="@style/Widget.App.InsightCard"
                     app:contentPadding="20dp">
 
                 <LinearLayout
@@ -155,9 +153,7 @@
                         android:layout_height="match_parent"
                         android:layout_weight="1"
                         android:layout_marginEnd="4dp"
-                        app:cardBackgroundColor="?attr/colorSurface"
-                        app:cardCornerRadius="8dp"
-                        app:cardElevation="4dp"
+                        style="@style/Widget.App.InsightCard"
                         app:contentPadding="16dp">
 
                     <LinearLayout
@@ -204,9 +200,7 @@
                         android:clickable="true"
                         android:focusable="true"
                         android:foreground="?attr/selectableItemBackground"
-                        app:cardBackgroundColor="?attr/colorSurface"
-                        app:cardCornerRadius="8dp"
-                        app:cardElevation="4dp"
+                        style="@style/Widget.App.InsightCard"
                         app:contentPadding="16dp">
 
                     <LinearLayout
@@ -251,9 +245,7 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:layout_marginEnd="4dp"
-                        app:cardBackgroundColor="?attr/colorSurface"
-                        app:cardCornerRadius="8dp"
-                        app:cardElevation="4dp"
+                        style="@style/Widget.App.InsightCard"
                         app:contentPadding="16dp">
 
                     <LinearLayout
@@ -288,9 +280,7 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:layout_marginStart="4dp"
-                        app:cardBackgroundColor="?attr/colorSurface"
-                        app:cardCornerRadius="8dp"
-                        app:cardElevation="4dp"
+                        style="@style/Widget.App.InsightCard"
                         app:contentPadding="16dp">
 
                     <LinearLayout
@@ -326,9 +316,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
-                    app:cardBackgroundColor="?attr/colorSurface"
-                    app:cardCornerRadius="8dp"
-                    app:cardElevation="4dp"
+                    style="@style/Widget.App.InsightCard"
                     app:contentPadding="16dp">
 
                 <LinearLayout
@@ -369,9 +357,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
-                    app:cardBackgroundColor="?attr/colorSurface"
-                    app:cardCornerRadius="8dp"
-                    app:cardElevation="4dp"
+                    style="@style/Widget.App.InsightCard"
                     app:contentPadding="16dp">
 
                 <LinearLayout
@@ -405,9 +391,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
-                    app:cardBackgroundColor="?attr/colorSurface"
-                    app:cardCornerRadius="8dp"
-                    app:cardElevation="4dp"
+                    style="@style/Widget.App.InsightCard"
                     app:contentPadding="16dp">
 
                 <LinearLayout
