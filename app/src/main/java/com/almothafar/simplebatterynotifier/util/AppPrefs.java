@@ -32,9 +32,13 @@ import static java.util.Objects.isNull;
  *   <li>the fast-drain timing pair (#109) — the sustained window and the reminder gap ({@link #fastDrainSustainedMs} + {@link #fastDrainReminderGapMs}), whose
  *       six bounds moved here from {@code FastDrainDetector} so they sit beside the {@link #clampMinutesToMs} that enforces them, like every other timing
  *       preference.</li>
+ *   <li>the theme choice (#332) — its stored values ({@link #THEME_SYSTEM} / {@link #THEME_LIGHT} / {@link #THEME_DARK}) and the mapping to the
+ *       {@code AppCompatDelegate} night modes ({@link #themeMode} + {@link #themeModeOf}), so the picker, {@code BattWatchApplication} and the fallback for a
+ *       corrupt value all read the same table.</li>
  * </ul>
- * The one restatement that remains is each slider's XML-declared default in {@code pref_alerts.xml}, which the framework instantiates from XML and so cannot
- * share a constant with — a comment ties each pair, and {@code AppPrefsTest} asserts they stay equal. Remaining settings migrate incrementally; new ones (the
+ * The restatements that remain are the defaults the framework instantiates straight from XML and so cannot share a constant with: each slider's in
+ * {@code pref_alerts.xml} and the theme picker's in {@code pref_general.xml}. A comment ties each pair, and {@code AppPrefsTest} asserts they stay equal.
+ * Remaining settings migrate incrementally; new ones (the
  * charge target #263, the unplug reminder #264) are born here, along with the one value here that is no setting at all: the pending "monitoring stopped"
  * report (#302).
  */
@@ -382,8 +386,8 @@ public final class AppPrefs {
 	}
 
 	/**
-	 * Map a stored theme value to its night mode. Anything unrecognised — an older build's value, or a corrupt one —
-	 * follows the system rather than forcing a theme the user never picked.
+	 * Map a stored theme value to its night mode. Anything unrecognised — an older build's value, or a corrupt one — follows the system rather than forcing
+	 * a theme the user never picked.
 	 *
 	 * @param stored the persisted value, or null when unset
 	 *

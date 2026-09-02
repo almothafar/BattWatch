@@ -19,8 +19,8 @@
          and minSdk is 26, which is exactly the intent (#48). Older devices ignore it and fall back to
          the in-app language choice AppCompatDelegate stores. -->
     <application
-            android:allowBackup="true"
             android:name=".BattWatchApplication"
+            android:allowBackup="true"
             android:dataExtractionRules="@xml/data_extraction_rules"
             android:fullBackupContent="@xml/backup_rules"
             android:icon="@mipmap/ic_launcher"

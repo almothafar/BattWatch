@@ -391,21 +391,21 @@
     <string name="about_footer_hint">Tap for more about this app</string>
 
     <!-- App language picker -->
-    <string name="pref_language_category">Language</string>
     <string name="pref_title_language">App language</string>
-    <string name="language_system_default">System default</string>
+    <!-- "Follow the phone" entry, shared by the language and theme pickers -->
+    <string name="system_default">System default</string>
     <!-- Language autonyms: shown in the language's own script regardless of UI locale -->
     <string name="language_arabic" translatable="false">العربية</string>
     <string name="language_english" translatable="false">English</string>
 
-    <!-- App theme picker (#332) -->
+    <!-- App theme picker (#332); its "System default" entry is the shared string above -->
     <string name="pref_title_theme">Theme</string>
-    <string name="theme_system_default">System default</string>
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
 
     <!-- Settings category titles -->
-    <string name="pref_cat_title_display">Display</string>
+    <!-- General screen; the Behaviour screen has its own "Appearance" group for how notifications look -->
+    <string name="pref_cat_title_display_language">Display &amp; language</string>
     <string name="pref_cat_title_status_notification">Status Notification</string>
     <string name="pref_cat_title_thresholds">Battery Levels</string>
     <string name="pref_cat_title_full_battery">Full Battery</string>
@@ -464,6 +464,8 @@
     <string name="_pref_key_notify_slow_charge" translatable="false">key_notify_slow_charge</string>
     <string name="_pref_key_language" translatable="false">key_language</string>
     <string name="_pref_key_theme" translatable="false">key_theme</string>
+    <!-- Must equal AppPrefs.THEME_SYSTEM; the picker's XML default is the one value AppPrefs cannot own. AppPrefsTest asserts they stay equal. -->
+    <string name="_pref_value_theme_system" translatable="false">system</string>
     <!-- #302: set when Android refused the foreground promotion; cleared once the hint has been shown -->
     <string name="_pref_key_monitoring_stopped" translatable="false">key_monitoring_stopped</string>
 

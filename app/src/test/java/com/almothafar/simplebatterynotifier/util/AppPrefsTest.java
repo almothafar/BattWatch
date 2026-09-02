@@ -73,6 +73,15 @@ public class AppPrefsTest {
 			                  context.getResources().getStringArray(R.array.theme_values));
 		}
 
+		/**
+		 * The other half of that guard, and the one the array does not cover: {@code PreferenceManager} writes the picker's XML default on first run, so a
+		 * default of {@code "light"} there would open a fresh install in light whatever {@link AppPrefs#themeMode} falls back to.
+		 */
+		@Test
+		public void themeDefaultInXml_stillMatchesTheConstant() throws Exception {
+			assertEquals(AppPrefs.THEME_SYSTEM, xmlStringDefaultOf(R.xml.pref_general, R.string._pref_key_theme));
+		}
+
 		@Test
 		public void levels_fallBackToTheSingleOwnedDefaults() {
 			assertEquals(AppPrefs.DEFAULT_CRITICAL_LEVEL, AppPrefs.criticalLevel(context));
@@ -404,7 +413,23 @@ public class AppPrefsTest {
 		 * @return the declared default, or {@code null} when the slider or its attribute is gone
 		 */
 		private Integer xmlDefaultOf(int keyRes) throws Exception {
-			return attrOf(keyRes, android.R.attr.defaultValue, (parser, i) -> parser.getAttributeIntValue(i, Integer.MIN_VALUE), null);
+			return attrOf(R.xml.pref_alerts, keyRes, android.R.attr.defaultValue, (parser, i) -> parser.getAttributeIntValue(i, Integer.MIN_VALUE), null);
+		}
+
+		/**
+		 * The same, for a preference whose {@code android:defaultValue} is a string. Reads a {@code @string/…} reference through to its text so the guard holds
+		 * whichever form the attribute is written in — the convention is the reference, but a literal would still have to match.
+		 *
+		 * @param screenRes the preference screen declaring it
+		 * @param keyRes    the preference's own key string resource
+		 *
+		 * @return the declared default as text, or {@code null} when the preference or its attribute is gone
+		 */
+		private String xmlStringDefaultOf(int screenRes, int keyRes) throws Exception {
+			return attrOf(screenRes, keyRes, android.R.attr.defaultValue, (parser, i) -> {
+				final int ref = parser.getAttributeResourceValue(i, 0);
+				return ref == 0 ? parser.getAttributeValue(i) : context.getString(ref);
+			}, null);
 		}
 
 		/**
@@ -415,25 +440,26 @@ public class AppPrefsTest {
 		 * @return the dependency's key resource, or {@code 0} when the preference declares none
 		 */
 		private int xmlDependencyOf(int keyRes) throws Exception {
-			return attrOf(keyRes, android.R.attr.dependency, (parser, i) -> parser.getAttributeResourceValue(i, 0), 0);
+			return attrOf(R.xml.pref_alerts, keyRes, android.R.attr.dependency, (parser, i) -> parser.getAttributeResourceValue(i, 0), 0);
 		}
 
 		/**
-		 * One attribute off the preference declared with {@code keyRes}, read straight from {@code pref_alerts.xml}. The typed readers above differ only in
-		 * which attribute they want and how it is decoded, so the walk itself lives here once.
+		 * One attribute off the preference declared with {@code keyRes}, read straight from the given preference screen. The typed readers above differ only in
+		 * which screen and attribute they want and how it is decoded, so the walk itself lives here once.
 		 * <p>
 		 * The first tag carrying the key wins, matching {@link #inflateSlider}: a key declared twice is a bug in the screen, not a value to pick between.
 		 *
-		 * @param keyRes  the preference's own key string resource
-		 * @param attrRes the {@code android.R.attr} constant to look for
-		 * @param reader  decodes the attribute at the given index off the positioned parser
-		 * @param absent  what the preference or the attribute being undeclared reads as
-		 * @param <T>     the decoded attribute type
+		 * @param screenRes the preference screen to walk
+		 * @param keyRes    the preference's own key string resource
+		 * @param attrRes   the {@code android.R.attr} constant to look for
+		 * @param reader    decodes the attribute at the given index off the positioned parser
+		 * @param absent    what the preference or the attribute being undeclared reads as
+		 * @param <T>       the decoded attribute type
 		 *
 		 * @return the decoded attribute, or {@code absent}
 		 */
-		private <T> T attrOf(int keyRes, int attrRes, AttrReader<T> reader, T absent) throws Exception {
-			final XmlResourceParser parser = context.getResources().getXml(R.xml.pref_alerts);
+		private <T> T attrOf(int screenRes, int keyRes, int attrRes, AttrReader<T> reader, T absent) throws Exception {
+			final XmlResourceParser parser = context.getResources().getXml(screenRes);
 			try {
 				for (int event = parser.getEventType(); event != XmlPullParser.END_DOCUMENT; event = parser.next()) {
 					if (event != XmlPullParser.START_TAG || !hasKey(parser, keyRes)) {
