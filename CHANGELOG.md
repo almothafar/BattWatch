@@ -1,5 +1,25 @@
 # Changelog
 
+## [3.3.0](https://github.com/almothafar/BattWatch/compare/v3.2.0...v3.3.0) (2026-09-02)
+
+
+### Features
+
+* add a theme setting (System / Light / Dark) ([#334](https://github.com/almothafar/BattWatch/issues/334)) ([c07e114](https://github.com/almothafar/BattWatch/commit/c07e114d657f9dbc6321843e7b4db71bfa0289a3))
+* add a theme toggle to the gauge corner ([#337](https://github.com/almothafar/BattWatch/issues/337)) ([a1bfca3](https://github.com/almothafar/BattWatch/commit/a1bfca3429a7fc7b45ce10772e8da3b465e653eb))
+* follow the system dark theme ([#331](https://github.com/almothafar/BattWatch/issues/331)) ([9b53a88](https://github.com/almothafar/BattWatch/commit/9b53a8885b33d1c2819038dc5f02758fbd337268))
+* publish the graphify graph viewer to GitHub Pages ([#325](https://github.com/almothafar/BattWatch/issues/325)) ([95bd7d4](https://github.com/almothafar/BattWatch/commit/95bd7d4b74117df743b2bf17a975dcd083a94e71))
+* tell the user when the system stopped background monitoring ([#314](https://github.com/almothafar/BattWatch/issues/314)) ([986625b](https://github.com/almothafar/BattWatch/commit/986625b7402c914da61c59eecc486cb9a2a48201))
+
+
+### Bug Fixes
+
+* give the monitoring-stopped hint time to be read ([#329](https://github.com/almothafar/BattWatch/issues/329)) ([3553029](https://github.com/almothafar/BattWatch/commit/3553029efd1901c73d752b762bfd51069cd037dd))
+* give the preference dialogs the app's own Material 3 panel ([#336](https://github.com/almothafar/BattWatch/issues/336)) ([c95c6a7](https://github.com/almothafar/BattWatch/commit/c95c6a78d5ce561f06149b25c5ff7d41c7c06587))
+* make the adaptive-icon background track the artwork it sits under ([#330](https://github.com/almothafar/BattWatch/issues/330)) ([3cfdf98](https://github.com/almothafar/BattWatch/commit/3cfdf98eaa59b57b1956c17ed9e36f2bd0a70e3d))
+* stop the Graph Viewer workflow claiming it can enable Pages ([#327](https://github.com/almothafar/BattWatch/issues/327)) ([e66da7a](https://github.com/almothafar/BattWatch/commit/e66da7a644eed282ad04f693f6470da2a7be4b15))
+* stop the pre-commit hook recording an empty commit ([#320](https://github.com/almothafar/BattWatch/issues/320)) ([ab3c163](https://github.com/almothafar/BattWatch/commit/ab3c16353e7305732a07038864194b919466415f))
+
 ## [3.2.0](https://github.com/almothafar/BattWatch/compare/v3.1.0...v3.2.0) (2026-08-27)
 
 
