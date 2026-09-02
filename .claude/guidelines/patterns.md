@@ -105,9 +105,6 @@ try (final TypedArray styledAttributes = context.obtainStyledAttributes(attrs, R
 
 
 ### Adaptive-Icon Background Gradient (2026)
-- **Decision**: Keep the papercut artwork baked into `ic_launcher_foreground` rather than splitting it into genuine foreground/background layers, and make `ic_launcher_background` a measured vertical gradient instead of a flat colour (#289)
-- **Rationale**:
-  - A real background layer has to fill all 108dp, and only a 71.5dp opaque square of artwork exists, with no vector source in the repo — a split means inventing 18.25dp of wave on every side, at five densities, out of raster, plus inpainting where the shield's drop shadow sits
-  - The icon is the app's identity on Play: a bad redraw is visible to every user permanently, while the artefact it fixes is a transient parallax band on the launchers that animate the two layers
-  - The background is only visible where the foreground is not, which under a static mask is nowhere — so changing it cannot regress the common case, which is what makes the gradient worth doing when the redraw is not
-- **Implementation**: `res/drawable/ic_launcher_background.xml` with stops sampled from `mipmap-xxxhdpi/ic_launcher_foreground.png` — `#D8F3EC` → `#A3E3D7` → `#6DD3C5`, averaged over the outer eighth of each side so the centred shield does not skew them. The `@color` resource of the same name is gone; the drawable is now the single owner of that name.
+- **Decision**: Keep the artwork baked into `ic_launcher_foreground`; make `ic_launcher_background` a gradient measured from it rather than a flat colour (#289)
+- **Rationale**: A real background layer must fill 108dp and only 71.5dp of art exists, with no vector source — a split means redrawing the icon. The background is invisible under static masks, so a gradient improves parallax without risking the common case.
+- **Implementation**: `res/drawable/ic_launcher_background.xml`, stops `#D8F3EC` → `#A3E3D7` → `#6DD3C5` sampled from the xxxhdpi foreground; the `@color` of the same name is gone.
