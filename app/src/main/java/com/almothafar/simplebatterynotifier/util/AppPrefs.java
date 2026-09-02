@@ -382,7 +382,7 @@ public final class AppPrefs {
 	 * @return one of the {@code AppCompatDelegate.MODE_NIGHT_*} constants
 	 */
 	public static int themeMode(Context context) {
-		return themeModeOf(prefs(context).getString(context.getString(R.string._pref_key_theme), THEME_SYSTEM));
+		return themeModeOf(themeChoice(context));
 	}
 
 	/**

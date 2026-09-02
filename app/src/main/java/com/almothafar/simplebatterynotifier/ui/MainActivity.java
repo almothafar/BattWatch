@@ -3,8 +3,8 @@ package com.almothafar.simplebatterynotifier.ui;
 import android.Manifest;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
-import android.content.res.Configuration;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.BatteryManager;
 import android.os.Build;
@@ -528,17 +528,21 @@ public class MainActivity extends BaseActivity {
 	private void setupThemeToggle() {
 		final ImageButton themeButton = findViewById(R.id.gaugeThemeButton);
 
-		dressThemeToggle(themeButton);
+		updateThemeToggleFace(themeButton);
 		themeButton.setOnClickListener(v -> flipTheme());
 	}
 
 	/**
 	 * Put the face on the toggle that names where a tap goes, not where it already is. The screen itself is unmistakably light or dark, so a glyph repeating
 	 * that says nothing; one naming the destination is what a button is normally read as. The description states both, for anyone who cannot see either.
+	 * <p>
+	 * The glyph is named here and only previewed in the layout ({@code tools:src}), because a real {@code android:src} would match one of the two states and
+	 * make a test asserting that state pass whether this method ran or not. The description stays in the layout as well, since lint requires one and this
+	 * build treats its warnings as errors — which is why the icon direction is the assertion worth trusting.
 	 *
 	 * @param themeButton the toggle in the gauge corner
 	 */
-	private void dressThemeToggle(ImageButton themeButton) {
+	private void updateThemeToggleFace(ImageButton themeButton) {
 		final boolean showingDark = showingDark();
 
 		themeButton.setImageResource(showingDark ? R.drawable.ic_light_mode : R.drawable.ic_dark_mode);
@@ -552,6 +556,9 @@ public class MainActivity extends BaseActivity {
 	 * the time, which describes the rule and says nothing about the result; and AppCompat applies the night mode while it themes the <em>activity</em>, so an
 	 * application context can still be reporting the un-nighted configuration. The Mate 10 Pro is where that would show: EMUI does not propagate night to the
 	 * app config at all, and it was {@code setDefaultNightMode(FOLLOW_SYSTEM)} in #334 that made dark work there.
+	 * <p>
+	 * No test guards the choice of context, and none can: Robolectric hands the activity and the application the same {@code Resources}, so swapping this for
+	 * {@code getApplicationContext()} keeps the whole suite green. Green tests are not evidence here — the device is.
 	 *
 	 * @return true when the current configuration is a night one
 	 */
@@ -585,18 +592,29 @@ public class MainActivity extends BaseActivity {
 	 * <p>
 	 * The action says "Match my phone" rather than "Undo". Undo has no fixed meaning once a second tap has happened — previous state, or system? — and that
 	 * ambiguity belongs to the word, not to the timing. A named destination stays true however the user got here.
+	 * <p>
+	 * The flag is cleared when the bar leaves the screen, not when it is put up, and only for the three ways it can leave with the user present: it timed
+	 * out, they used the action, or they swiped it away. A rotation inside the window tears the bar down with the activity — Material reports that as
+	 * {@code DISMISS_EVENT_MANUAL} — and clearing on show would spend the one-shot offer on a bar nobody had a chance to read.
 	 */
 	private void showThemeLeftSystemHintIfNeeded() {
 		if (!AppPrefs.themeLeftSystem(this)) {
 			return;
 		}
-		AppPrefs.setThemeLeftSystem(this, false);
 
-		Snackbar.make(
-				findViewById(R.id.containerLayout),
-				showingDark() ? R.string.theme_staying_dark : R.string.theme_staying_light,
-				THEME_HINT_DURATION_MS
-		).setAction(R.string.theme_match_phone_action, v -> followSystemTheme()).show();
+		final int staying = showingDark() ? R.string.theme_staying_dark : R.string.theme_staying_light;
+		final Snackbar offer = Snackbar.make(findViewById(R.id.containerLayout), staying, THEME_HINT_DURATION_MS);
+
+		offer.setAction(R.string.theme_match_phone_action, v -> followSystemTheme());
+		offer.addCallback(new Snackbar.Callback() {
+			@Override
+			public void onDismissed(Snackbar bar, int event) {
+				if (event == DISMISS_EVENT_TIMEOUT || event == DISMISS_EVENT_ACTION || event == DISMISS_EVENT_SWIPE) {
+					AppPrefs.setThemeLeftSystem(MainActivity.this, false);
+				}
+			}
+		});
+		offer.show();
 	}
 
 	/**
@@ -606,7 +624,6 @@ public class MainActivity extends BaseActivity {
 		AppPrefs.setThemeChoice(this, AppPrefs.THEME_SYSTEM);
 		AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
 	}
-
 
 	/**
 	 * Open the system's battery-optimization list, where the app can be exempted.
