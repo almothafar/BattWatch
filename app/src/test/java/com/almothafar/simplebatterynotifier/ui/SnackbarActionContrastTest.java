@@ -2,18 +2,18 @@ package com.almothafar.simplebatterynotifier.ui;
 
 import android.content.Context;
 import android.graphics.Color;
-import android.util.TypedValue;
-import android.view.ContextThemeWrapper;
 
 import androidx.core.content.ContextCompat;
-import androidx.test.core.app.ApplicationProvider;
 
 import com.almothafar.simplebatterynotifier.R;
+import com.almothafar.simplebatterynotifier.ThemeAttributes;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
+
+import java.util.Locale;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -35,12 +35,6 @@ public class SnackbarActionContrastTest {
 	/** WCAG AA for normal-size text. The action label is not large text. */
 	private static final double AA_NORMAL_TEXT = 4.5d;
 
-	private static int attrColor(Context context, int attrId) {
-		final TypedValue value = new TypedValue();
-		assertTrue("attribute unresolved", context.getTheme().resolveAttribute(attrId, value, true));
-		return value.data;
-	}
-
 	/** Relative luminance, per WCAG 2.1. */
 	private static double luminance(int color) {
 		return 0.2126d * channel(Color.red(color)) + 0.7152d * channel(Color.green(color)) + 0.0722d * channel(Color.blue(color));
@@ -58,14 +52,14 @@ public class SnackbarActionContrastTest {
 	}
 
 	private static void assertTheActionIsLegible(String mode) {
-		final Context themed = new ContextThemeWrapper(ApplicationProvider.getApplicationContext(), R.style.AppTheme);
-		final int action = attrColor(themed, com.google.android.material.R.attr.colorPrimaryInverse);
-		final int slab = attrColor(themed, com.google.android.material.R.attr.colorSurfaceInverse);
+		final Context themed = ThemeAttributes.appTheme();
+		final int action = ThemeAttributes.color(themed, com.google.android.material.R.attr.colorPrimaryInverse);
+		final int slab = ThemeAttributes.color(themed, com.google.android.material.R.attr.colorSurfaceInverse);
 		final double ratio = contrast(action, slab);
 
 		assertEquals(mode + ": the action is not coming from the app palette", ContextCompat.getColor(themed, R.color.md_theme_primaryInverse), action);
 
-		assertTrue(String.format("%s: snackbar action #%06X on #%06X is %.2f:1, below %.1f:1",
+		assertTrue(String.format(Locale.ROOT, "%s: snackbar action #%06X on #%06X is %.2f:1, below %.1f:1",
 		                         mode, action & 0xFFFFFF, slab & 0xFFFFFF, ratio, AA_NORMAL_TEXT),
 		           ratio >= AA_NORMAL_TEXT);
 	}
