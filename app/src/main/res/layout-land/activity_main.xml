@@ -142,7 +142,7 @@
                             android:layout_marginStart="6dp"
                             android:padding="8dp"
                             android:background="?attr/selectableItemBackgroundBorderless"
-                            android:src="@drawable/ic_light_mode"
+                            android:src="@drawable/ic_dark_mode"
                             android:contentDescription="@string/gauge_theme_switch_to_dark"
                             app:tint="@android:color/white" />
                     </FrameLayout>

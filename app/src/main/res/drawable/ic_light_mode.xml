@@ -1,5 +1,5 @@
-<!-- Material "light mode" sun, for the gauge-corner theme toggle (#333). Shown when the app is currently
-     rendering light, so the glyph names the appearance on screen rather than the one a tap would bring.
+<!-- Material "light mode" sun, for the gauge-corner theme toggle (#333). Shown while the app is rendering dark, because the glyph
+     names where a tap goes rather than where it already is - the screen itself says which theme is on.
      Tinted white by the layout, like the info glyph it sits opposite. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"

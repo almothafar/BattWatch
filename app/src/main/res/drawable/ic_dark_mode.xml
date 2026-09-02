@@ -1,4 +1,4 @@
-<!-- Material "dark mode" crescent, the counterpart to ic_light_mode on the gauge-corner theme toggle (#333). -->
+<!-- Material "dark mode" crescent, the counterpart to ic_light_mode on the gauge-corner theme toggle (#333). Shown while the app is rendering light. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"

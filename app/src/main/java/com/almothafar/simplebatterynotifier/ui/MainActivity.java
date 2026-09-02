@@ -533,14 +533,15 @@ public class MainActivity extends BaseActivity {
 	}
 
 	/**
-	 * Put the face on the toggle that matches what is on screen, so the glyph reports the current appearance rather than the one a tap would bring.
+	 * Put the face on the toggle that names where a tap goes, not where it already is. The screen itself is unmistakably light or dark, so a glyph repeating
+	 * that says nothing; one naming the destination is what a button is normally read as. The description states both, for anyone who cannot see either.
 	 *
 	 * @param themeButton the toggle in the gauge corner
 	 */
 	private void dressThemeToggle(ImageButton themeButton) {
 		final boolean showingDark = showingDark();
 
-		themeButton.setImageResource(showingDark ? R.drawable.ic_dark_mode : R.drawable.ic_light_mode);
+		themeButton.setImageResource(showingDark ? R.drawable.ic_light_mode : R.drawable.ic_dark_mode);
 		themeButton.setContentDescription(getString(showingDark ? R.string.gauge_theme_switch_to_light : R.string.gauge_theme_switch_to_dark));
 	}
 

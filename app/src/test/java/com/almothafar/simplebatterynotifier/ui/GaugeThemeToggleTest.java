@@ -13,6 +13,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.RuntimeEnvironment;
+import org.robolectric.Shadows;
 import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
 
@@ -88,6 +90,51 @@ public class GaugeThemeToggleTest {
 
 			assertEquals(AppPrefs.THEME_LIGHT, AppPrefs.themeChoice(ApplicationProvider.getApplicationContext()));
 			assertFalse(AppPrefs.themeLeftSystem(ApplicationProvider.getApplicationContext()));
+		}
+	}
+
+	/**
+	 * The glyph names where a tap goes, not where it already is: the screen is unmistakably light or dark on its own, so a sun in light mode would only repeat
+	 * what the user can see. Asserted on the drawable rather than the description, because those two are set from the same flag and would agree even if the
+	 * icons were the wrong way round.
+	 */
+	@Test
+	@Config(qualifiers = "notnight")
+	public void inLightTheGlyphIsTheMoonItWouldSwitchTo() {
+		try (ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class)) {
+			final MainActivity activity = controller.setup().get();
+
+			assertEquals(R.drawable.ic_dark_mode, Shadows.shadowOf(toggleOf(activity).getDrawable()).getCreatedFromResId());
+		}
+	}
+
+	@Test
+	@Config(qualifiers = "night")
+	public void inDarkTheGlyphIsTheSunItWouldSwitchTo() {
+		try (ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class)) {
+			final MainActivity activity = controller.setup().get();
+
+			assertEquals(R.drawable.ic_light_mode, Shadows.shadowOf(toggleOf(activity).getDrawable()).getCreatedFromResId());
+		}
+	}
+
+	/**
+	 * While the app is following the system, the phone changing theme has to carry the toggle with it — an offer to "switch to dark" sitting on a screen that
+	 * just went dark would be plainly wrong. Nothing in this class arranges that: the configuration change recreates the activity, and the face is read fresh
+	 * from the new one. This pins that it stays true.
+	 */
+	@Test
+	@Config(qualifiers = "notnight")
+	public void theGlyphFollowsThePhoneWhileTheAppIsFollowingIt() {
+		try (ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class)) {
+			controller.setup();
+
+			RuntimeEnvironment.setQualifiers("+night");
+			controller.configurationChange();
+
+			final MainActivity activity = controller.get();
+			assertEquals(activity.getString(R.string.gauge_theme_switch_to_light), toggleOf(activity).getContentDescription());
+			assertEquals(R.drawable.ic_light_mode, Shadows.shadowOf(toggleOf(activity).getDrawable()).getCreatedFromResId());
 		}
 	}
 
