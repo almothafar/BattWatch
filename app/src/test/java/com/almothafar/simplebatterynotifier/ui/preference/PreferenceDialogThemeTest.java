@@ -25,7 +25,6 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -36,16 +35,17 @@ import static org.junit.Assert.assertTrue;
  * appcompat's {@code AlertDialog.Builder}, which reads {@code alertDialogTheme} and nothing else.
  * <p>
  * Two ways to regress, so the panel colour is read off the drawable rather than trusted from an attribute. Drop {@code alertDialogTheme} and these
- * dialogs fall back to appcompat's {@code abc_dialog_material_background}, which is white in dark mode too; point it at Material's own
- * {@code ThemeOverlay.Material3.MaterialAlertDialog} instead and the M3 layout arrives with no background of its own, leaving that same white shape
- * showing. Both were confirmed by mutating this theme and watching the two colour tests below fail. Only stating the panel drawable satisfies both.
+ * dialogs fall back to appcompat's own dialog background; point it at Material's {@code ThemeOverlay.Material3.MaterialAlertDialog} instead and the M3
+ * layout arrives with no background of its own, falling back to the same place. Both were confirmed by mutating this theme and watching the colour
+ * tests below fail. Only stating the panel drawable satisfies both.
+ * <p>
+ * Measured on an S23+ in dark mode: {@code #424242} square-cornered before, {@code #2B2930} at a 28dp radius after. Robolectric resolves that fallback
+ * to appcompat's declared white shape rather than the {@code colorBackgroundFloating} a real framework substitutes, so it disagrees with the device on
+ * the old value - which is why these assertions are written against the colour the panel should be, never against one it should not.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 34)
 public class PreferenceDialogThemeTest {
-
-	/** What appcompat hands these dialogs when {@code alertDialogTheme} goes unset: a white panel, in dark mode as much as in light. */
-	private static final int APPCOMPAT_FALLBACK_PANEL = 0xFFFFFFFF;
 
 	private static Context appTheme() {
 		return new ContextThemeWrapper(ApplicationProvider.getApplicationContext(), R.style.AppTheme);
@@ -87,8 +87,6 @@ public class PreferenceDialogThemeTest {
 	@Config(qualifiers = "night")
 	public void darkPreferenceDialogsMatchTheDialogsTheAppBuildsItself() {
 		final Context dialog = dialogTheme();
-
-		assertNotEquals("panel fell back to appcompat's white dialog background", APPCOMPAT_FALLBACK_PANEL, panelColor(dialog));
 
 		assertEquals(attrColor(dialog, com.google.android.material.R.attr.colorSurfaceContainerHigh), panelColor(dialog));
 	}

@@ -22,7 +22,7 @@
         <item name="android:statusBarColor">@color/title_bar_background_color</item>
         <!-- androidx.preference builds its dialogs with appcompat AlertDialog.Builder, which reads this attribute; MaterialAlertDialogBuilder reads
              materialAlertDialogTheme instead, so the app's own dialogs are unaffected. Left unset these inherit ThemeOverlay.Material3.Dialog.Alert,
-             whose appcompat ancestry paints the panel abc_dialog_material_background - a white shape, in dark mode too (#335). -->
+             whose appcompat ancestry paints the panel colorBackgroundFloating - measured #424242 on an S23+, a mid-grey slab over #1C1B1F cards (#335). -->
         <item name="alertDialogTheme">@style/ThemeOverlay.App.MaterialAlertDialog</item>
     </style>
 
