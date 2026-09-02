@@ -20,6 +20,10 @@
              edge-to-edge Toolbar paints that strip itself, out of the same colour and its toolbar_status_bar_padding.
              There is no non-deprecated replacement for the older range, which is why the attribute stays. -->
         <item name="android:statusBarColor">@color/title_bar_background_color</item>
+        <!-- androidx.preference builds its dialogs with appcompat AlertDialog.Builder, which reads this attribute; MaterialAlertDialogBuilder reads
+             materialAlertDialogTheme instead, so the app's own dialogs are unaffected. Left unset these inherit ThemeOverlay.Material3.Dialog.Alert,
+             whose appcompat ancestry paints the panel colorBackgroundFloating - measured #424242 on an S23+, a mid-grey slab over #1C1B1F cards (#335). -->
+        <item name="alertDialogTheme">@style/ThemeOverlay.App.MaterialAlertDialog</item>
     </style>
 
     <style name="Widget" />
@@ -58,6 +62,12 @@
 
     <!-- Toolbar overflow popup; see the night variant for why it is its own style. -->
     <style name="ToolBarStyle.Popup" parent="ThemeOverlay.Material3.Light" />
+
+    <!-- Material 3 dialogs on the preference screens. The overlay carries the M3 layout, title and button styles, but its m3_alert_dialog has
+         no background of its own - MaterialAlertDialogBuilder normally sets that panel in code, so android:windowBackground supplies it here. -->
+    <style name="ThemeOverlay.App.MaterialAlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="android:windowBackground">@drawable/dialog_background</item>
+    </style>
 
     <!-- Slightly smaller toolbar title so the long app name doesn't dominate the bar.
          Color stays white via the Toolbar's app:titleTextColor. -->
