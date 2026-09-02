@@ -30,11 +30,6 @@
     <color name="accent_teal">#32BEA6</color>
     <color name="accent_blue">#059bbf</color>
 
-    <!-- Label drawn on top of the teal fill (the Battery Insights button). White survives the deepened night
-         teal at 6.3:1, but reaches only 2.3:1 on the light mint, under the 4.5:1 a button label needs; light
-         takes a deep teal ink instead, at 5.9:1. -->
-    <color name="on_brand_fill">#00352C</color>
-
     <!-- Details-table and insight-card text. Sits on the page, not the header, so it inverts for dark. -->
     <color name="battery_details_label_color">#004A5B</color>
     <color name="battery_details_value_color">#01708A</color>
