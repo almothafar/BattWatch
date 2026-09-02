@@ -49,11 +49,11 @@
     <string name="gauge_info_content_description">حول النسبة المباشرة</string>
 
     <!-- #333: مفتاح المظهر في زاوية المقياس؛ الوصف يذكر المظهر الحالي أولًا ثم ما يفعله النقر. -->
-    <string name="gauge_theme_switch_to_dark">المظهر الفاتح. التبديل إلى الداكن.</string>
-    <string name="gauge_theme_switch_to_light">المظهر الداكن. التبديل إلى الفاتح.</string>
-    <string name="theme_staying_light">سيبقى التطبيق فاتحًا</string>
-    <string name="theme_staying_dark">سيبقى التطبيق داكنًا</string>
-    <string name="theme_match_phone_action">مطابقة هاتفي</string>
+    <string name="gauge_theme_switch_to_dark">الوضع النهاري. التبديل إلى الوضع الليلي.</string>
+    <string name="gauge_theme_switch_to_light">الوضع الليلي. التبديل إلى الوضع النهاري.</string>
+    <string name="theme_staying_light">سيبقى التطبيق على الوضع النهاري</string>
+    <string name="theme_staying_dark">سيبقى التطبيق على الوضع الليلي</string>
+    <string name="theme_match_phone_action">مطابقة الهاتف</string>
 
     <!-- #188/#216: تبقى صفوف المعدل/الوقت/التيار ثابتة؛ ولكل صف بلا قيمة أيقونة معلومات قابلة للنقر.
          الشرطة تعني أن القيمة غير متوفرة فعلًا؛ أما القيمة التي ما زالت تُحسب فتظهر بتلميح
@@ -362,10 +362,12 @@
     <string name="pref_title_language">لغة التطبيق</string>
     <string name="system_default">إعدادات النظام</string>
 
-    <!-- App theme picker (#332); its "System default" entry is the shared string above -->
+    <!-- App theme picker (#332). Arabic says وضع نهاري/ليلي where English says Light/Dark - maintainer decision (#333): it is the term every Arabic app has
+         taught users, and localisation follows each language rather than mirroring the other. English keeps Light/Dark, which is what Android itself renamed
+         Night Mode to. Its "System default" entry is the shared string above. -->
     <string name="pref_title_theme">المظهر</string>
-    <string name="theme_light">فاتح</string>
-    <string name="theme_dark">داكن</string>
+    <string name="theme_light">وضع نهاري</string>
+    <string name="theme_dark">وضع ليلي</string>
 
     <!-- Settings category titles -->
     <string name="pref_cat_title_display_language">العرض واللغة</string>
