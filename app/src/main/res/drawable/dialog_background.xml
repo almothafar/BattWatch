@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The dialog panel MaterialAlertDialogBuilder builds in code, expressed as a drawable so androidx.preference's dialogs get it too (#335).
+     Those go through appcompat's AlertDialog.Builder, which only ever reads android:windowBackground, so the container colour, the 28dp
+     Material 3 corner and the inset all have to be stated here. Values match MaterialAlertDialogBuilder's own: m3_comp_dialog_container_color
+     (colorSurfaceContainerHigh), shapeAppearanceCornerExtraLarge (28dp) and mtrl_alert_dialog_background_inset_* (10dp). -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:insetLeft="10dp"
+    android:insetTop="10dp"
+    android:insetRight="10dp"
+    android:insetBottom="10dp">
+
+    <shape android:shape="rectangle">
+        <corners android:radius="28dp" />
+        <solid android:color="?attr/colorSurfaceContainerHigh" />
+    </shape>
+
+</inset>
