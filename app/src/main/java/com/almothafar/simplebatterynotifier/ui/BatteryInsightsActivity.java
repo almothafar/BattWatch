@@ -262,7 +262,7 @@ public class BatteryInsightsActivity extends BaseActivity {
 	 *
 	 * @return Color integer for the grade
 	 */
-	private int getHealthColor(final BatteryHealthGrade grade) {
+	private int getHealthColor(BatteryHealthGrade grade) {
 		return switch (grade) {
 			case EXCELLENT -> getColor(R.color.accent_teal); // Green
 			case GOOD -> getColor(R.color.accent_blue); // Blue
