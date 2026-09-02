@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.content.res.XmlResourceParser;
 import android.util.Xml;
 
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.preference.PreferenceManager;
 import androidx.preference.SeekBarPreference;
 import androidx.test.core.app.ApplicationProvider;
@@ -26,6 +27,7 @@ import org.xmlpull.v1.XmlPullParser;
 import java.util.Arrays;
 import java.util.Collection;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -48,6 +50,27 @@ public class AppPrefsTest {
 		@Before
 		public void setUp() {
 			context = ApplicationProvider.getApplicationContext();
+		}
+
+		@Test
+		public void themeMode_fallsBackToFollowingTheSystem() {
+			assertEquals(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM, AppPrefs.themeMode(context));
+		}
+
+		@Test
+		public void themeMode_readsBackTheStoredChoice() {
+			PreferenceManager.getDefaultSharedPreferences(context).edit()
+			                 .putString(context.getString(R.string._pref_key_theme), AppPrefs.THEME_DARK)
+			                 .apply();
+
+			assertEquals(AppCompatDelegate.MODE_NIGHT_YES, AppPrefs.themeMode(context));
+		}
+
+		/** Drift guard: the picker persists whatever arrays.xml lists, so a rename there would silently strand the mapping. */
+		@Test
+		public void themeValuesArray_stillMatchesTheConstants() {
+			assertArrayEquals(new String[]{AppPrefs.THEME_SYSTEM, AppPrefs.THEME_LIGHT, AppPrefs.THEME_DARK},
+			                  context.getResources().getStringArray(R.array.theme_values));
 		}
 
 		@Test
@@ -561,6 +584,31 @@ public class AppPrefsTest {
 		@Test
 		public void matchesExpected() {
 			assertEquals(expected, AppPrefs.clampDrainLimit(stored));
+		}
+	}
+
+	/** The stored-value to night-mode mapping, including the unrecognised values that must fall back to following the system (#332). */
+	@RunWith(Parameterized.class)
+	public static class ThemeModeOf {
+
+		@Parameter public String stored;
+		@Parameter(1) public int expected;
+
+		@Parameters(name = "themeModeOf({0}) = {1}")
+		public static Collection<Object[]> data() {
+			return Arrays.asList(new Object[][]{
+					{AppPrefs.THEME_SYSTEM, AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM},
+					{AppPrefs.THEME_LIGHT, AppCompatDelegate.MODE_NIGHT_NO},
+					{AppPrefs.THEME_DARK, AppCompatDelegate.MODE_NIGHT_YES},
+					{null, AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM},   // never set
+					{"", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM},     // corrupt
+					{"Dark", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM}, // the values are case-sensitive
+			});
+		}
+
+		@Test
+		public void matchesExpected() {
+			assertEquals(expected, AppPrefs.themeModeOf(stored));
 		}
 	}
 }

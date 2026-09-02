@@ -3,10 +3,13 @@ package com.almothafar.simplebatterynotifier.util;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.preference.PreferenceManager;
 
 import com.almothafar.simplebatterynotifier.R;
 import com.almothafar.simplebatterynotifier.model.LevelThresholds;
+
+import static java.util.Objects.isNull;
 
 /**
  * Typed facade over the app's default {@link SharedPreferences} (#162): the single owner of each
@@ -105,6 +108,16 @@ public final class AppPrefs {
 
 	/** Default for the "Vibrate" preference — mirrors the switch's {@code android:defaultValue} in pref_behaviour.xml. */
 	public static final boolean DEFAULT_VIBRATE = true;
+
+	/**
+	 * The stored theme values written by the Settings picker (#332) — mirror the {@code theme_values} array in arrays.xml. Constants so the XML, the
+	 * {@link #themeModeOf} mapping and its test all name the same three strings.
+	 */
+	public static final String THEME_SYSTEM = "system";
+	/** Stored value for the always-light theme. */
+	public static final String THEME_LIGHT = "light";
+	/** Stored value for the always-dark theme. */
+	public static final String THEME_DARK = "dark";
 
 	/** Milliseconds in a minute — the conversion between the minutes every timing slider speaks in and the millis the decision cores measure in. */
 	private static final long MS_PER_MINUTE = 60_000L;
@@ -355,6 +368,33 @@ public final class AppPrefs {
 	 */
 	public static void setMonitoringStopped(Context context, boolean stopped) {
 		prefs(context).edit().putBoolean(context.getString(R.string._pref_key_monitoring_stopped), stopped).apply();
+	}
+
+	/**
+	 * The user's theme choice as an {@link AppCompatDelegate} night mode, defaulting to following the system.
+	 *
+	 * @param context Application context
+	 *
+	 * @return one of the {@code AppCompatDelegate.MODE_NIGHT_*} constants
+	 */
+	public static int themeMode(Context context) {
+		return themeModeOf(prefs(context).getString(context.getString(R.string._pref_key_theme), THEME_SYSTEM));
+	}
+
+	/**
+	 * Map a stored theme value to its night mode. Anything unrecognised — an older build's value, or a corrupt one —
+	 * follows the system rather than forcing a theme the user never picked.
+	 *
+	 * @param stored the persisted value, or null when unset
+	 *
+	 * @return one of the {@code AppCompatDelegate.MODE_NIGHT_*} constants
+	 */
+	public static int themeModeOf(String stored) {
+		return switch (isNull(stored) ? THEME_SYSTEM : stored) {
+			case THEME_LIGHT -> AppCompatDelegate.MODE_NIGHT_NO;
+			case THEME_DARK -> AppCompatDelegate.MODE_NIGHT_YES;
+			default -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM;
+		};
 	}
 
 	private static SharedPreferences prefs(Context context) {

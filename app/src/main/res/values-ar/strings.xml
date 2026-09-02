@@ -356,6 +356,12 @@
     <string name="pref_title_language">لغة التطبيق</string>
     <string name="language_system_default">إعدادات النظام</string>
 
+    <!-- App theme picker (#332) -->
+    <string name="pref_title_theme">المظهر</string>
+    <string name="theme_system_default">إعدادات النظام</string>
+    <string name="theme_light">فاتح</string>
+    <string name="theme_dark">داكن</string>
+
     <!-- Settings category titles -->
     <string name="pref_cat_title_display">العرض</string>
     <string name="pref_cat_title_status_notification">إشعار الحالة</string>
