@@ -46,9 +46,9 @@
     <!-- #333: the gauge-corner theme toggle. The description names the appearance on screen first, then what a tap does. -->
     <string name="gauge_theme_switch_to_dark">Light theme. Switch to dark.</string>
     <string name="gauge_theme_switch_to_light">Dark theme. Switch to light.</string>
-    <string name="theme_now_always_light">Always light</string>
-    <string name="theme_now_always_dark">Always dark</string>
-    <string name="theme_follow_system_action">Follow system</string>
+    <string name="theme_staying_light">This app will stay light</string>
+    <string name="theme_staying_dark">This app will stay dark</string>
+    <string name="theme_match_phone_action">Match my phone</string>
 
     <!-- #188/#216: the rate/time/current rows stay put; each no-value row carries a tappable info icon.
          The dash marks a value that is genuinely unavailable; a value still warming up shows the small

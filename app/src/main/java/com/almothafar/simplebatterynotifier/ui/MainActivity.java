@@ -583,7 +583,7 @@ public class MainActivity extends BaseActivity {
 	 * Raised here rather than at the tap because {@code setDefaultNightMode} recreates the activity: a bar posted at tap time dies with the instance that
 	 * posted it, so the new one collects the message from a flag instead. Same shape as {@link #showMonitoringStoppedHintIfNeeded()}.
 	 * <p>
-	 * The action says "Follow system" rather than "Undo". Undo has no fixed meaning once a second tap has happened — previous state, or system? — and that
+	 * The action says "Match my phone" rather than "Undo". Undo has no fixed meaning once a second tap has happened — previous state, or system? — and that
 	 * ambiguity belongs to the word, not to the timing. A named destination stays true however the user got here.
 	 */
 	private void showThemeLeftSystemHintIfNeeded() {
@@ -594,9 +594,9 @@ public class MainActivity extends BaseActivity {
 
 		Snackbar.make(
 				findViewById(R.id.containerLayout),
-				showingDark() ? R.string.theme_now_always_dark : R.string.theme_now_always_light,
+				showingDark() ? R.string.theme_staying_dark : R.string.theme_staying_light,
 				THEME_HINT_DURATION_MS
-		).setAction(R.string.theme_follow_system_action, v -> followSystemTheme()).show();
+		).setAction(R.string.theme_match_phone_action, v -> followSystemTheme()).show();
 	}
 
 	/**
