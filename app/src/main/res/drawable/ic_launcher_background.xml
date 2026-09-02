@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Adaptive-icon background (#289).
+
+    This is NOT a real background layer, and that is deliberate. @mipmap/ic_launcher_foreground is not a foreground in the adaptive-icon sense either: it
+    carries the full papercut artwork baked in as an opaque 71.5dp square, centred in the 108dp canvas, filling the 72dp masked viewport almost exactly.
+    Under any static mask — circle, squircle, rounded square — the mask cuts into that square and this layer is never seen at all, apart from a ~0.25dp
+    hairline at the four edge midpoints where the art falls fractionally short of the viewport.
+
+    So this exists for the only two moments the foreground does not cover: that hairline, and launcher parallax, where the foreground slides against the
+    background and exposes a strip of it along the trailing edge.
+
+    A flat colour did that badly. It was #D8F0F0, which matches the top of the artwork and misses the bottom by a mile, because the art is a vertical
+    gradient — so parallax produced a hard pale band under the icon. The stops below are measured from the artwork itself, averaged over the outer eighth of
+    each side of mipmap-xxxhdpi/ic_launcher_foreground.png so the centred shield does not skew them:
+
+        top #D8F3EC   centre #A3E3D7   bottom #6DD3C5
+
+    Fixing this properly would mean splitting the layers — waves into the background, shield alone on transparency into the foreground. Considered and
+    rejected in #289: a real background layer has to fill all 108dp and only 71.5dp of artwork exists, with no vector source anywhere in the repo. A split
+    means inventing 18.25dp of wave on every side, at five densities, out of raster, and inpainting the hole the shield's drop shadow leaves behind. The
+    icon is the app's identity on Play, so a bad redraw costs every user permanently while the artefact it fixes costs a few, transiently, on the launchers
+    that animate the two layers.
+
+    Changing this file cannot regress the common case: the background is only visible where the foreground is not, which under a static mask is nowhere.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <!-- angle 270 runs the gradient top-to-bottom, matching the artwork's own direction. -->
+    <gradient
+        android:type="linear"
+        android:angle="270"
+        android:startColor="#D8F3EC"
+        android:centerColor="#A3E3D7"
+        android:endColor="#6DD3C5" />
+</shape>

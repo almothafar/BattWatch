@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- Adaptive-icon background. Matches the light mint of the BattWatch launcher art
-         so the transparent corners of the foreground blend where a launcher mask exposes them. -->
-    <color name="ic_launcher_background">#D8F0F0</color>
-</resources>
