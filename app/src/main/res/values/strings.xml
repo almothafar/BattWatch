@@ -364,7 +364,7 @@
     <string name="open_settings">Open Settings</string>
 
     <!-- #302: shown once, at the first launch after the system stopped background monitoring -->
-    <string name="monitoring_stopped_rationale">Background monitoring was stopped by the system. Turning off battery optimization for BattWatch makes that less likely.</string>
+    <string name="monitoring_stopped_rationale">The system stopped background monitoring. Turning off battery optimization usually prevents it.</string>
     <string name="no_battery_settings">Battery optimization settings are not available on this device</string>
 
     <!-- Feedback / report an issue -->

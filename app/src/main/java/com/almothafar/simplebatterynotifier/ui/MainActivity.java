@@ -57,6 +57,19 @@ public class MainActivity extends BaseActivity {
 	// background or notification cost.
 	private static final long UPDATER_PERIOD = 1000;
 
+	/**
+	 * How long the "monitoring stopped" hint stays on screen, in milliseconds (#302).
+	 * <p>
+	 * Deliberately not {@code Snackbar.LENGTH_LONG}, which is 2750 ms in Material 1.14 — under three seconds for a message that wraps to two lines, and
+	 * on-device testing found it gone before it could be read. {@code SnackbarManager.scheduleTimeoutLocked} passes any positive duration straight to
+	 * {@code Handler.sendMessageDelayed} with no clamping, so this value is simply the one used.
+	 * <p>
+	 * Ten seconds covers reading the message plus a beat to notice it arrived. Longer would be worse rather than better: the home screen's root is a
+	 * {@code LinearLayout}, not a {@code CoordinatorLayout}, so the bar has no swipe-to-dismiss and the only way out is the action button — which navigates
+	 * away. A bar that outstays the reading it needs is just an obstruction.
+	 */
+	private static final int MONITORING_HINT_DURATION_MS = 10_000;
+
 	// Use Handler(Looper) constructor - Handler() deprecated to prevent null Looper
 	private final Handler handler = new Handler(Looper.getMainLooper());
 
@@ -488,7 +501,7 @@ public class MainActivity extends BaseActivity {
 		Snackbar.make(
 				findViewById(R.id.containerLayout),
 				R.string.monitoring_stopped_rationale,
-				Snackbar.LENGTH_LONG
+				MONITORING_HINT_DURATION_MS
 		).setAction(R.string.open_settings, v -> openBatteryOptimizationSettings()).show();
 	}
 
