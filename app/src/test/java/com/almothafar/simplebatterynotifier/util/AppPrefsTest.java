@@ -83,6 +83,44 @@ public class AppPrefsTest {
 		}
 
 		@Test
+		public void themeChoice_defaultsToFollowingTheSystem() {
+			assertEquals(AppPrefs.THEME_SYSTEM, AppPrefs.themeChoice(context));
+		}
+
+		/**
+		 * The gauge toggle (#333) and the Settings picker stay in step by writing one key and nothing else, so a write through here has to be exactly what the
+		 * picker reads back.
+		 */
+		@Test
+		public void setThemeChoice_isWhatTheSettingsPickerReadsBack() {
+			AppPrefs.setThemeChoice(context, AppPrefs.THEME_LIGHT);
+
+			assertEquals(AppPrefs.THEME_LIGHT, AppPrefs.themeChoice(context));
+			assertEquals(AppCompatDelegate.MODE_NIGHT_NO, AppPrefs.themeMode(context));
+			assertEquals(AppPrefs.THEME_LIGHT,
+			             PreferenceManager.getDefaultSharedPreferences(context).getString(context.getString(R.string._pref_key_theme), null));
+		}
+
+		/** The tap flips what is on screen, not what is stored: on THEME_SYSTEM the stored value names the rule and says nothing about the result. */
+		@Test
+		public void themeChoiceOpposite_flipsTheAppearanceOnScreen() {
+			assertEquals(AppPrefs.THEME_LIGHT, AppPrefs.themeChoiceOpposite(true));
+			assertEquals(AppPrefs.THEME_DARK, AppPrefs.themeChoiceOpposite(false));
+		}
+
+		/** The offer to go back has to outlive the activity recreate that applying a theme triggers, which is why it is stored rather than held. */
+		@Test
+		public void themeLeftSystem_roundTripsAndStartsOwingNothing() {
+			assertFalse(AppPrefs.themeLeftSystem(context));
+
+			AppPrefs.setThemeLeftSystem(context, true);
+			assertTrue(AppPrefs.themeLeftSystem(context));
+
+			AppPrefs.setThemeLeftSystem(context, false);
+			assertFalse(AppPrefs.themeLeftSystem(context));
+		}
+
+		@Test
 		public void levels_fallBackToTheSingleOwnedDefaults() {
 			assertEquals(AppPrefs.DEFAULT_CRITICAL_LEVEL, AppPrefs.criticalLevel(context));
 			assertEquals(AppPrefs.DEFAULT_WARNING_LEVEL, AppPrefs.warningLevel(context));

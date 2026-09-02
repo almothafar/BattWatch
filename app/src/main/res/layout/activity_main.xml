@@ -53,6 +53,20 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/gauge_info_content_description"
             app:tint="@android:color/white" />
+        <!-- Theme toggle, mirroring the info button in the opposite corner (#333). Flips light/dark on the spot; the
+             glyph names the appearance currently on screen, and MainActivity offers System back when a tap leaves it. -->
+        <ImageButton
+            android:id="@+id/gaugeThemeButton"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_gravity="top|start"
+            android:layout_marginTop="6dp"
+            android:layout_marginStart="6dp"
+            android:padding="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_light_mode"
+            android:contentDescription="@string/gauge_theme_switch_to_dark"
+            app:tint="@android:color/white" />
     </FrameLayout>
 
     <!-- In-fly critical/warning threshold adjuster, placed directly under the gauge it controls.

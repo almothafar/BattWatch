@@ -43,6 +43,13 @@
     <string name="gauge_info_message">This percentage is shown to two decimals and slides smoothly every second.\n\nYour phone only measures the exact battery charge every several seconds, so the value in between is estimated from the current charge or drain speed and corrected when the next real measurement arrives. It can differ slightly from the percentage in your status bar.\n\nOn phones that don\'t report fine-grained charge data, a plain whole number is shown instead.</string>
     <string name="gauge_info_content_description">About the live percentage</string>
 
+    <!-- #333: the gauge-corner theme toggle. The description names the appearance on screen first, then what a tap does. -->
+    <string name="gauge_theme_switch_to_dark">Light theme. Switch to dark.</string>
+    <string name="gauge_theme_switch_to_light">Dark theme. Switch to light.</string>
+    <string name="theme_now_always_light">Always light</string>
+    <string name="theme_now_always_dark">Always dark</string>
+    <string name="theme_follow_system_action">Follow system</string>
+
     <!-- #188/#216: the rate/time/current rows stay put; each no-value row carries a tappable info icon.
          The dash marks a value that is genuinely unavailable; a value still warming up shows the small
          "calculating" hint instead, and the unset Design capacity row a "tap to set" nudge. The dash is
@@ -468,6 +475,8 @@
     <string name="_pref_value_theme_system" translatable="false">system</string>
     <!-- #302: set when Android refused the foreground promotion; cleared once the hint has been shown -->
     <string name="_pref_key_monitoring_stopped" translatable="false">key_monitoring_stopped</string>
+    <!-- #333: set when the gauge toggle took the user off "System default"; cleared once the snackbar offering it back has been shown -->
+    <string name="_pref_key_theme_left_system" translatable="false">key_theme_left_system</string>
 
     <string name="_pref_value_temperatures_unit_c" translatable="false">celsius</string>
     <string name="_pref_value_temperatures_unit_f" translatable="false">fahrenheit</string>
