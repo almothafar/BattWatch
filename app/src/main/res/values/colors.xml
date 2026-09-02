@@ -1,19 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Material Design 3 Color System -->
-    <color name="md_theme_light_primary">#059bbf</color>
-    <color name="md_theme_light_onPrimary">#FFFFFF</color>
-    <color name="md_theme_light_primaryContainer">#32BEA6</color>
-    <color name="md_theme_light_secondary">#004A5B</color>
-    <color name="md_theme_light_onSecondary">#FFFFFF</color>
-    <color name="md_theme_light_surface">#FFFFFF</color>
-    <color name="md_theme_light_onSurface">#000000</color>
-    <color name="md_theme_light_background">#FFFBFF</color>
-    <color name="md_theme_light_onBackground">#1C1B1E</color>
-    <color name="md_theme_light_error">#BA1A1A</color>
-    <color name="md_theme_light_onError">#FFFFFF</color>
+    <!-- Material Design 3 Color System. Dark values live in values-night/colors.xml (#225). -->
+    <color name="md_theme_primary">#059bbf</color>
+    <color name="md_theme_onPrimary">#FFFFFF</color>
+    <color name="md_theme_primaryContainer">#32BEA6</color>
+    <color name="md_theme_secondary">#004A5B</color>
+    <color name="md_theme_onSecondary">#FFFFFF</color>
+    <color name="md_theme_surface">#FFFFFF</color>
+    <color name="md_theme_onSurface">#000000</color>
+    <color name="md_theme_background">#FFFBFF</color>
+    <color name="md_theme_onBackground">#1C1B1E</color>
+    <color name="md_theme_error">#BA1A1A</color>
+    <color name="md_theme_onError">#FFFFFF</color>
 
-    <!-- Legacy colors (kept for backward compatibility) -->
+    <!-- Gauge and brand-header colours. No night variant: the header keeps its teal/blue in dark mode, so
+         the gauge is still drawn on a coloured surface, and the two brand hues stay legible as accent text. -->
     <color name="circular_progress_default_progress">#059bbf</color>
     <color name="circular_progress_default_progress_warning">#FFB100</color>
     <color name="circular_progress_default_progress_alert">#E01A00</color>
@@ -22,12 +23,16 @@
     <color name="circular_progress_default_subtitle">#FFFFFF</color>
     <color name="top_background_color">#32BEA6</color>
     <color name="title_bar_background_color">#059bbf</color>
+
+    <!-- Details-table and insight-card text. Sits on the page, not the header, so it inverts for dark. -->
     <color name="battery_details_label_color">#004A5B</color>
     <color name="battery_details_value_color">#01708A</color>
     <color name="default_text_color">#004A5B</color>
 
-    <!-- Drain-rate colouring in the details table (#108): amber as the rate nears the user's limit, red
-         at/above it. Reuse the circular gauge's warning/alert hues so the app reads as one system. -->
+    <!-- The on-surface twins of the gauge's warning/alert hues: the same signal drawn as text on a page
+         background rather than as an arc on the coloured header — drain rate in the details table (#108)
+         and the critical/warning threshold captions. Same values as the gauge in light, but these lighten
+         for dark (#225) where the gauge deliberately does not. -->
     <color name="battery_rate_warn">#FFB100</color>
     <color name="battery_rate_high">#E01A00</color>
 

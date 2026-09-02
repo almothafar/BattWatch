@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dark overrides for values/colors.xml (#225). Only the colours that assume a light background are
+     listed; anything absent here is correct in both modes.
+
+     Deliberately not overridden: the brand header (top_background_color, title_bar_background_color) and
+     the gauge palette (circular_progress_*). The header stays coloured in dark mode, so the gauge arc and
+     its labels are still drawn on teal — lightening them there would cut their contrast, not raise it. -->
+<resources>
+    <!-- Material Design 3 Color System - dark -->
+    <color name="md_theme_primary">#6ED3EC</color>
+    <color name="md_theme_onPrimary">#00363F</color>
+    <color name="md_theme_primaryContainer">#00504C</color>
+    <color name="md_theme_secondary">#9FC3CE</color>
+    <color name="md_theme_onSecondary">#003543</color>
+    <color name="md_theme_surface">#1C1B1F</color>
+    <color name="md_theme_onSurface">#E5E2E6</color>
+    <color name="md_theme_background">#121316</color>
+    <color name="md_theme_onBackground">#E5E2E6</color>
+    <color name="md_theme_error">#FFB4AB</color>
+    <color name="md_theme_onError">#690005</color>
+
+    <!-- Details table and insight cards: the light theme's dark teals inverted to light tones, keeping the
+         same muted-label / saturated-value split. -->
+    <color name="battery_details_label_color">#9FC3CE</color>
+    <color name="battery_details_value_color">#6ED3EC</color>
+    <color name="default_text_color">#C9D6DC</color>
+
+    <!-- #E01A00 reads on white but only reaches 3.4:1 on a dark surface, under the 4.5:1 these bold 12sp
+         captions need; this coral clears it at 6:1. The amber twin already passes, so it stays put. -->
+    <color name="battery_rate_high">#FF6B5A</color>
+
+    <!-- Settings card groups (#222): the neutral drops to the page background and the cards lift above it,
+         the same one-step separation the light values have. -->
+    <color name="settings_group_background">#121316</color>
+    <color name="settings_group_card">#1C1B1F</color>
+</resources>

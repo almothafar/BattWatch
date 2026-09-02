@@ -16,7 +16,7 @@
             android:background="@color/title_bar_background_color"
             android:elevation="4dp"
             android:theme="@style/ToolBarStyle"
-            app:popupTheme="@style/ThemeOverlay.Material3.Light"
+            app:popupTheme="@style/ToolBarStyle.Popup"
             app:title="@string/battery_insights_title"
             app:titleTextColor="@android:color/white"/>
 
@@ -47,6 +47,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
+                    app:cardBackgroundColor="?attr/colorSurface"
                     app:cardCornerRadius="8dp"
                     app:cardElevation="4dp"
                     app:contentPadding="20dp">
@@ -154,6 +155,7 @@
                         android:layout_height="match_parent"
                         android:layout_weight="1"
                         android:layout_marginEnd="4dp"
+                        app:cardBackgroundColor="?attr/colorSurface"
                         app:cardCornerRadius="8dp"
                         app:cardElevation="4dp"
                         app:contentPadding="16dp">
@@ -202,6 +204,7 @@
                         android:clickable="true"
                         android:focusable="true"
                         android:foreground="?attr/selectableItemBackground"
+                        app:cardBackgroundColor="?attr/colorSurface"
                         app:cardCornerRadius="8dp"
                         app:cardElevation="4dp"
                         app:contentPadding="16dp">
@@ -248,6 +251,7 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:layout_marginEnd="4dp"
+                        app:cardBackgroundColor="?attr/colorSurface"
                         app:cardCornerRadius="8dp"
                         app:cardElevation="4dp"
                         app:contentPadding="16dp">
@@ -284,6 +288,7 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:layout_marginStart="4dp"
+                        app:cardBackgroundColor="?attr/colorSurface"
                         app:cardCornerRadius="8dp"
                         app:cardElevation="4dp"
                         app:contentPadding="16dp">
@@ -321,6 +326,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
+                    app:cardBackgroundColor="?attr/colorSurface"
                     app:cardCornerRadius="8dp"
                     app:cardElevation="4dp"
                     app:contentPadding="16dp">
@@ -363,6 +369,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
+                    app:cardBackgroundColor="?attr/colorSurface"
                     app:cardCornerRadius="8dp"
                     app:cardElevation="4dp"
                     app:contentPadding="16dp">
@@ -398,6 +405,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
+                    app:cardBackgroundColor="?attr/colorSurface"
                     app:cardCornerRadius="8dp"
                     app:cardElevation="4dp"
                     app:contentPadding="16dp">

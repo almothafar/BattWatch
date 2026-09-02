@@ -1,0 +1,8 @@
+<resources>
+
+    <!-- Toolbar overflow popup. The toolbar keeps its brand-blue background and white text in both modes,
+         so the popup can't inherit that overlay; it follows the page instead. Material3 ships no DayNight
+         ThemeOverlay, hence the light/night pair. -->
+    <style name="ToolBarStyle.Popup" parent="ThemeOverlay.Material3.Dark" />
+
+</resources>
