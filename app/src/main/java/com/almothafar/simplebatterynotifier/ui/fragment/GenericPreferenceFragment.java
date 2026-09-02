@@ -172,6 +172,7 @@ public class GenericPreferenceFragment extends CardPreferenceFragment
 				if (category.equals(getString(R.string.pref_category_general))) {
 					setPreferencesFromResource(R.xml.pref_general, rootKey);
 					configureLanguagePreference();
+					configureThemePreference();
 				} else if (category.equals(getString(R.string.pref_category_alerts))) {
 					setPreferencesFromResource(R.xml.pref_alerts, rootKey);
 					configureTemperatureThreshold();
@@ -208,6 +209,25 @@ public class GenericPreferenceFragment extends CardPreferenceFragment
 					: LocaleListCompat.forLanguageTags(tag);
 			// Applies immediately (recreates activities); the metadata service persists it across restarts.
 			AppCompatDelegate.setApplicationLocales(locales);
+			return true;
+		});
+	}
+
+	/**
+	 * Wire up the theme picker (System / Light / Dark).
+	 * <p>
+	 * Unlike the language picker above this one persists normally — {@link AppCompatDelegate#setDefaultNightMode} keeps the mode in a static that does not
+	 * survive the process, so {@code BattWatchApplication} re-applies the stored value on every start. Applying here only covers the running process, which
+	 * is what makes the change visible immediately; the recreate it triggers is posted, so the framework still writes the new value first.
+	 */
+	private void configureThemePreference() {
+		final ListPreference pref = findPreference(getString(R.string._pref_key_theme));
+		if (isNull(pref)) {
+			return;
+		}
+
+		pref.setOnPreferenceChangeListener((preference, newValue) -> {
+			AppCompatDelegate.setDefaultNightMode(AppPrefs.themeModeOf((String) newValue));
 			return true;
 		});
 	}

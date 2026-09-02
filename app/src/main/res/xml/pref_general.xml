@@ -1,8 +1,10 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
+    <!-- The three presentation choices in one group (#332): which language the app speaks, which theme it wears, which unit it shows temperatures in.
+         Language and Theme sit adjacent deliberately — they are the two "how the app looks" settings and were a category header apart before. -->
     <PreferenceCategory
-        android:title="@string/pref_language_category"
+        android:title="@string/pref_cat_title_display_language"
         app:iconSpaceReserved="false">
 
         <ListPreference
@@ -14,11 +16,14 @@
             app:useSimpleSummaryProvider="true"
             app:iconSpaceReserved="false" />
 
-    </PreferenceCategory>
-
-    <PreferenceCategory
-        android:title="@string/pref_cat_title_display"
-        app:iconSpaceReserved="false">
+        <ListPreference
+            android:defaultValue="@string/_pref_value_theme_system"
+            android:entries="@array/theme_entries"
+            android:entryValues="@array/theme_values"
+            android:key="@string/_pref_key_theme"
+            android:title="@string/pref_title_theme"
+            app:iconSpaceReserved="false"
+            app:useSimpleSummaryProvider="true" />
 
         <ListPreference
             android:defaultValue="@string/_pref_value_temperatures_unit_c"

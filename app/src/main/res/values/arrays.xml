@@ -5,7 +5,7 @@
          tools:ignore="MissingTranslation": the arrays are locale-independent; the visible copy
          lives in the referenced string resources, which are translated. -->
     <string-array name="language_entries" tools:ignore="MissingTranslation">
-        <item>@string/language_system_default</item>
+        <item>@string/system_default</item>
         <item>@string/language_arabic</item>
         <item>@string/language_english</item>
     </string-array>
@@ -13,6 +13,19 @@
         <item></item>
         <item>ar</item>
         <item>en</item>
+    </string-array>
+
+    <!-- App theme picker (#332). Entry labels are localized string references; the values are stable
+         identifiers persisted by the ListPreference, so the array itself is not translated. -->
+    <string-array name="theme_entries" tools:ignore="MissingTranslation">
+        <item>@string/system_default</item>
+        <item>@string/theme_light</item>
+        <item>@string/theme_dark</item>
+    </string-array>
+    <string-array name="theme_values" tools:ignore="MissingTranslation">
+        <item>system</item>
+        <item>light</item>
+        <item>dark</item>
     </string-array>
 
     <!-- Charge-connected notification style (issue #122). Entry labels reference localized strings;
