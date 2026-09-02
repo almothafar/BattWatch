@@ -40,32 +40,35 @@
             android:layout_marginBottom="-10dp" />
 
         <!-- Honest info affordance for the smoothed/estimated live percentage (#217). Overlaid in the
-             top corner of the gauge area; tinted white for the coloured header. -->
+             top corner of the gauge area; tinted white for the coloured header. 48dp to meet the minimum
+             touch target, with the padding carrying the glyph back to 24dp so it looks as it always has. -->
         <ImageButton
             android:id="@+id/gaugeInfoButton"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:layout_gravity="top|end"
             android:layout_marginTop="6dp"
             android:layout_marginEnd="6dp"
-            android:padding="8dp"
+            android:padding="12dp"
             android:src="@drawable/ic_info"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/gauge_info_content_description"
             app:tint="@android:color/white" />
-        <!-- Theme toggle, mirroring the info button in the opposite corner (#333). Flips light/dark on the spot; the
-             glyph names the appearance currently on screen, and MainActivity offers System back when a tap leaves it. -->
+        <!-- Theme toggle, mirroring the info button in the opposite corner (#333). Flips light/dark on the spot; the glyph
+             names where a tap goes rather than where it already is, and MainActivity offers System back when a tap leaves it.
+             The glyph is preview-only here: MainActivity sets the real one, and a src naming either state would leave the test
+             for that state passing with the code that sets it deleted. -->
         <ImageButton
             android:id="@+id/gaugeThemeButton"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:layout_gravity="top|start"
             android:layout_marginTop="6dp"
             android:layout_marginStart="6dp"
-            android:padding="8dp"
+            android:padding="12dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_dark_mode"
             android:contentDescription="@string/gauge_theme_switch_to_dark"
+            tools:src="@drawable/ic_dark_mode"
             app:tint="@android:color/white" />
     </FrameLayout>
 
