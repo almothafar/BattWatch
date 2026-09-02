@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dark overrides for values/colors.xml (#225). Only the colours that assume a light background are
+     listed; anything absent here is correct in both modes. -->
+<resources>
+    <!-- Material Design 3 Color System - dark -->
+    <color name="md_theme_primary">#6ED3EC</color>
+    <color name="md_theme_onPrimary">#00363F</color>
+    <color name="md_theme_primaryContainer">#00504C</color>
+    <color name="md_theme_secondary">#9FC3CE</color>
+    <color name="md_theme_onSecondary">#003543</color>
+    <color name="md_theme_surface">#1C1B1F</color>
+    <color name="md_theme_onSurface">#E5E2E6</color>
+    <color name="md_theme_background">#121316</color>
+    <color name="md_theme_onBackground">#E5E2E6</color>
+    <color name="md_theme_error">#FFB4AB</color>
+    <color name="md_theme_onError">#690005</color>
+
+    <!-- Brand header, deepened. At their light values these two fill the top ~45% of Home, which on a near-black
+         page reads as a light-mode screenshot pasted above a dark-mode one. Deepening them is what the gauge
+         palette below is re-tuned around. -->
+    <color name="title_bar_background_color">#075E75</color>
+    <color name="top_background_color">#1B6B5E</color>
+
+    <!-- The gauge sits on that header, so its two darkest parts follow it down. The track has to stay darker than
+         the header to still read as a recess (2.6:1 here), and the alert arc — which was the darker of the two
+         against the light mint — has to lighten instead, or it sinks into the deepened teal at 1.3:1. The lit arc,
+         the amber, the gold title and the white status text are all lighter than the header and simply gain
+         contrast as it darkens, so they stay as they are. -->
+    <color name="circular_progress_default_background">#02222B</color>
+    <color name="circular_progress_default_progress_alert">#FF6B5A</color>
+
+    <!-- The accent twins move the other way: they are text on a dark surface, so they lighten. -->
+    <color name="accent_teal">#4FD8BE</color>
+    <color name="accent_blue">#6ED3EC</color>
+
+    <!-- Details table and insight cards: the light theme's dark teals inverted to light tones, keeping the
+         same muted-label / saturated-value split. -->
+    <color name="battery_details_label_color">#9FC3CE</color>
+    <color name="battery_details_value_color">#6ED3EC</color>
+    <color name="default_text_color">#C9D6DC</color>
+
+    <!-- #E01A00 reads on white but only reaches 3.4:1 on a dark surface, under the 4.5:1 these bold 12sp
+         captions need; this coral clears it at 6:1. The amber twin already passes, so it stays put. -->
+    <color name="battery_rate_high">#FF6B5A</color>
+
+    <!-- Settings card groups (#222): the neutral drops to the page background and the cards lift above it,
+         the same one-step separation the light values have. -->
+    <color name="settings_group_background">#121316</color>
+    <color name="settings_group_card">#1C1B1F</color>
+</resources>

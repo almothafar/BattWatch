@@ -36,7 +36,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:gravity="start"
-            android:textColor="@color/circular_progress_default_progress_alert"
+            android:textColor="@color/battery_rate_high"
             android:textSize="12sp"
             android:textStyle="bold"
             tools:text="Critical 20%" />
@@ -47,7 +47,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:gravity="end"
-            android:textColor="@color/circular_progress_default_progress_warning"
+            android:textColor="@color/battery_rate_warn"
             android:textSize="12sp"
             android:textStyle="bold"
             tools:text="Warning 40%" />

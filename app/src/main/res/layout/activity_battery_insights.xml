@@ -16,7 +16,7 @@
             android:background="@color/title_bar_background_color"
             android:elevation="4dp"
             android:theme="@style/ToolBarStyle"
-            app:popupTheme="@style/ThemeOverlay.Material3.Light"
+            app:popupTheme="@style/ToolBarStyle.Popup"
             app:title="@string/battery_insights_title"
             app:titleTextColor="@android:color/white"/>
 
@@ -47,8 +47,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
-                    app:cardCornerRadius="8dp"
-                    app:cardElevation="4dp"
+                    style="@style/Widget.App.InsightCard"
                     app:contentPadding="20dp">
 
                 <LinearLayout
@@ -72,7 +71,7 @@
                             tools:text="100%"
                             android:textSize="56sp"
                             android:textStyle="bold"
-                            android:textColor="@color/top_background_color"
+                            android:textColor="@color/accent_teal"
                             android:layout_marginBottom="8dp"/>
 
                     <!-- Status word + (when health can't be measured, #94) a tappable amber info icon -->
@@ -89,7 +88,7 @@
                                 tools:text="Excellent"
                                 android:textSize="20sp"
                                 android:textStyle="bold"
-                                android:textColor="@color/title_bar_background_color"/>
+                                android:textColor="@color/accent_blue"/>
 
                         <ImageView
                                 android:id="@+id/healthWarningIcon"
@@ -154,8 +153,7 @@
                         android:layout_height="match_parent"
                         android:layout_weight="1"
                         android:layout_marginEnd="4dp"
-                        app:cardCornerRadius="8dp"
-                        app:cardElevation="4dp"
+                        style="@style/Widget.App.InsightCard"
                         app:contentPadding="16dp">
 
                     <LinearLayout
@@ -202,8 +200,7 @@
                         android:clickable="true"
                         android:focusable="true"
                         android:foreground="?attr/selectableItemBackground"
-                        app:cardCornerRadius="8dp"
-                        app:cardElevation="4dp"
+                        style="@style/Widget.App.InsightCard"
                         app:contentPadding="16dp">
 
                     <LinearLayout
@@ -248,8 +245,7 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:layout_marginEnd="4dp"
-                        app:cardCornerRadius="8dp"
-                        app:cardElevation="4dp"
+                        style="@style/Widget.App.InsightCard"
                         app:contentPadding="16dp">
 
                     <LinearLayout
@@ -284,8 +280,7 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:layout_marginStart="4dp"
-                        app:cardCornerRadius="8dp"
-                        app:cardElevation="4dp"
+                        style="@style/Widget.App.InsightCard"
                         app:contentPadding="16dp">
 
                     <LinearLayout
@@ -321,8 +316,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
-                    app:cardCornerRadius="8dp"
-                    app:cardElevation="4dp"
+                    style="@style/Widget.App.InsightCard"
                     app:contentPadding="16dp">
 
                 <LinearLayout
@@ -363,8 +357,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
-                    app:cardCornerRadius="8dp"
-                    app:cardElevation="4dp"
+                    style="@style/Widget.App.InsightCard"
                     app:contentPadding="16dp">
 
                 <LinearLayout
@@ -398,8 +391,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
-                    app:cardCornerRadius="8dp"
-                    app:cardElevation="4dp"
+                    style="@style/Widget.App.InsightCard"
                     app:contentPadding="16dp">
 
                 <LinearLayout

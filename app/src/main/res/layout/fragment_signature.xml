@@ -32,7 +32,7 @@
         android:text="@string/developer_name"
         android:textSize="12sp"
         android:textStyle="bold"
-        android:textColor="@color/title_bar_background_color"
+        android:textColor="@color/accent_blue"
         android:layout_marginEnd="8dp" />
 
     <ImageView
@@ -50,6 +50,6 @@
         android:text="@string/developer_handle"
         android:textSize="12sp"
         android:textStyle="italic"
-        android:textColor="@color/title_bar_background_color" />
+        android:textColor="@color/accent_blue" />
 
 </LinearLayout>

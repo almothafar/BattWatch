@@ -1,19 +1,25 @@
 <resources>
 
     <!-- Base application theme - Material Design 3 -->
-    <style name="AppTheme" parent="Theme.Material3.Light.NoActionBar">
+    <style name="AppTheme" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Material3 Color System -->
-        <item name="colorPrimary">@color/md_theme_light_primary</item>
-        <item name="colorOnPrimary">@color/md_theme_light_onPrimary</item>
-        <item name="colorPrimaryContainer">@color/md_theme_light_primaryContainer</item>
-        <item name="colorSecondary">@color/md_theme_light_secondary</item>
-        <item name="colorOnSecondary">@color/md_theme_light_onSecondary</item>
-        <item name="colorSurface">@color/md_theme_light_surface</item>
-        <item name="colorOnSurface">@color/md_theme_light_onSurface</item>
-        <item name="android:colorBackground">@color/md_theme_light_background</item>
-        <item name="colorOnBackground">@color/md_theme_light_onBackground</item>
-        <item name="colorError">@color/md_theme_light_error</item>
-        <item name="colorOnError">@color/md_theme_light_onError</item>
+        <item name="colorPrimary">@color/md_theme_primary</item>
+        <item name="colorOnPrimary">@color/md_theme_onPrimary</item>
+        <item name="colorPrimaryContainer">@color/md_theme_primaryContainer</item>
+        <item name="colorSecondary">@color/md_theme_secondary</item>
+        <item name="colorOnSecondary">@color/md_theme_onSecondary</item>
+        <item name="colorSurface">@color/md_theme_surface</item>
+        <item name="colorOnSurface">@color/md_theme_onSurface</item>
+        <item name="android:colorBackground">@color/md_theme_background</item>
+        <item name="colorOnBackground">@color/md_theme_onBackground</item>
+        <item name="colorError">@color/md_theme_error</item>
+        <item name="colorOnError">@color/md_theme_onError</item>
+        <!-- Pin the status bar to the toolbar it sits above. Left to the platform it resolves to colorPrimary, which
+             matched the toolbar in light only by coincidence and broke the moment primary lightened for dark.
+             Deprecated in API 35 and ignored at targetSdk 35+, so this covers API 26-34 only; from 35 the enforced
+             edge-to-edge Toolbar paints that strip itself, out of the same colour and its toolbar_status_bar_padding.
+             There is no non-deprecated replacement for the older range, which is why the attribute stays. -->
+        <item name="android:statusBarColor">@color/title_bar_background_color</item>
     </style>
 
     <style name="Widget" />
@@ -32,6 +38,15 @@
         <item name="gaugeLevelDescription">@string/battery_progress_description</item>
     </style>
 
+    <!-- Shared look for the eight Battery Insights cards, so a surface or elevation tweak lands in one place.
+         The background has to be stated: androidx.cardview otherwise picks its own #424242 on a dark theme,
+         lighter than every other surface in the app. contentPadding and layout params stay per-card. -->
+    <style name="Widget.App.InsightCard" parent="Widget">
+        <item name="cardBackgroundColor">?attr/colorSurface</item>
+        <item name="cardCornerRadius">8dp</item>
+        <item name="cardElevation">4dp</item>
+    </style>
+
     <!-- Toolbar style for Material3 -->
     <style name="ToolBarStyle" parent="ThemeOverlay.Material3.Toolbar.Surface">
         <item name="android:textColorPrimary">@android:color/white</item>
@@ -40,6 +55,9 @@
         <!-- Tint control icons (the overflow three-dots) white to match the white gear -->
         <item name="colorControlNormal">@android:color/white</item>
     </style>
+
+    <!-- Toolbar overflow popup; see the night variant for why it is its own style. -->
+    <style name="ToolBarStyle.Popup" parent="ThemeOverlay.Material3.Light" />
 
     <!-- Slightly smaller toolbar title so the long app name doesn't dominate the bar.
          Color stays white via the Toolbar's app:titleTextColor. -->

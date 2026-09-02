@@ -17,7 +17,7 @@
             android:background="@color/title_bar_background_color"
             android:elevation="4dp"
             android:theme="@style/ToolBarStyle"
-            app:popupTheme="@style/ThemeOverlay.Material3.Light"
+            app:popupTheme="@style/ToolBarStyle.Popup"
             app:title="@string/app_name"
             app:titleTextAppearance="@style/ToolBarStyle.Title"
             app:titleTextColor="@android:color/white"/>
@@ -63,7 +63,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:background="@android:color/white"
+        android:background="?android:attr/colorBackground"
         android:paddingStart="16dp"
         android:paddingEnd="16dp"
         android:paddingTop="4dp"
@@ -90,7 +90,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:gravity="start"
-                android:textColor="@color/circular_progress_default_progress_alert"
+                android:textColor="@color/battery_rate_high"
                 android:textSize="12sp"
                 android:textStyle="bold" />
 
@@ -100,7 +100,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:gravity="end"
-                android:textColor="@color/circular_progress_default_progress_warning"
+                android:textColor="@color/battery_rate_warn"
                 android:textSize="12sp"
                 android:textStyle="bold" />
 
@@ -126,7 +126,7 @@
         android:paddingEnd="16dp"
         android:paddingTop="8dp"
         android:paddingBottom="@dimen/content_navigation_bar_padding"
-        android:background="@android:color/white">
+        android:background="?android:attr/colorBackground">
 
         <!-- Battery Insights Button - Material3 -->
         <com.google.android.material.button.MaterialButton
