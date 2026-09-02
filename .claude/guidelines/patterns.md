@@ -103,3 +103,8 @@ try (final TypedArray styledAttributes = context.obtainStyledAttributes(attrs, R
   - `determineHealthStatus(int health)` - returns enum, no side effects
   - `getHealthString(int health, Resources resources)` - returns string, no side effects
 
+
+### Adaptive-Icon Background Gradient (2026)
+- **Decision**: Keep the artwork baked into `ic_launcher_foreground`; make `ic_launcher_background` a gradient measured from it rather than a flat colour (#289)
+- **Rationale**: A real background layer must fill 108dp and only 71.5dp of art exists, with no vector source — a split means redrawing the icon. The background is invisible under static masks, so a gradient improves parallax without risking the common case.
+- **Implementation**: `res/drawable/ic_launcher_background.xml`, stops `#D8F3EC` → `#A3E3D7` → `#6DD3C5` sampled from the xxxhdpi foreground; the `@color` of the same name is gone.

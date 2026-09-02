@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Adaptive-icon background (#289). Visible in only two places: the ~0.25dp hairline at the viewport edges,
+    and launcher parallax. @mipmap/ic_launcher_foreground is an opaque 71.5dp square, so a static mask hides
+    this layer completely.
+
+    Stops sampled from the artwork itself — outer eighth of each side of the xxxhdpi foreground, clear of the
+    centred shield. The old flat #D8F0F0 matched the art's top and missed its bottom, so parallax showed a
+    pale band.
+
+    Splitting the layers properly was rejected in #289: a background must fill 108dp, only 71.5dp of art
+    exists, and there is no vector source to extend it from.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <!-- angle 270 = top to bottom, matching the artwork. -->
+    <gradient
+        android:type="linear"
+        android:angle="270"
+        android:startColor="#D8F3EC"
+        android:centerColor="#A3E3D7"
+        android:endColor="#6DD3C5" />
+</shape>
