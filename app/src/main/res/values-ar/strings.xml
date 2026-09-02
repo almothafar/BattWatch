@@ -362,9 +362,10 @@
     <string name="pref_title_language">لغة التطبيق</string>
     <string name="system_default">إعدادات النظام</string>
 
-    <!-- App theme picker (#332). Arabic says وضع نهاري/ليلي where English says Light/Dark - maintainer decision (#333): it is the term every Arabic app has
-         taught users, and localisation follows each language rather than mirroring the other. English keeps Light/Dark, which is what Android itself renamed
-         Night Mode to. Its "System default" entry is the shared string above. -->
+    <!-- App theme picker (#332). Arabic says وضع نهاري/ليلي where English says Light/Dark (#333) - deliberately not a literal pair. Both phones this app is
+         tested on ship the same Arabic for it: dark_ui_mode reads الوضع الليلي on EMUI and on One UI alike, so it is what the system itself shows an
+         Arabic user. English keeps Light/Dark, Google's and Apple's term - One UI says "Night mode" there too, but it is the outlier. Its "System
+         default" entry is the shared string above. -->
     <string name="pref_title_theme">المظهر</string>
     <string name="theme_light">وضع نهاري</string>
     <string name="theme_dark">وضع ليلي</string>
