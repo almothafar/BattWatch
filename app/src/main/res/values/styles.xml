@@ -14,6 +14,9 @@
         <item name="colorOnBackground">@color/md_theme_onBackground</item>
         <item name="colorError">@color/md_theme_error</item>
         <item name="colorOnError">@color/md_theme_onError</item>
+        <!-- Pin the status bar to the toolbar it sits above. Left to the platform it resolves to colorPrimary, which
+             matched the toolbar in light only by coincidence and broke the moment primary lightened for dark. -->
+        <item name="android:statusBarColor">@color/title_bar_background_color</item>
     </style>
 
     <style name="Widget" />
