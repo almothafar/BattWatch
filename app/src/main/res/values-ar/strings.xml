@@ -326,7 +326,7 @@
     <string name="open_settings">فتح الإعدادات</string>
 
     <!-- #302: shown once, at the first launch after the system stopped background monitoring -->
-    <string name="monitoring_stopped_rationale">أوقف النظام مراقبة البطارية في الخلفية. إيقاف تحسين البطارية لتطبيق BattWatch يجعل تكرار ذلك أقل.</string>
+    <string name="monitoring_stopped_rationale">أوقف النظام مراقبة البطارية في الخلفية. إيقاف تحسين البطارية يمنع ذلك عادةً.</string>
     <string name="no_battery_settings">إعدادات تحسين البطارية غير متوفرة على هذا الجهاز</string>
 
     <!-- Feedback / report an issue -->
