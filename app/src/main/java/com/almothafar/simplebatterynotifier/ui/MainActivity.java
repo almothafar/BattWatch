@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.BatteryManager;
 import android.os.Build;
@@ -26,6 +27,7 @@ import com.google.android.material.snackbar.Snackbar;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
 import com.almothafar.simplebatterynotifier.R;
@@ -69,6 +71,15 @@ public class MainActivity extends BaseActivity {
 	 * away. A bar that outstays the reading it needs is just an obstruction.
 	 */
 	private static final int MONITORING_HINT_DURATION_MS = 10_000;
+
+	/**
+	 * How long the "no longer following the system" offer stays on screen, in milliseconds (#333).
+	 * <p>
+	 * Shorter than {@link #MONITORING_HINT_DURATION_MS} — one short line rather than a wrapped paragraph — but still well past the 2750 ms of
+	 * {@code Snackbar.LENGTH_LONG}, because this bar is the only route back to the system theme that does not go through Settings, and it is shown exactly
+	 * once per departure.
+	 */
+	private static final int THEME_HINT_DURATION_MS = 7_000;
 
 	// Use Handler(Looper) constructor - Handler() deprecated to prevent null Looper
 	private final Handler handler = new Handler(Looper.getMainLooper());
@@ -207,6 +218,8 @@ public class MainActivity extends BaseActivity {
 				.setPositiveButton(android.R.string.ok, null)
 				.show());
 
+		setupThemeToggle();
+
 		// Wire the in-fly critical/warning threshold slider (portrait home screen).
 		setupThresholdSlider();
 
@@ -222,6 +235,7 @@ public class MainActivity extends BaseActivity {
 		// Monitoring may have been down since the system last killed the process: the service has no UI to say so, and this is the first screen there is to
 		// explain it on (#302).
 		showMonitoringStoppedHintIfNeeded();
+		showThemeLeftSystemHintIfNeeded();
 	}
 
 	/**
@@ -503,6 +517,112 @@ public class MainActivity extends BaseActivity {
 				R.string.monitoring_stopped_rationale,
 				MONITORING_HINT_DURATION_MS
 		).setAction(R.string.open_settings, v -> openBatteryOptimizationSettings()).show();
+	}
+
+	/**
+	 * Wire the gauge-corner theme toggle (#333).
+	 * <p>
+	 * Two states rather than the picker's three: a tap flips light and dark, and counts as an explicit choice, so it leaves "System default" behind. Getting
+	 * back there is the snackbar's job — see {@link #showThemeLeftSystemHintIfNeeded()} — and the Settings picker's.
+	 */
+	private void setupThemeToggle() {
+		final ImageButton themeButton = findViewById(R.id.gaugeThemeButton);
+
+		updateThemeToggleFace(themeButton);
+		themeButton.setOnClickListener(v -> flipTheme());
+	}
+
+	/**
+	 * Put the face on the toggle that names where a tap goes, not where it already is. The screen itself is unmistakably light or dark, so a glyph repeating
+	 * that says nothing; one naming the destination is what a button is normally read as. The description states both, for anyone who cannot see either.
+	 * <p>
+	 * The glyph is named here and only previewed in the layout ({@code tools:src}), because a real {@code android:src} would match one of the two states and
+	 * make a test asserting that state pass whether this method ran or not. The description stays in the layout as well, since lint requires one and this
+	 * build treats its warnings as errors — which is why the icon direction is the assertion worth trusting.
+	 *
+	 * @param themeButton the toggle in the gauge corner
+	 */
+	private void updateThemeToggleFace(ImageButton themeButton) {
+		final boolean showingDark = showingDark();
+
+		themeButton.setImageResource(showingDark ? R.drawable.ic_light_mode : R.drawable.ic_dark_mode);
+		themeButton.setContentDescription(getString(showingDark ? R.string.gauge_theme_switch_to_light : R.string.gauge_theme_switch_to_dark));
+	}
+
+	/**
+	 * Whether the app is rendering dark at this moment.
+	 * <p>
+	 * Read from this activity's configuration, not from the stored choice and not from the application context. The stored choice is {@code system} most of
+	 * the time, which describes the rule and says nothing about the result; and AppCompat applies the night mode while it themes the <em>activity</em>, so an
+	 * application context can still be reporting the un-nighted configuration. The Mate 10 Pro is where that would show: EMUI does not propagate night to the
+	 * app config at all, and it was {@code setDefaultNightMode(FOLLOW_SYSTEM)} in #334 that made dark work there.
+	 * <p>
+	 * No test guards the choice of context, and none can: Robolectric hands the activity and the application the same {@code Resources}, so swapping this for
+	 * {@code getApplicationContext()} keeps the whole suite green. Green tests are not evidence here — the device is.
+	 *
+	 * @return true when the current configuration is a night one
+	 */
+	private boolean showingDark() {
+		return (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
+	}
+
+	/**
+	 * Flip to the opposite of what is on screen, recording the departure from the system theme when this is the tap that causes it.
+	 * <p>
+	 * The flag has to be written before the mode is applied: {@code setDefaultNightMode} recreates this activity, and everything not already in
+	 * {@code SharedPreferences} goes with it.
+	 */
+	private void flipTheme() {
+		final boolean leavingSystem = AppPrefs.THEME_SYSTEM.equals(AppPrefs.themeChoice(this));
+		final String choice = AppPrefs.themeChoiceOpposite(showingDark());
+
+		AppPrefs.setThemeChoice(this, choice);
+		if (leavingSystem) {
+			AppPrefs.setThemeLeftSystem(this, true);
+		}
+
+		AppCompatDelegate.setDefaultNightMode(AppPrefs.themeModeOf(choice));
+	}
+
+	/**
+	 * Offer the system theme back, once, on the launch that follows the tap which left it (#333).
+	 * <p>
+	 * Raised here rather than at the tap because {@code setDefaultNightMode} recreates the activity: a bar posted at tap time dies with the instance that
+	 * posted it, so the new one collects the message from a flag instead. Same shape as {@link #showMonitoringStoppedHintIfNeeded()}.
+	 * <p>
+	 * The action says "Match my phone" rather than "Undo". Undo has no fixed meaning once a second tap has happened — previous state, or system? — and that
+	 * ambiguity belongs to the word, not to the timing. A named destination stays true however the user got here.
+	 * <p>
+	 * The flag is cleared when the bar leaves the screen, not when it is put up, and only for the three ways it can leave with the user present: it timed
+	 * out, they used the action, or they swiped it away. A rotation inside the window tears the bar down with the activity — Material reports that as
+	 * {@code DISMISS_EVENT_MANUAL} — and clearing on show would spend the one-shot offer on a bar nobody had a chance to read.
+	 */
+	private void showThemeLeftSystemHintIfNeeded() {
+		if (!AppPrefs.themeLeftSystem(this)) {
+			return;
+		}
+
+		final int staying = showingDark() ? R.string.theme_staying_dark : R.string.theme_staying_light;
+		final Snackbar offer = Snackbar.make(findViewById(R.id.containerLayout), staying, THEME_HINT_DURATION_MS);
+
+		offer.setAction(R.string.theme_match_phone_action, v -> followSystemTheme());
+		offer.addCallback(new Snackbar.Callback() {
+			@Override
+			public void onDismissed(Snackbar bar, int event) {
+				if (event == DISMISS_EVENT_TIMEOUT || event == DISMISS_EVENT_ACTION || event == DISMISS_EVENT_SWIPE) {
+					AppPrefs.setThemeLeftSystem(MainActivity.this, false);
+				}
+			}
+		});
+		offer.show();
+	}
+
+	/**
+	 * Hand the theme back to the system, from the snackbar the flip put up.
+	 */
+	private void followSystemTheme() {
+		AppPrefs.setThemeChoice(this, AppPrefs.THEME_SYSTEM);
+		AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
 	}
 
 	/**

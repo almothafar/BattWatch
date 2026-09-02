@@ -15,6 +15,10 @@
     <color name="md_theme_error">#FFB4AB</color>
     <color name="md_theme_onError">#690005</color>
 
+    <!-- Dark mode inverts the inversion: the snackbar is a light #E6E0E9 slab, so its accent is the deep end of the brand. 7.6:1 on that ground;
+         the mid blue #059bbf that reads well elsewhere in the app manages only 2.5:1 here. -->
+    <color name="md_theme_primaryInverse">#004A5B</color>
+
     <!-- Brand header, deepened. At their light values these two fill the top ~45% of Home, which on a near-black
          page reads as a light-mode screenshot pasted above a dark-mode one. Deepening them is what the gauge
          palette below is re-tuned around. -->

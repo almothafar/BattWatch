@@ -13,6 +13,10 @@
     <color name="md_theme_error">#BA1A1A</color>
     <color name="md_theme_onError">#FFFFFF</color>
 
+    <!-- The accent for a snackbar, which Material paints on an inverted surface: here a dark #322F35 slab, so this is the light end of the brand
+         rather than the dark one. Undefined it falls back to M3's lavender #D0BCFF, which is what the theme snackbar showed until #333. -->
+    <color name="md_theme_primaryInverse">#6ED3EC</color>
+
     <!-- Gauge and brand-header fills. These are large areas of colour, so they deepen for dark rather than staying
          put (see values-night/colors.xml); the gauge palette that sits on them is re-tuned to match. -->
     <color name="circular_progress_default_progress">#059bbf</color>

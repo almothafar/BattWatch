@@ -6,16 +6,15 @@ import android.content.res.ColorStateList;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.InsetDrawable;
-import android.util.TypedValue;
 import android.view.ContextThemeWrapper;
 import android.widget.ListView;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.res.ResourcesCompat;
 import androidx.fragment.app.FragmentActivity;
-import androidx.test.core.app.ApplicationProvider;
 
 import com.almothafar.simplebatterynotifier.R;
+import com.almothafar.simplebatterynotifier.ThemeAttributes;
 import com.almothafar.simplebatterynotifier.ui.SettingsActivity;
 
 import org.junit.Test;
@@ -47,31 +46,15 @@ import static org.junit.Assert.assertTrue;
 @Config(sdk = 34)
 public class PreferenceDialogThemeTest {
 
-	private static Context appTheme() {
-		return new ContextThemeWrapper(ApplicationProvider.getApplicationContext(), R.style.AppTheme);
-	}
-
-	private static int attr(Context context, int attrId) {
-		final TypedValue value = new TypedValue();
-		assertTrue("attribute unresolved", context.getTheme().resolveAttribute(attrId, value, true));
-		return value.type == TypedValue.TYPE_REFERENCE || value.resourceId != 0 ? value.resourceId : value.data;
-	}
-
-	private static int attrColor(Context context, int attrId) {
-		final TypedValue value = new TypedValue();
-		assertTrue("attribute unresolved", context.getTheme().resolveAttribute(attrId, value, true));
-		return value.data;
-	}
-
 	/** The context androidx.preference's dialogs are themed with: the activity theme, overlaid with whatever {@code alertDialogTheme} names. */
 	private static Context dialogTheme() {
-		final Context base = appTheme();
-		return new ContextThemeWrapper(base, attr(base, androidx.appcompat.R.attr.alertDialogTheme));
+		final Context base = ThemeAttributes.appTheme();
+		return new ContextThemeWrapper(base, ThemeAttributes.reference(base, androidx.appcompat.R.attr.alertDialogTheme));
 	}
 
 	/** The colour the dialog panel actually paints, read off the drawable rather than the attribute it was declared from. */
 	private static int panelColor(Context dialogContext) {
-		final int backgroundId = attr(dialogContext, android.R.attr.windowBackground);
+		final int backgroundId = ThemeAttributes.reference(dialogContext, android.R.attr.windowBackground);
 		final Drawable background = ResourcesCompat.getDrawable(dialogContext.getResources(), backgroundId, dialogContext.getTheme());
 		assertTrue("panel is not an inset shape: " + background, background instanceof InsetDrawable);
 
@@ -88,7 +71,7 @@ public class PreferenceDialogThemeTest {
 	public void darkPreferenceDialogsMatchTheDialogsTheAppBuildsItself() {
 		final Context dialog = dialogTheme();
 
-		assertEquals(attrColor(dialog, com.google.android.material.R.attr.colorSurfaceContainerHigh), panelColor(dialog));
+		assertEquals(ThemeAttributes.color(dialog, com.google.android.material.R.attr.colorSurfaceContainerHigh), panelColor(dialog));
 	}
 
 	@Test
@@ -96,7 +79,7 @@ public class PreferenceDialogThemeTest {
 	public void lightPreferenceDialogsMatchTheDialogsTheAppBuildsItself() {
 		final Context dialog = dialogTheme();
 
-		assertEquals(attrColor(dialog, com.google.android.material.R.attr.colorSurfaceContainerHigh), panelColor(dialog));
+		assertEquals(ThemeAttributes.color(dialog, com.google.android.material.R.attr.colorSurfaceContainerHigh), panelColor(dialog));
 	}
 
 	/**
@@ -106,7 +89,7 @@ public class PreferenceDialogThemeTest {
 	@Test
 	public void theAppsOwnDialogsKeepTheirOwnTheme() {
 		assertEquals(com.google.android.material.R.style.ThemeOverlay_Material3_MaterialAlertDialog,
-		             attr(appTheme(), com.google.android.material.R.attr.materialAlertDialogTheme));
+		             ThemeAttributes.reference(ThemeAttributes.appTheme(), com.google.android.material.R.attr.materialAlertDialogTheme));
 	}
 
 	/**

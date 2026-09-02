@@ -382,7 +382,7 @@ public final class AppPrefs {
 	 * @return one of the {@code AppCompatDelegate.MODE_NIGHT_*} constants
 	 */
 	public static int themeMode(Context context) {
-		return themeModeOf(prefs(context).getString(context.getString(R.string._pref_key_theme), THEME_SYSTEM));
+		return themeModeOf(themeChoice(context));
 	}
 
 	/**
@@ -399,6 +399,71 @@ public final class AppPrefs {
 			case THEME_DARK -> AppCompatDelegate.MODE_NIGHT_YES;
 			default -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM;
 		};
+	}
+
+	/**
+	 * The stored theme choice as written, rather than resolved to a night mode. The gauge toggle (#333) needs the raw value: {@link #THEME_SYSTEM} is the one
+	 * state a tap has to announce leaving, and {@link #themeMode} has already flattened it into a mode by the time it returns.
+	 *
+	 * @param context Application context
+	 *
+	 * @return one of {@link #THEME_SYSTEM}, {@link #THEME_LIGHT} or {@link #THEME_DARK}
+	 */
+	public static String themeChoice(Context context) {
+		return prefs(context).getString(context.getString(R.string._pref_key_theme), THEME_SYSTEM);
+	}
+
+	/**
+	 * Persist a theme choice. Writes the same key the Settings picker owns, which is what keeps the gauge toggle and the picker in step without either
+	 * knowing about the other — the {@code ListPreference} is persistent and re-reads the value whenever its screen opens.
+	 * <p>
+	 * Applying the choice is the caller's job: {@code AppCompatDelegate.setDefaultNightMode(themeModeOf(choice))} recreates the visible activity, so it wants
+	 * to happen once, after everything else this tap needs to record.
+	 *
+	 * @param context Application context
+	 * @param choice  one of {@link #THEME_SYSTEM}, {@link #THEME_LIGHT} or {@link #THEME_DARK}
+	 */
+	public static void setThemeChoice(Context context, String choice) {
+		prefs(context).edit().putString(context.getString(R.string._pref_key_theme), choice).apply();
+	}
+
+	/**
+	 * The explicit choice a gauge tap makes, given what is on screen at the time (#333).
+	 * <p>
+	 * Keyed off the rendered appearance rather than the stored value, because on {@link #THEME_SYSTEM} the stored value describes the rule and says nothing
+	 * about the result. The caller reads that appearance from the *activity* configuration — AppCompat applies the night mode when it themes the activity,
+	 * so an application context can still be reporting the un-nighted one.
+	 *
+	 * @param showingDark whether the app is currently rendering dark
+	 *
+	 * @return {@link #THEME_LIGHT} when dark is showing, {@link #THEME_DARK} otherwise
+	 */
+	public static String themeChoiceOpposite(boolean showingDark) {
+		return showingDark ? THEME_LIGHT : THEME_DARK;
+	}
+
+	/**
+	 * Whether a gauge tap has taken the user off {@link #THEME_SYSTEM} without the offer to go back having been shown yet (#333).
+	 * <p>
+	 * A flag rather than a direct call because {@code setDefaultNightMode} recreates the activity: a snackbar raised at tap time dies with the instance that
+	 * raised it, so the new one has to pick the message up. Same shape as the pending {@code monitoringStopped} report (#302).
+	 *
+	 * @param context Application context
+	 *
+	 * @return true when the offer is still owed
+	 */
+	public static boolean themeLeftSystem(Context context) {
+		return prefs(context).getBoolean(context.getString(R.string._pref_key_theme_left_system), false);
+	}
+
+	/**
+	 * Record — or clear — the pending "you are no longer following the system" offer (#333).
+	 *
+	 * @param context Application context
+	 * @param pending true when a tap has just left {@link #THEME_SYSTEM}, false once the offer has been shown
+	 */
+	public static void setThemeLeftSystem(Context context, boolean pending) {
+		prefs(context).edit().putBoolean(context.getString(R.string._pref_key_theme_left_system), pending).apply();
 	}
 
 	private static SharedPreferences prefs(Context context) {
