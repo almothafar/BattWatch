@@ -201,6 +201,18 @@ public class HorseshoeProgressBar extends View {
 		return level;
 	}
 
+	/**
+	 * Whether a level sweep is currently in flight.
+	 * <p>
+	 * The level a host reads back during one is a frame of an animation rather than a value it set, so a host that has to tell "the gauge is showing this"
+	 * from "the gauge is on its way to this" needs to ask (#339).
+	 *
+	 * @return true while {@link #animateLevelTo} is still running
+	 */
+	public boolean isAnimatingLevel() {
+		return nonNull(levelAnimator) && levelAnimator.isRunning();
+	}
+
 	/** The big centered text, normally the percentage (e.g. "80%"). */
 	public void setTitle(final String title) {
 		this.title = nonNull(title) ? title : "";

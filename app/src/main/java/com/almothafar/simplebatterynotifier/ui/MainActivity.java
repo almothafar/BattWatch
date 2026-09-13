@@ -92,6 +92,9 @@ public class MainActivity extends BaseActivity {
 	// on devices without genuine sub-percent data or a trustworthy rate. Bound to this activity, since
 	// it only smooths the on-screen gauge.
 	private final GaugeValueSmoother gaugeSmoother = new GaugeValueSmoother();
+	// Whether the ring has already swept up from empty for this instance (#339). The sweep is an opening flourish, so it belongs to a cold start and to
+	// nothing else: a recreate seeds this true, and the first call latches it, which keeps it off the trip back from Settings.
+	private boolean gaugeIntroPlayed;
 	private ActivityResultLauncher<Intent> settingsLauncher;
 	private ActivityResultLauncher<String> notificationPermissionLauncher;
 
@@ -156,6 +159,10 @@ public class MainActivity extends BaseActivity {
 	@Override
 	protected void onCreate(final Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+
+		// A recreate already had a level on screen a moment ago — rotation, or the theme toggle, which recreates through setDefaultNightMode. Replaying the
+		// opening sweep there would show a number that is wrong on purpose, right where the user is looking (#339).
+		gaugeIntroPlayed = nonNull(savedInstanceState);
 
 		setContentView(R.layout.activity_main);
 
@@ -344,9 +351,7 @@ public class MainActivity extends BaseActivity {
 	 */
 	private void refreshBatteryUi() {
 		fillBatteryInfo();
-		batteryGauge.setLevel(batteryPercentage);
-		batteryGauge.setTitle(batteryPercentageText);
-		batteryGauge.setStatusText(subTitle);
+		showGaugeLevel();
 
 		// Drive the gauge motion: charging wave, full-on-charger idle pulse, or discharge wave.
 		if (nonNull(batteryDO)) {
@@ -374,7 +379,11 @@ public class MainActivity extends BaseActivity {
 	}
 
 	/**
-	 * Initialize first values and animate the progress bar
+	 * Put the current battery reading on the gauge, sweeping up to it on a cold start and landing on it directly every other time.
+	 * <p>
+	 * Called on open and again on the way back from Settings, where thresholds may have changed. The sweep is an opening flourish and belongs only to the
+	 * first of those: replayed on a return, a rotation or a theme flip it spends a second showing a level the app already knows is wrong (#339). Live updates
+	 * never animate either — {@link #refreshBatteryUi()} has always set the level outright.
 	 */
 	private void initializeFirstValues() {
 		fillBatteryInfo();
@@ -385,12 +394,25 @@ public class MainActivity extends BaseActivity {
 		// Keep the in-fly slider in sync with values that may have changed in Settings.
 		syncThresholdSlider();
 
+		if (gaugeIntroPlayed) {
+			showGaugeLevel();
+			return;
+		}
+		gaugeIntroPlayed = true;
+
 		// The ring still animates whole levels; only the final title carries the decimals (#158).
 		// Intermediate steps count up in whole percent, then the last step lands on the precise text.
 		batteryGauge.animateLevelTo(batteryPercentage, progress -> {
 			batteryGauge.setTitle(progress >= batteryPercentage ? batteryPercentageText : BatteryPercentFormatter.formatWhole(progress));
 			batteryGauge.setStatusText(subTitle);
 		});
+	}
+
+	/** The gauge showing the reading it has, with no animation — the state the opening sweep ends on, and the one every later update writes directly. */
+	private void showGaugeLevel() {
+		batteryGauge.setLevel(batteryPercentage);
+		batteryGauge.setTitle(batteryPercentageText);
+		batteryGauge.setStatusText(subTitle);
 	}
 
 	/**
