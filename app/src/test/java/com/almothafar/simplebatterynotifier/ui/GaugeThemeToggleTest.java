@@ -23,6 +23,7 @@ import org.robolectric.annotation.Config;
 
 import java.time.Duration;
 
+import static java.util.Objects.isNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -44,6 +45,17 @@ import static org.junit.Assert.assertTrue;
 @Config(sdk = 34)
 public class GaugeThemeToggleTest {
 
+	/** How many looper rounds to give the manager before calling it a failure, and how far each one advances. */
+	private static final int AWAIT_ROUNDS = 20;
+	private static final long AWAIT_ROUND_MS = 25;
+
+	/**
+	 * The night mode is a static, so it has to be put back. Deliberately nothing else.
+	 * <p>
+	 * An earlier attempt at #343 also drained the looper here, to clear any bar left current in {@code SnackbarManager}. It ran the activity recreate that
+	 * the tap tests leave queued on purpose, against an activity the try-with-resources had already destroyed, and two of them failed with "Cannot recreate
+	 * activity since it's destroyed already". A test that ends with work still in flight is entitled to; tidying up after it is not this method's business.
+	 */
 	@After
 	public void restoreTheDefaultNightMode() {
 		AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
@@ -63,9 +75,26 @@ public class GaugeThemeToggleTest {
 		return activity.findViewById(com.google.android.material.R.id.snackbar_action);
 	}
 
-	/** A snackbar reaches the screen through the manager's handler, so nothing is attached until the main looper has run. */
-	private static void settle() {
-		Shadows.shadowOf(Looper.getMainLooper()).idle();
+	/**
+	 * Run the main looper until the offer is on screen, and fail saying so if it never arrives (#343).
+	 * <p>
+	 * A mitigation rather than a diagnosis, and worth being honest about which. CI saw this lookup come back null exactly once; it has not been reproduced
+	 * since, over more than twenty local runs of the class alone and of the whole suite, under both the debug and release variants, nor by deliberately
+	 * queueing a second bar behind the first to force the hand-off the manager does through the looper. The mechanism is therefore unknown.
+	 * <p>
+	 * What is known from Material's own code is that {@code SnackbarManager} shows one bar at a time and hands them to
+	 * {@code BaseTransientBottomBar.showView} — the call that attaches the view this looks up — through the main looper. So the number of looper rounds
+	 * between {@code show()} and the view existing is not a constant the test gets to assume, and asserting after exactly one {@code idle()} was assuming it.
+	 * <p>
+	 * Waiting for the view instead cannot be worse than waiting for a fixed amount of work, and it turns a bare "expected not null" into a bounded wait that
+	 * says what it was waiting for. Each round advances a little so short-delayed hand-offs fire too, and the whole budget sits well inside
+	 * {@code THEME_HINT_DURATION_MS}, so the bar cannot time out while being waited for.
+	 */
+	private static void awaitOffer(MainActivity activity, String what) {
+		for (int round = 0; round < AWAIT_ROUNDS && isNull(offerText(activity)); round++) {
+			Shadows.shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(AWAIT_ROUND_MS));
+		}
+		assertNotNull(what, offerText(activity));
 	}
 
 	@Test
@@ -194,9 +223,8 @@ public class GaugeThemeToggleTest {
 
 		try (ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class)) {
 			final MainActivity activity = controller.setup().get();
-			settle();
+			awaitOffer(activity, "no offer reached the screen");
 
-			assertNotNull("no offer on screen", offerText(activity));
 			assertEquals(activity.getString(R.string.theme_staying_dark), offerText(activity).getText().toString());
 			assertEquals(activity.getString(R.string.theme_match_phone_action), offerAction(activity).getText().toString());
 		}
@@ -211,9 +239,8 @@ public class GaugeThemeToggleTest {
 
 		try (ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class)) {
 			final MainActivity activity = controller.setup().get();
-			settle();
+			awaitOffer(activity, "no offer reached the screen");
 
-			assertNotNull("no offer to act on", offerAction(activity));
 			offerAction(activity).performClick();
 
 			assertEquals(AppPrefs.THEME_SYSTEM, AppPrefs.themeChoice(ApplicationProvider.getApplicationContext()));
@@ -232,14 +259,12 @@ public class GaugeThemeToggleTest {
 
 		try (ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class)) {
 			controller.setup();
-			settle();
+			awaitOffer(controller.get(), "no offer reached the screen");
 			assertTrue("spent before anyone could act on it", AppPrefs.themeLeftSystem(ApplicationProvider.getApplicationContext()));
 
 			RuntimeEnvironment.setQualifiers("+land");
 			controller.configurationChange();
-			settle();
-
-			assertNotNull("the offer did not come back with the recreated activity", offerText(controller.get()));
+			awaitOffer(controller.get(), "the offer did not come back with the recreated activity");
 		}
 	}
 
