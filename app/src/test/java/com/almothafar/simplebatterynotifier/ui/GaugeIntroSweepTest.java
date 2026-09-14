@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.app.Application;
 import android.content.Intent;
 import android.os.BatteryManager;
-import android.os.Looper;
 
 import androidx.test.core.app.ApplicationProvider;
 
@@ -29,12 +28,12 @@ import static org.junit.Assert.assertTrue;
 /**
  * The opening sweep belongs to a cold start and to nothing else (#339).
  * <p>
- * {@code animateLevelTo} always starts the ring at empty, which is right the first time the app opens and wrong every other time it is called — and it was
- * called on three of them: the return from Settings, a rotation, and the theme toggle, which recreates the activity through {@code setDefaultNightMode}. Each
- * spent a second showing a level the app already knew was wrong, with the theme toggle doing it while the user looked straight at the gauge.
+ * {@code animateLevelTo} always starts the ring at empty, which is right the first time the app opens and wrong every other time {@code initializeFirstValues}
+ * runs — and it runs from {@code onPostResume}, so that is every return to the screen, plus every rotation and theme flip, since both recreate the activity.
+ * Each spent a second showing a level the app already knew was wrong, with the theme toggle doing it while the user looked straight at the gauge.
  * <p>
- * The recreate assertions read the level <em>immediately</em> after the configuration change, before the looper advances the animator. That is the window the
- * defect lives in: mutating the fix away drops the reading to 0 there, because a fresh sweep had begun from empty.
+ * The assertions read the gauge <em>immediately</em> after the event, before the looper advances the animator. That is the window the defect lives in: a
+ * version that sweeps leaves the ring reading 0 with its animator still running, where a fixed one is already showing the level and animating nothing.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 34)
@@ -64,7 +63,7 @@ public class GaugeIntroSweepTest {
 	/** The case the user sees most often, because the toggle that causes it sits on the gauge itself. */
 	@Test
 	public void theGaugeKeepsItsLevelWhenTheThemeFlips() {
-		try (ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class)) {
+		try (final ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class)) {
 			final MainActivity opened = controller.setup().get();
 			assertEquals("the gauge never reached the seeded level", SEEDED_LEVEL, gaugeOf(opened).getLevel());
 
@@ -76,13 +75,13 @@ public class GaugeIntroSweepTest {
 	}
 
 	/**
-	 * The level alone cannot pin this one. {@code initializeFirstValues()} runs <em>twice</em> on a recreate — once from {@code onCreate}, once more as the
-	 * activity-result launcher re-delivers — so a version that sweeps on the first call still lands on the right number by the second, and the end state looks
-	 * identical. What differs is that a sweep was started and is still running, which is exactly what the user sees as the ring dropping to empty.
+	 * The level alone cannot pin this one. A recreate drives {@code initializeFirstValues()} more than once, so a version that sweeps on the first pass still
+	 * lands on the right number by the last, and the end state looks identical. What differs is that a sweep was started and is still running — which is
+	 * exactly what the user sees as the ring dropping to empty and climbing back.
 	 */
 	@Test
 	public void noSweepIsEvenStartedWhenTheActivityIsRecreated() {
-		try (ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class)) {
+		try (final ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class)) {
 			controller.setup();
 
 			RuntimeEnvironment.setQualifiers("+night");
@@ -93,13 +92,13 @@ public class GaugeIntroSweepTest {
 	}
 
 	/**
-	 * The most frequent trigger of the three, and the one the issue missed: {@code initializeFirstValues()} has a second caller, the activity-result callback
-	 * that fires on the way back from Settings. No recreate is involved there, so the {@code savedInstanceState} seed cannot help — only the latch, which
-	 * remembers that this instance has already had its opening sweep.
+	 * The trigger the issue missed, and the one with no recreate behind it: the settings launcher's result callback is the second caller of
+	 * {@code initializeFirstValues()}, so the {@code savedInstanceState} seed cannot help here. Only the latch can, by remembering that this instance has
+	 * already had its opening sweep.
 	 */
 	@Test
 	public void theGaugeDoesNotSweepAgainOnTheWayBackFromSettings() {
-		try (ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class)) {
+		try (final ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class)) {
 			final MainActivity activity = controller.setup().get();
 			final ShadowActivity shadow = Shadows.shadowOf(activity);
 
@@ -114,7 +113,7 @@ public class GaugeIntroSweepTest {
 	/** Same path, a different configuration: the fix must be about recreating at all, not about the theme in particular. */
 	@Test
 	public void theGaugeKeepsItsLevelThroughARotation() {
-		try (ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class)) {
+		try (final ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class)) {
 			controller.setup();
 
 			RuntimeEnvironment.setQualifiers("+land");
@@ -125,20 +124,19 @@ public class GaugeIntroSweepTest {
 	}
 
 	/**
-	 * The sweep itself is worth keeping, so this pins that it still starts from empty and still arrives — the opening flourish is the one place it earns its
-	 * second. Asserted on the widget rather than through the activity, because Robolectric reports no battery level during {@code onCreate}, which would make
-	 * a cold-start assertion pass on a gauge that animated to zero.
+	 * The other half of the rule, and the one a fix for this bug can quietly destroy: a cold start must still sweep. Nothing else here would notice a version
+	 * that simply never animates, since every assertion above is about <em>not</em> sweeping.
+	 * <p>
+	 * Robolectric surfaces no battery level during {@code onCreate}, so a freshly created activity animates to zero and its level says nothing afterwards. The
+	 * sweep is caught in flight instead, which is why the lifecycle stops one step short of the {@code setup()} used everywhere else: {@code visible()} idles
+	 * the looper, and an idle runs a Robolectric animator to completion, leaving a finished sweep indistinguishable from one that never started.
 	 */
 	@Test
-	public void theOpeningSweepStillRunsFromEmptyToTheLevel() {
-		final HorseshoeProgressBar gauge = new HorseshoeProgressBar(ApplicationProvider.getApplicationContext());
+	public void aColdStartStillSweepsUpFromEmpty() {
+		try (final ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class)) {
+			controller.create().start().resume();
 
-		gauge.animateLevelTo(SEEDED_LEVEL, null);
-		assertEquals("the sweep did not start from empty", 0, gauge.getLevel());
-		assertTrue("a sweep in flight does not report itself", gauge.isAnimatingLevel());
-
-		Shadows.shadowOf(Looper.getMainLooper()).idle();
-		assertEquals("the sweep did not arrive", SEEDED_LEVEL, gauge.getLevel());
-		assertFalse("a finished sweep still reports itself", gauge.isAnimatingLevel());
+			assertTrue("no opening sweep on a cold start", gaugeOf(controller.get()).isAnimatingLevel());
+		}
 	}
 }
