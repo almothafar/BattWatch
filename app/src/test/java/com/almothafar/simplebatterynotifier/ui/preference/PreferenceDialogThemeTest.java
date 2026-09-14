@@ -38,9 +38,13 @@ import static org.junit.Assert.assertTrue;
  * layout arrives with no background of its own, falling back to the same place. Both were confirmed by mutating this theme and watching the colour
  * tests below fail. Only stating the panel drawable satisfies both.
  * <p>
- * Measured on an S23+ in dark mode: {@code #424242} square-cornered before, {@code #2B2930} at a 28dp radius after. Robolectric resolves that fallback
- * to appcompat's declared white shape rather than the {@code colorBackgroundFloating} a real framework substitutes, so it disagrees with the device on
- * the old value - which is why these assertions are written against the colour the panel should be, never against one it should not.
+ * Measured on an S23+ in dark mode: {@code #424242} square-cornered before, {@code #2B2930} at a 28dp radius after. That second value has since moved to
+ * {@code #232C2E} — #340 re-hued the whole neutral ramp off Material's violet baseline — so the panel is now a shade of the app's own blue rather than of
+ * Material's purple. The shape and the radius are what that measurement was taken for, and those are unchanged.
+ * <p>
+ * Robolectric resolves the old fallback to appcompat's declared white shape rather than the {@code colorBackgroundFloating} a real framework substitutes,
+ * so it disagrees with the device on the pre-fix value - which is why these assertions are written against the colour the panel should be, never against
+ * one it should not.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 34)

@@ -15,9 +15,24 @@
     <color name="md_theme_error">#FFB4AB</color>
     <color name="md_theme_onError">#690005</color>
 
-    <!-- Dark mode inverts the inversion: the snackbar is a light #E6E0E9 slab, so its accent is the deep end of the brand. 7.6:1 on that ground;
+    <!-- Dark mode inverts the inversion: the snackbar is a light slab, so its accent is the deep end of the brand. 7.7:1 on that ground;
          the mid blue #059bbf that reads well elsewhere in the app manages only 2.5:1 here. -->
     <color name="md_theme_primaryInverse">#004A5B</color>
+
+    <!-- The dark half of the neutral ramp (#340); see values/colors.xml for why these are stated rather than inherited. Same lightness and chroma as the
+         M3 baseline values, rotated from hue 312 to this theme's 216 so the greys lean with the palette instead of across it. Dark surfaces show a tint
+         more than light ones do, which is why the mismatch became obvious once the dark theme shipped. -->
+    <color name="md_theme_surfaceContainerLowest">#081012</color>
+    <color name="md_theme_surfaceContainerLow">#171D1F</color>
+    <color name="md_theme_surfaceContainer">#192224</color>
+    <color name="md_theme_surfaceContainerHigh">#232C2E</color>
+    <color name="md_theme_surfaceContainerHighest">#2E3739</color>
+    <color name="md_theme_surfaceVariant">#3D4A4D</color>
+    <color name="md_theme_onSurfaceVariant">#BBCACE</color>
+    <color name="md_theme_surfaceInverse">#D9E5E8</color>
+    <color name="md_theme_onSurfaceInverse">#2A3234</color>
+    <color name="md_theme_outline">#879497</color>
+    <color name="md_theme_outlineVariant">#3D4A4D</color>
 
     <!-- Brand header, deepened. At their light values these two fill the top ~45% of Home, which on a near-black
          page reads as a light-mode screenshot pasted above a dark-mode one. Deepening them is what the gauge

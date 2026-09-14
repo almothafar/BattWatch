@@ -13,9 +13,26 @@
     <color name="md_theme_error">#BA1A1A</color>
     <color name="md_theme_onError">#FFFFFF</color>
 
-    <!-- The accent for a snackbar, which Material paints on an inverted surface: here a dark #322F35 slab, so this is the light end of the brand
+    <!-- The accent for a snackbar, which Material paints on an inverted surface: here a dark slab, so this is the light end of the brand
          rather than the dark one. Undefined it falls back to M3's lavender #D0BCFF, which is what the theme snackbar showed until #333. -->
     <color name="md_theme_primaryInverse">#6ED3EC</color>
+
+    <!-- The neutral ramp Material builds its containers, dividers and inverted surfaces from (#340). Left undefined these fall back to the baseline M3
+         palette, whose neutrals are tinted toward Material's own violet seed: measured in OKLCH they sit at hue 312 while this app's primary sits at 222,
+         so every grey in the app leaned ~90 degrees the wrong way. Nothing looked wrong alone, and everything looked faintly off together.
+         Same lightness and same chroma as the M3 values, rotated to the app's hue - the tint is deliberate and very slight (chroma 0.0148), the direction
+         was the defect. Regenerating the whole scheme from a seed was rejected: Material Theme Builder tone-maps the seed and would rewrite #059bbf. -->
+    <color name="md_theme_surfaceContainerLowest">#FFFFFF</color>
+    <color name="md_theme_surfaceContainerLow">#ECF6FA</color>
+    <color name="md_theme_surfaceContainer">#E6F2F7</color>
+    <color name="md_theme_surfaceContainerHigh">#DFEBF0</color>
+    <color name="md_theme_surfaceContainerHighest">#D9E5E9</color>
+    <color name="md_theme_surfaceVariant">#D7E6EC</color>
+    <color name="md_theme_onSurfaceVariant">#3D494E</color>
+    <color name="md_theme_surfaceInverse">#2A3235</color>
+    <color name="md_theme_onSurfaceInverse">#E9F4F7</color>
+    <color name="md_theme_outline">#6D797D</color>
+    <color name="md_theme_outlineVariant">#BBCACF</color>
 
     <!-- Gauge and brand-header fills. These are large areas of colour, so they deepen for dark rather than staying
          put (see values-night/colors.xml); the gauge palette that sits on them is re-tuned to match. -->
