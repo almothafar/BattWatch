@@ -1,6 +1,7 @@
 package com.almothafar.simplebatterynotifier.ui.widget;
 
 import android.content.Context;
+import android.os.Looper;
 import android.util.AttributeSet;
 
 import androidx.test.core.app.ApplicationProvider;
@@ -11,11 +12,13 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.Shadows;
 import org.robolectric.annotation.Config;
 
 import java.util.Locale;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -118,5 +121,25 @@ public class HorseshoeProgressBarTest {
 		assertEquals("ar-rEG should select Eastern Arabic digits", "٧٢", String.format(Locale.getDefault(), "%d", 72));
 
 		assertEquals("Level at 72 percent", String.valueOf(gaugeWithTemplate("Level at %1$d percent", 72).getContentDescription()));
+	}
+
+	/**
+	 * The level sweep, and the query that tells it apart from a level someone set.
+	 * <p>
+	 * {@code getLevel} alone cannot: mid-sweep it returns an animation frame, so a host driving the gauge on a timer would overwrite the climb without ever
+	 * being able to notice. Asserted in both directions, because a query hardwired to one answer would satisfy either half on its own.
+	 */
+	@Test
+	@Config(sdk = 34)
+	public void animateLevelTo_sweepsFromEmptyAndReportsWhileItRuns() {
+		final HorseshoeProgressBar gauge = new HorseshoeProgressBar(ApplicationProvider.getApplicationContext());
+
+		gauge.animateLevelTo(72, null);
+		assertEquals("the sweep did not start from empty", 0, gauge.getLevel());
+		assertTrue("a sweep in flight does not report itself", gauge.isAnimatingLevel());
+
+		Shadows.shadowOf(Looper.getMainLooper()).idle();
+		assertEquals("the sweep did not arrive", 72, gauge.getLevel());
+		assertFalse("a finished sweep still reports itself", gauge.isAnimatingLevel());
 	}
 }

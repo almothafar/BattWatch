@@ -201,6 +201,19 @@ public class HorseshoeProgressBar extends View {
 		return level;
 	}
 
+	/**
+	 * Whether a level sweep started by {@link #animateLevelTo} is still running.
+	 * <p>
+	 * {@link #getLevel()} cannot answer this on its own: mid-sweep it returns an animation frame rather than a value anyone set, so "the gauge is showing
+	 * this" and "the gauge is on its way to this" look identical. A host that drives the gauge on a timer should ask before writing a level, since
+	 * {@link #setLevel} during a sweep is overwritten by the animation's next frame.
+	 *
+	 * @return true while a level sweep is in flight
+	 */
+	public boolean isAnimatingLevel() {
+		return nonNull(levelAnimator) && levelAnimator.isRunning();
+	}
+
 	/** The big centered text, normally the percentage (e.g. "80%"). */
 	public void setTitle(final String title) {
 		this.title = nonNull(title) ? title : "";

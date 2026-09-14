@@ -92,6 +92,9 @@ public class MainActivity extends BaseActivity {
 	// on devices without genuine sub-percent data or a trustworthy rate. Bound to this activity, since
 	// it only smooths the on-screen gauge.
 	private final GaugeValueSmoother gaugeSmoother = new GaugeValueSmoother();
+	// Whether the ring has already swept up from empty for this instance (#339). The sweep is an opening flourish, so it belongs to a cold start and to
+	// nothing else: a recreate seeds this true, and the first call latches it, which keeps it off the trip back from Settings.
+	private boolean gaugeIntroPlayed;
 	private ActivityResultLauncher<Intent> settingsLauncher;
 	private ActivityResultLauncher<String> notificationPermissionLauncher;
 
@@ -154,8 +157,12 @@ public class MainActivity extends BaseActivity {
 	 * @param savedInstanceState Saved state bundle
 	 */
 	@Override
-	protected void onCreate(final Bundle savedInstanceState) {
+	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+
+		// A recreate already had a level on screen a moment ago — rotation, or the theme toggle, which recreates through setDefaultNightMode. Replaying the
+		// opening sweep there would show a number that is wrong on purpose, right where the user is looking (#339).
+		gaugeIntroPlayed = nonNull(savedInstanceState);
 
 		setContentView(R.layout.activity_main);
 
@@ -344,9 +351,16 @@ public class MainActivity extends BaseActivity {
 	 */
 	private void refreshBatteryUi() {
 		fillBatteryInfo();
-		batteryGauge.setLevel(batteryPercentage);
-		batteryGauge.setTitle(batteryPercentageText);
-		batteryGauge.setStatusText(subTitle);
+
+		// Stand off while the opening sweep is running. The first run of this loop lands at UPDATER_DELAY (300 ms) and the sweep lasts LEVEL_ANIMATION_MS
+		// (1000 ms), so exactly one tick falls inside it — long enough to throw the ring to the final level for a frame before the animation drags it back to
+		// where it had climbed to. The sweep keeps the text in step itself, through the per-step callback in initializeFirstValues.
+		//
+		// Not covered by a test, and not coverable by one here: Robolectric runs a ValueAnimator to completion on the first idle of any length, so the gauge
+		// is only ever seen un-started or finished and the overlap this guards has no moment to happen in. Device-verified instead.
+		if (!batteryGauge.isAnimatingLevel()) {
+			showGaugeReading();
+		}
 
 		// Drive the gauge motion: charging wave, full-on-charger idle pulse, or discharge wave.
 		if (nonNull(batteryDO)) {
@@ -374,7 +388,15 @@ public class MainActivity extends BaseActivity {
 	}
 
 	/**
-	 * Initialize first values and animate the progress bar
+	 * Put the current battery reading on the gauge, sweeping up to it on a cold start and landing on it directly every other time.
+	 * <p>
+	 * Two callers, and between them this runs far more often than "first values" suggests: {@link #onPostResume()}, so every return to the screen — from
+	 * Insights, from the background, from the lock screen — as well as every rotation and every theme flip, since both recreate the activity; and the
+	 * settings launcher's result callback, for the thresholds that may have changed while the user was in there.
+	 * <p>
+	 * The sweep is an opening flourish and belongs to the first of those only. Replayed on any of the rest it spends a second showing a level the app already
+	 * knows is wrong (#339), so it is spent once per cold-started instance. Live updates never animate either — {@link #refreshBatteryUi()} has always set the
+	 * level outright.
 	 */
 	private void initializeFirstValues() {
 		fillBatteryInfo();
@@ -385,12 +407,25 @@ public class MainActivity extends BaseActivity {
 		// Keep the in-fly slider in sync with values that may have changed in Settings.
 		syncThresholdSlider();
 
+		if (gaugeIntroPlayed) {
+			showGaugeReading();
+			return;
+		}
+		gaugeIntroPlayed = true;
+
 		// The ring still animates whole levels; only the final title carries the decimals (#158).
 		// Intermediate steps count up in whole percent, then the last step lands on the precise text.
 		batteryGauge.animateLevelTo(batteryPercentage, progress -> {
 			batteryGauge.setTitle(progress >= batteryPercentage ? batteryPercentageText : BatteryPercentFormatter.formatWhole(progress));
 			batteryGauge.setStatusText(subTitle);
 		});
+	}
+
+	/** Write the current reading — level, percentage and status — straight onto the gauge, with no animation. This is the state the opening sweep ends on. */
+	private void showGaugeReading() {
+		batteryGauge.setLevel(batteryPercentage);
+		batteryGauge.setTitle(batteryPercentageText);
+		batteryGauge.setStatusText(subTitle);
 	}
 
 	/**
