@@ -1,10 +1,10 @@
 package com.almothafar.simplebatterynotifier.ui;
 
 import android.content.Context;
-import android.graphics.Color;
 
 import androidx.core.content.ContextCompat;
 
+import com.almothafar.simplebatterynotifier.AppPalette;
 import com.almothafar.simplebatterynotifier.R;
 import com.almothafar.simplebatterynotifier.ThemeAttributes;
 import com.almothafar.simplebatterynotifier.WcagContrast;
@@ -36,19 +36,38 @@ import static org.junit.Assert.assertTrue;
 @Config(sdk = 34)
 public class SurfacePaletteTest {
 
+	/** One neutral role: the Material attribute a widget resolves, and the app resource it has to come from. */
+	private record NeutralRole(int attr, int color) { }
+
+	/** Which way the container steps travel, since elevation is read off lightness and the two themes run opposite ways. */
+	private enum Mode {
+		LIGHT(true),
+		DARK(false);
+
+		private final boolean containersDarkenAsTheyRise;
+
+		Mode(boolean containersDarkenAsTheyRise) {
+			this.containersDarkenAsTheyRise = containersDarkenAsTheyRise;
+		}
+
+		private String label() {
+			return name().toLowerCase(Locale.ROOT);
+		}
+	}
+
 	/** Every neutral role the app states, paired with the resource it must come from. */
-	private static final int[][] RAMP = {
-		{attr.colorSurfaceContainerLowest, R.color.md_theme_surfaceContainerLowest},
-		{attr.colorSurfaceContainerLow, R.color.md_theme_surfaceContainerLow},
-		{attr.colorSurfaceContainer, R.color.md_theme_surfaceContainer},
-		{attr.colorSurfaceContainerHigh, R.color.md_theme_surfaceContainerHigh},
-		{attr.colorSurfaceContainerHighest, R.color.md_theme_surfaceContainerHighest},
-		{attr.colorSurfaceVariant, R.color.md_theme_surfaceVariant},
-		{attr.colorOnSurfaceVariant, R.color.md_theme_onSurfaceVariant},
-		{attr.colorSurfaceInverse, R.color.md_theme_surfaceInverse},
-		{attr.colorOnSurfaceInverse, R.color.md_theme_onSurfaceInverse},
-		{attr.colorOutline, R.color.md_theme_outline},
-		{attr.colorOutlineVariant, R.color.md_theme_outlineVariant},
+	private static final NeutralRole[] RAMP = {
+		new NeutralRole(attr.colorSurfaceContainerLowest, R.color.md_theme_surfaceContainerLowest),
+		new NeutralRole(attr.colorSurfaceContainerLow, R.color.md_theme_surfaceContainerLow),
+		new NeutralRole(attr.colorSurfaceContainer, R.color.md_theme_surfaceContainer),
+		new NeutralRole(attr.colorSurfaceContainerHigh, R.color.md_theme_surfaceContainerHigh),
+		new NeutralRole(attr.colorSurfaceContainerHighest, R.color.md_theme_surfaceContainerHighest),
+		new NeutralRole(attr.colorSurfaceVariant, R.color.md_theme_surfaceVariant),
+		new NeutralRole(attr.colorOnSurfaceVariant, R.color.md_theme_onSurfaceVariant),
+		new NeutralRole(attr.colorSurfaceInverse, R.color.md_theme_surfaceInverse),
+		new NeutralRole(attr.colorOnSurfaceInverse, R.color.md_theme_onSurfaceInverse),
+		new NeutralRole(attr.colorOutline, R.color.md_theme_outline),
+		new NeutralRole(attr.colorOutlineVariant, R.color.md_theme_outlineVariant),
 	};
 
 	/** The five container steps, lightest-named first; Material reads elevation off their order. */
@@ -60,54 +79,46 @@ public class SurfacePaletteTest {
 		attr.colorSurfaceContainerHighest,
 	};
 
-	private static void assertTheRampIsTheApps(String mode) {
+	private static void assertTheRampIsTheApps(Mode mode) {
 		final Context themed = ThemeAttributes.appTheme();
 
-		for (final int[] role : RAMP) {
-			assertEquals(mode + ": role is not coming from the app palette",
-			             ContextCompat.getColor(themed, role[1]), ThemeAttributes.color(themed, role[0]));
+		for (final NeutralRole role : RAMP) {
+			assertEquals(mode.label() + ": role is not coming from the app palette", ContextCompat.getColor(themed, role.color()),
+			             ThemeAttributes.color(themed, role.attr()));
 		}
 	}
 
-	private static void assertTextStaysLegible(String mode) {
+	private static void assertTextStaysLegible(Mode mode) {
 		final Context themed = ThemeAttributes.appTheme();
 		final int onSurface = ThemeAttributes.color(themed, attr.colorOnSurface);
 
 		for (final int step : STEPS) {
-			assertRatio(mode + ": body text on a container step", onSurface, ThemeAttributes.color(themed, step), WcagContrast.AA_NORMAL_TEXT);
+			WcagContrast.assertRatioAtLeast(mode.label() + ": body text on a container step", onSurface, ThemeAttributes.color(themed, step),
+			                                WcagContrast.AA_NORMAL_TEXT);
 		}
-		assertRatio(mode + ": onSurfaceVariant on surfaceVariant",
-		            ThemeAttributes.color(themed, attr.colorOnSurfaceVariant), ThemeAttributes.color(themed, attr.colorSurfaceVariant),
-		            WcagContrast.AA_NORMAL_TEXT);
-		assertRatio(mode + ": onSurfaceInverse on surfaceInverse",
-		            ThemeAttributes.color(themed, attr.colorOnSurfaceInverse), ThemeAttributes.color(themed, attr.colorSurfaceInverse),
-		            WcagContrast.AA_NORMAL_TEXT);
-		assertRatio(mode + ": outline on the dialog panel",
-		            ThemeAttributes.color(themed, attr.colorOutline), ThemeAttributes.color(themed, attr.colorSurfaceContainerHigh),
-		            WcagContrast.AA_LARGE_TEXT);
-	}
-
-	private static void assertRatio(String what, int foreground, int background, double floor) {
-		final double ratio = WcagContrast.ratio(foreground, background);
-
-		assertTrue(String.format(Locale.ROOT, "%s: #%06X on #%06X is %.2f:1, below %.1f:1",
-		                         what, foreground & 0xFFFFFF, background & 0xFFFFFF, ratio, floor),
-		           ratio >= floor);
+		WcagContrast.assertRatioAtLeast(mode.label() + ": onSurfaceVariant on surfaceVariant",
+		                                ThemeAttributes.color(themed, attr.colorOnSurfaceVariant),
+		                                ThemeAttributes.color(themed, attr.colorSurfaceVariant), WcagContrast.AA_NORMAL_TEXT);
+		WcagContrast.assertRatioAtLeast(mode.label() + ": onSurfaceInverse on surfaceInverse",
+		                                ThemeAttributes.color(themed, attr.colorOnSurfaceInverse),
+		                                ThemeAttributes.color(themed, attr.colorSurfaceInverse), WcagContrast.AA_NORMAL_TEXT);
+		WcagContrast.assertRatioAtLeast(mode.label() + ": outline on the dialog panel", ThemeAttributes.color(themed, attr.colorOutline),
+		                                ThemeAttributes.color(themed, attr.colorSurfaceContainerHigh), WcagContrast.AA_LARGE_TEXT);
 	}
 
 	/**
 	 * Elevation in Material is read off lightness, so the five steps have to stay ordered — lightest to darkest in light, the reverse in dark. A re-hue that
 	 * kept every colour legible but shuffled the ramp would leave a raised surface sitting darker than the one it floats above.
 	 */
-	private static void assertElevationStillReads(String mode, boolean lightThemeDescends) {
+	private static void assertElevationStillReads(Mode mode) {
 		final Context themed = ThemeAttributes.appTheme();
 
 		for (int i = 1; i < STEPS.length; i++) {
 			final double previous = WcagContrast.luminance(ThemeAttributes.color(themed, STEPS[i - 1]));
 			final double current = WcagContrast.luminance(ThemeAttributes.color(themed, STEPS[i]));
 
-			assertTrue(mode + ": container step " + i + " breaks the elevation order",
-			           lightThemeDescends ? current < previous : current > previous);
+			assertTrue(mode.label() + ": container step " + i + " breaks the elevation order",
+			           mode.containersDarkenAsTheyRise ? current < previous : current > previous);
 		}
 	}
 
@@ -116,65 +127,65 @@ public class SurfacePaletteTest {
 	 * it cannot pin what those resources hold, so editing one back to a violet passes it.
 	 * <p>
 	 * Green against red separates the two casts without needing a colour space: a violet neutral is redder than it is green ({@code #ECE6F0} is 236/230),
-	 * and a cyan-leaning one is the reverse ({@code #DFEBF0} is 223/235). Every M3 baseline value in this family fails this, and every replacement passes.
+	 * and a cyan-leaning one is the reverse ({@code #DFEBF0} is 223/235).
+	 * <p>
+	 * One role is beyond both guards in light, and it is worth naming rather than leaving to be discovered: {@code surfaceContainerLowest} is {@code #FFFFFF}
+	 * here <em>and</em> in Material's baseline. Provenance compares the theme against the resource, which stay equal either way, and pure white is not redder
+	 * than it is green — so dropping that one theme item passes every light assertion. Only the dark test catches it, where the two values differ.
 	 */
-	private static void assertNoNeutralLeansViolet(String mode) {
+	private static void assertNoNeutralLeansViolet(Mode mode) {
 		final Context themed = ThemeAttributes.appTheme();
 
-		for (final int[] role : RAMP) {
-			final int color = ThemeAttributes.color(themed, role[0]);
-
-			assertTrue(String.format(Locale.ROOT, "%s: #%06X leans violet — red %d is above green %d",
-			                         mode, color & 0xFFFFFF, Color.red(color), Color.green(color)),
-			           Color.green(color) >= Color.red(color));
+		for (final NeutralRole role : RAMP) {
+			AppPalette.assertLeansWithTheBrand(mode.label() + ": neutral role", ThemeAttributes.color(themed, role.attr()));
 		}
 	}
 
 	@Test
 	@Config(qualifiers = "notnight")
 	public void noLightNeutralLeansViolet() {
-		assertNoNeutralLeansViolet("light");
+		assertNoNeutralLeansViolet(Mode.LIGHT);
 	}
 
 	@Test
 	@Config(qualifiers = "night")
 	public void noDarkNeutralLeansViolet() {
-		assertNoNeutralLeansViolet("dark");
+		assertNoNeutralLeansViolet(Mode.DARK);
 	}
 
 	@Test
 	@Config(qualifiers = "notnight")
 	public void theLightRampIsTheAppsOwn() {
-		assertTheRampIsTheApps("light");
+		assertTheRampIsTheApps(Mode.LIGHT);
 	}
 
 	@Test
 	@Config(qualifiers = "night")
 	public void theDarkRampIsTheAppsOwn() {
-		assertTheRampIsTheApps("dark");
+		assertTheRampIsTheApps(Mode.DARK);
 	}
 
 	@Test
 	@Config(qualifiers = "notnight")
 	public void lightTextStaysLegibleOnEveryNeutral() {
-		assertTextStaysLegible("light");
+		assertTextStaysLegible(Mode.LIGHT);
 	}
 
 	@Test
 	@Config(qualifiers = "night")
 	public void darkTextStaysLegibleOnEveryNeutral() {
-		assertTextStaysLegible("dark");
+		assertTextStaysLegible(Mode.DARK);
 	}
 
 	@Test
 	@Config(qualifiers = "notnight")
 	public void lightContainersGetDarkerAsTheyRise() {
-		assertElevationStillReads("light", true);
+		assertElevationStillReads(Mode.LIGHT);
 	}
 
 	@Test
 	@Config(qualifiers = "night")
 	public void darkContainersGetLighterAsTheyRise() {
-		assertElevationStillReads("dark", false);
+		assertElevationStillReads(Mode.DARK);
 	}
 }

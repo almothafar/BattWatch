@@ -2,6 +2,10 @@ package com.almothafar.simplebatterynotifier;
 
 import android.graphics.Color;
 
+import java.util.Locale;
+
+import static org.junit.Assert.assertTrue;
+
 /**
  * Relative luminance and contrast ratio, per WCAG 2.1.
  * <p>
@@ -54,5 +58,22 @@ public final class WcagContrast {
 		final double c = eightBit / 255d;
 
 		return c <= 0.03928d ? c / 12.92d : Math.pow((c + 0.055d) / 1.055d, 2.4d);
+	}
+
+	/**
+	 * Assert a pair clears its contrast floor, naming both colours and the ratio when it does not — a bare "expected true" tells whoever broke it nothing
+	 * about which colour moved or how far.
+	 *
+	 * @param what       what the pair is, for the failure message
+	 * @param foreground the colour drawn on top, as an ARGB int
+	 * @param background the colour behind it, as an ARGB int
+	 * @param floor      the minimum acceptable ratio, normally {@link #AA_NORMAL_TEXT} or {@link #AA_LARGE_TEXT}
+	 */
+	public static void assertRatioAtLeast(String what, int foreground, int background, double floor) {
+		final double ratio = ratio(foreground, background);
+
+		assertTrue(String.format(Locale.ROOT, "%s: #%06X on #%06X is %.2f:1, below %.1f:1",
+		                         what, foreground & 0xFFFFFF, background & 0xFFFFFF, ratio, floor),
+		           ratio >= floor);
 	}
 }

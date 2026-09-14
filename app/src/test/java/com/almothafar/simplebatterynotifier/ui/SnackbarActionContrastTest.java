@@ -4,19 +4,19 @@ import android.content.Context;
 
 import androidx.core.content.ContextCompat;
 
+import com.almothafar.simplebatterynotifier.AppPalette;
 import com.almothafar.simplebatterynotifier.R;
 import com.almothafar.simplebatterynotifier.ThemeAttributes;
 import com.almothafar.simplebatterynotifier.WcagContrast;
+
+import com.google.android.material.R.attr;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 
-import java.util.Locale;
-
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * The snackbar action's legibility (#333). Material paints a snackbar on an <em>inverted</em> surface and colours its action from
@@ -34,15 +34,12 @@ public class SnackbarActionContrastTest {
 
 	private static void assertTheActionIsLegible(String mode) {
 		final Context themed = ThemeAttributes.appTheme();
-		final int action = ThemeAttributes.color(themed, com.google.android.material.R.attr.colorPrimaryInverse);
-		final int slab = ThemeAttributes.color(themed, com.google.android.material.R.attr.colorSurfaceInverse);
-		final double ratio = WcagContrast.ratio(action, slab);
+		final int action = ThemeAttributes.color(themed, attr.colorPrimaryInverse);
+		final int slab = ThemeAttributes.color(themed, attr.colorSurfaceInverse);
 
 		assertEquals(mode + ": the action is not coming from the app palette", ContextCompat.getColor(themed, R.color.md_theme_primaryInverse), action);
-
-		assertTrue(String.format(Locale.ROOT, "%s: snackbar action #%06X on #%06X is %.2f:1, below %.1f:1",
-		                         mode, action & 0xFFFFFF, slab & 0xFFFFFF, ratio, WcagContrast.AA_NORMAL_TEXT),
-		           ratio >= WcagContrast.AA_NORMAL_TEXT);
+		AppPalette.assertLeansWithTheBrand(mode + ": snackbar action", action);
+		WcagContrast.assertRatioAtLeast(mode + ": snackbar action", action, slab, WcagContrast.AA_NORMAL_TEXT);
 	}
 
 	@Test
