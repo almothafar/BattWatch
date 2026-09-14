@@ -15,6 +15,19 @@
         <item name="colorError">@color/md_theme_error</item>
         <item name="colorOnError">@color/md_theme_onError</item>
         <item name="colorPrimaryInverse">@color/md_theme_primaryInverse</item>
+        <!-- The neutral ramp (#340). Material derives containers, dividers and the inverted snackbar surface from these; unstated they come from the
+             baseline M3 palette, which is tinted toward Material's violet seed rather than this app's blue. See values/colors.xml for the measurements. -->
+        <item name="colorSurfaceContainerLowest">@color/md_theme_surfaceContainerLowest</item>
+        <item name="colorSurfaceContainerLow">@color/md_theme_surfaceContainerLow</item>
+        <item name="colorSurfaceContainer">@color/md_theme_surfaceContainer</item>
+        <item name="colorSurfaceContainerHigh">@color/md_theme_surfaceContainerHigh</item>
+        <item name="colorSurfaceContainerHighest">@color/md_theme_surfaceContainerHighest</item>
+        <item name="colorSurfaceVariant">@color/md_theme_surfaceVariant</item>
+        <item name="colorOnSurfaceVariant">@color/md_theme_onSurfaceVariant</item>
+        <item name="colorSurfaceInverse">@color/md_theme_surfaceInverse</item>
+        <item name="colorOnSurfaceInverse">@color/md_theme_onSurfaceInverse</item>
+        <item name="colorOutline">@color/md_theme_outline</item>
+        <item name="colorOutlineVariant">@color/md_theme_outlineVariant</item>
         <!-- Pin the status bar to the toolbar it sits above. Left to the platform it resolves to colorPrimary, which
              matched the toolbar in light only by coincidence and broke the moment primary lightened for dark.
              Deprecated in API 35 and ignored at targetSdk 35+, so this covers API 26-34 only; from 35 the enforced
