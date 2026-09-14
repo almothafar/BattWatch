@@ -45,9 +45,14 @@ import static org.junit.Assert.assertTrue;
 @Config(sdk = 34)
 public class GaugeThemeToggleTest {
 
-	/** How many looper rounds to give the manager before calling it a failure, and how far each one advances. */
+	/** How many rounds {@link #awaitOffer} gives the bar before calling it a failure. */
 	private static final int AWAIT_ROUNDS = 20;
+
+	/** How far each of those rounds advances the clock. Small on purpose: the loop stops as soon as the bar lands, so the test moves time as little as it can. */
 	private static final long AWAIT_ROUND_MS = 25;
+
+	/** The usual reason to be waiting, so the three call sites that share it do not each spell it out. */
+	private static final String NO_OFFER = "no offer reached the screen";
 
 	/**
 	 * The night mode is a static, so it has to be put back. Deliberately nothing else.
@@ -78,18 +83,27 @@ public class GaugeThemeToggleTest {
 	/**
 	 * Run the main looper until the offer is on screen, and fail saying so if it never arrives (#343).
 	 * <p>
-	 * A mitigation rather than a diagnosis, and worth being honest about which. CI saw this lookup come back null exactly once; it has not been reproduced
-	 * since, over more than twenty local runs of the class alone and of the whole suite, under both the debug and release variants, nor by deliberately
-	 * queueing a second bar behind the first to force the hand-off the manager does through the looper. The mechanism is therefore unknown.
+	 * TODO(#343): a mitigation, not a diagnosis — the root cause is still unknown and that issue stays open for it.
 	 * <p>
-	 * What is known from Material's own code is that {@code SnackbarManager} shows one bar at a time and hands them to
-	 * {@code BaseTransientBottomBar.showView} — the call that attaches the view this looks up — through the main looper. So the number of looper rounds
-	 * between {@code show()} and the view existing is not a constant the test gets to assume, and asserting after exactly one {@code idle()} was assuming it.
+	 * {@code SnackbarManager} shows one bar at a time and hands them to {@code BaseTransientBottomBar.showView} — the call that attaches the view this looks
+	 * up — through the main looper. When a bar is already current, the new one waits in {@code nextSnackbar} until the old one's dismissal comes back round.
+	 * So the number of looper rounds between {@code show()} and the view existing is not a constant, and asserting after exactly one {@code idle()} assumed
+	 * it was.
 	 * <p>
-	 * Waiting for the view instead cannot be worse than waiting for a fixed amount of work, and it turns a bare "expected not null" into a bounded wait that
-	 * says what it was waiting for. Each round advances a little so short-delayed hand-offs fire too, and the whole budget sits well inside
-	 * {@code THEME_HINT_DURATION_MS}, so the bar cannot time out while being waited for.
+	 * Only the post-rotation wait in {@link #theOfferSurvivesARotationInsideItsWindow()} actually needs the rounds — measured, by setting
+	 * {@link #AWAIT_ROUNDS} to zero and watching which assertions fall over. At the other three call sites the bar is already attached, so this is insurance
+	 * there rather than a guard. It is kept uniform anyway: the sites differ only by whether an activity was recreated first, which is not a property a
+	 * reader should have to re-derive to know whether waiting is required.
+	 * <p>
+	 * The loop stops as soon as the bar lands rather than advancing a fixed slice, which keeps the clock as close to the moment as possible — moving it
+	 * further would start firing the other timers on this screen. The whole budget sits well inside {@code THEME_HINT_DURATION_MS}, so the bar cannot time
+	 * out while being waited for.
 	 */
+	private static void awaitOffer(MainActivity activity) {
+		awaitOffer(activity, NO_OFFER);
+	}
+
+	/** As {@link #awaitOffer(MainActivity)}, for the one site whose failure deserves its own words. */
 	private static void awaitOffer(MainActivity activity, String what) {
 		for (int round = 0; round < AWAIT_ROUNDS && isNull(offerText(activity)); round++) {
 			Shadows.shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(AWAIT_ROUND_MS));
@@ -223,7 +237,7 @@ public class GaugeThemeToggleTest {
 
 		try (ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class)) {
 			final MainActivity activity = controller.setup().get();
-			awaitOffer(activity, "no offer reached the screen");
+			awaitOffer(activity);
 
 			assertEquals(activity.getString(R.string.theme_staying_dark), offerText(activity).getText().toString());
 			assertEquals(activity.getString(R.string.theme_match_phone_action), offerAction(activity).getText().toString());
@@ -239,7 +253,7 @@ public class GaugeThemeToggleTest {
 
 		try (ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class)) {
 			final MainActivity activity = controller.setup().get();
-			awaitOffer(activity, "no offer reached the screen");
+			awaitOffer(activity);
 
 			offerAction(activity).performClick();
 
@@ -259,7 +273,7 @@ public class GaugeThemeToggleTest {
 
 		try (ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class)) {
 			controller.setup();
-			awaitOffer(controller.get(), "no offer reached the screen");
+			awaitOffer(controller.get());
 			assertTrue("spent before anyone could act on it", AppPrefs.themeLeftSystem(ApplicationProvider.getApplicationContext()));
 
 			RuntimeEnvironment.setQualifiers("+land");
