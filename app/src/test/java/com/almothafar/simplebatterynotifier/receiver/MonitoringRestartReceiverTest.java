@@ -2,7 +2,6 @@ package com.almothafar.simplebatterynotifier.receiver;
 
 import android.app.Application;
 import android.content.ComponentName;
-import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ResolveInfo;
 
@@ -16,8 +15,8 @@ import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 
-import java.util.List;
-
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -25,11 +24,11 @@ import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
 /**
- * That monitoring restarts after a reboot and after the app updates (#348).
+ * Checks that monitoring restarts after a reboot and after the app updates, the fix for "monitoring does not restart after the app updates" (#348).
  * <p>
  * Two halves, because either one alone passes against a real defect. The behaviour tests below call {@code onReceive} directly, which proves what the
  * receiver decides but says nothing about whether the broadcast ever reaches it — deleting an action from the manifest leaves them all green. The
- * registration test asks the package manager which receivers resolve each action, which is the half that pins the filter, and it in turn cannot see an
+ * registration tests ask the package manager which receivers resolve each action, which is the half that pins the filter, and they in turn cannot see an
  * {@code onReceive} that ignores what it was handed. Both actions are asserted in both halves.
  * <p>
  * Update was the one that shipped broken: a reboot has always been covered, while replacing a package force-stops the app and a force-stop clears the
@@ -50,7 +49,7 @@ public class MonitoringRestartReceiverTest {
 		shadowOf(application).clearStartedServices();
 	}
 
-	/** Deliver an action straight to the receiver, bypassing the manifest filter the registration test covers separately. */
+	/** Deliver an action straight to the receiver, bypassing the manifest filter the registration tests cover separately. */
 	private void receive(String action) {
 		receiver.onReceive(application, new Intent(action));
 	}
@@ -58,33 +57,35 @@ public class MonitoringRestartReceiverTest {
 	/** The component of the one service the receiver asked for, or null when it asked for none. */
 	private ComponentName startedService() {
 		final Intent started = shadowOf(application).getNextStartedService();
-		return started == null ? null : started.getComponent();
+		return isNull(started) ? null : started.getComponent();
 	}
 
-	private static ComponentName monitoringService(Context context) {
-		return new ComponentName(context, PowerConnectionService.class);
+	private ComponentName monitoringService() {
+		return new ComponentName(application, PowerConnectionService.class);
 	}
 
-	/** Whether the app's own receiver is registered for an action, asked of the package manager rather than read off the manifest file. */
-	private boolean isRegisteredFor(String action) {
+	/** The app's own registration for an action, asked of the package manager rather than read off the manifest file, or null when it has none. */
+	private ResolveInfo handlerFor(String action) {
 		final Intent broadcast = new Intent(action).setPackage(application.getPackageName());
-		final List<ResolveInfo> handlers = application.getPackageManager().queryBroadcastReceivers(broadcast, 0);
 
-		return handlers.stream().anyMatch(handler -> MonitoringRestartReceiver.class.getName().equals(handler.activityInfo.name));
+		return application.getPackageManager().queryBroadcastReceivers(broadcast, 0).stream()
+			.filter(candidate -> MonitoringRestartReceiver.class.getName().equals(candidate.activityInfo.name))
+			.findFirst()
+			.orElse(null);
 	}
 
 	@Test
 	public void bootStartsMonitoring() {
 		receive(Intent.ACTION_BOOT_COMPLETED);
 
-		assertEquals("boot did not start monitoring", monitoringService(application), startedService());
+		assertEquals("boot did not start monitoring", monitoringService(), startedService());
 	}
 
 	@Test
 	public void anAppUpdateStartsMonitoring() {
 		receive(Intent.ACTION_MY_PACKAGE_REPLACED);
 
-		assertEquals("an app update did not start monitoring", monitoringService(application), startedService());
+		assertEquals("an app update did not start monitoring", monitoringService(), startedService());
 	}
 
 	/**
@@ -108,12 +109,12 @@ public class MonitoringRestartReceiverTest {
 
 	@Test
 	public void theManifestRegistersBoot() {
-		assertTrue("nothing in the app is registered for BOOT_COMPLETED", isRegisteredFor(Intent.ACTION_BOOT_COMPLETED));
+		assertTrue("nothing in the app is registered for BOOT_COMPLETED", nonNull(handlerFor(Intent.ACTION_BOOT_COMPLETED)));
 	}
 
 	@Test
 	public void theManifestRegistersTheAppBeingReplaced() {
-		assertTrue("nothing in the app is registered for MY_PACKAGE_REPLACED", isRegisteredFor(Intent.ACTION_MY_PACKAGE_REPLACED));
+		assertTrue("nothing in the app is registered for MY_PACKAGE_REPLACED", nonNull(handlerFor(Intent.ACTION_MY_PACKAGE_REPLACED)));
 	}
 
 	/**
@@ -122,11 +123,7 @@ public class MonitoringRestartReceiverTest {
 	 */
 	@Test
 	public void theReceiverIsExportedSoTheSystemCanReachIt() {
-		final Intent boot = new Intent(Intent.ACTION_BOOT_COMPLETED).setPackage(application.getPackageName());
-		final ResolveInfo handler = application.getPackageManager().queryBroadcastReceivers(boot, 0).stream()
-			.filter(candidate -> MonitoringRestartReceiver.class.getName().equals(candidate.activityInfo.name))
-			.findFirst()
-			.orElse(null);
+		final ResolveInfo handler = handlerFor(Intent.ACTION_BOOT_COMPLETED);
 
 		assertNotNull("the receiver is not registered for boot at all", handler);
 		assertTrue("the receiver is not exported, so the system cannot deliver boot to it", handler.activityInfo.exported);
