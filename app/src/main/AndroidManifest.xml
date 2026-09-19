@@ -53,12 +53,13 @@
                     android:value="Continuous battery-level monitoring to deliver low, critical and full-charge alerts while the app is closed."/>
         </service>
 
-        <!-- Boot receiver: exported so system can deliver the broadcast on 12+ -->
+        <!-- Restarts monitoring after a reboot and after the app updates; exported so the system can deliver BOOT_COMPLETED on 12+ -->
         <receiver
-                android:name=".receiver.BootCompletedIntentReceiver"
+                android:name=".receiver.MonitoringRestartReceiver"
                 android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
             </intent-filter>
         </receiver>
 
