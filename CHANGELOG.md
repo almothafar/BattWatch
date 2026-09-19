@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.1](https://github.com/almothafar/BattWatch/compare/v3.3.0...v3.3.1) (2026-09-19)
+
+
+### Bug Fixes
+
+* restart monitoring after the app updates ([#349](https://github.com/almothafar/BattWatch/issues/349)) ([0d7a1aa](https://github.com/almothafar/BattWatch/commit/0d7a1aad933cc19f0d2666f7c875087a02ea52e9))
+
 ## [3.3.0](https://github.com/almothafar/BattWatch/compare/v3.2.0...v3.3.0) (2026-09-19)
 
 
