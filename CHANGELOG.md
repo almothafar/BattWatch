@@ -1,6 +1,6 @@
 # Changelog
 
-## [3.3.0](https://github.com/almothafar/BattWatch/compare/v3.2.0...v3.3.0) (2026-09-16)
+## [3.3.0](https://github.com/almothafar/BattWatch/compare/v3.2.0...v3.3.0) (2026-09-19)
 
 
 ### Features
