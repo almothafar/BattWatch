@@ -1,871 +1,871 @@
 {
   ".release-please-manifest.json": {
-    "mtime": 1790587796.4383523,
-    "seen": 1790587810.0728738,
+    "mtime": 1791194924.9721766,
+    "seen": 1791194938.1806376,
     "ast_hash": "973e1767d3a68e3e1d18fbffb36419cc",
     "semantic_hash": ""
   },
   "app/build.gradle": {
-    "mtime": 1790587796.4383523,
-    "seen": 1790587810.0728765,
+    "mtime": 1791194924.9721766,
+    "seen": 1791194938.1806407,
     "ast_hash": "d4c911151bcd909f1da8b3c05e0ebb8b",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/model/BatteryDO.java": {
-    "mtime": 1790587796.4396932,
-    "seen": 1790587810.0728807,
+    "mtime": 1791194924.9735184,
+    "seen": 1791194938.1806455,
     "ast_hash": "d48d33997b6e0bd205434f84481e7c8d",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/model/BatteryHealthGrade.java": {
-    "mtime": 1790587796.4397933,
-    "seen": 1790587810.0728822,
+    "mtime": 1791194924.9736156,
+    "seen": 1791194938.1806467,
     "ast_hash": "3e355071b066adbf22e1ee5591c44e8e",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/model/BatteryHealthStatus.java": {
-    "mtime": 1790587796.4397933,
-    "seen": 1790587810.0728836,
+    "mtime": 1791194924.9736156,
+    "seen": 1791194938.180648,
     "ast_hash": "91a143199a19a95f325800a537325ac4",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/model/ChargeSpeed.java": {
-    "mtime": 1790587796.4397933,
-    "seen": 1790587810.072885,
+    "mtime": 1791194924.9736156,
+    "seen": 1791194938.1806498,
     "ast_hash": "a621fd771cc3f9637bff168dd0649d76",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/model/ChargeSpeedTier.java": {
-    "mtime": 1790587796.4397933,
-    "seen": 1790587810.072886,
+    "mtime": 1791194924.9736156,
+    "seen": 1791194938.180651,
     "ast_hash": "0b6712f4a01204d5adf149736e185059",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/model/LevelThresholds.java": {
-    "mtime": 1790587796.4397933,
-    "seen": 1790587810.0728872,
+    "mtime": 1791194924.9736156,
+    "seen": 1791194938.1806524,
     "ast_hash": "b48c172383a230935b061f54389d9e50",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/receiver/BatteryLevelReceiver.java": {
-    "mtime": 1790587796.4397933,
-    "seen": 1790587810.0728889,
+    "mtime": 1791194924.9736156,
+    "seen": 1791194938.1806538,
     "ast_hash": "5cf5c6d0fb6668fd0a7a8f1577694907",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/receiver/PowerConnectionReceiver.java": {
-    "mtime": 1790587796.440187,
-    "seen": 1790587810.072892,
+    "mtime": 1791194924.974016,
+    "seen": 1791194938.180657,
     "ast_hash": "bef8f1dd513c01f662864c5395d53dbb",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/service/AlertSounds.java": {
-    "mtime": 1790587796.440187,
-    "seen": 1790587810.0728931,
+    "mtime": 1791194924.974016,
+    "seen": 1791194938.180658,
     "ast_hash": "031e5072bf416d5cae834a16f54e0167",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/service/AlertSpec.java": {
-    "mtime": 1790587796.4403977,
-    "seen": 1790587810.072894,
+    "mtime": 1791194924.9742212,
+    "seen": 1791194938.1806598,
     "ast_hash": "8c0e765abb84d7700082eea48ab5f6c2",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/service/AlertType.java": {
-    "mtime": 1790587796.4403977,
-    "seen": 1790587810.0728955,
+    "mtime": 1791194924.9742212,
+    "seen": 1791194938.1806607,
     "ast_hash": "38d3a0e1513ac007a0c9dbe94c39c548",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/service/BatteryCapacityTracker.java": {
-    "mtime": 1790587796.4403977,
-    "seen": 1790587810.0728967,
+    "mtime": 1791194924.9742212,
+    "seen": 1791194938.180662,
     "ast_hash": "a35f3a23ab038770ddd13b7c1a4917bc",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/service/BatteryHealthTracker.java": {
-    "mtime": 1790587796.4403977,
-    "seen": 1790587810.072898,
+    "mtime": 1791194924.9742212,
+    "seen": 1791194938.1806636,
     "ast_hash": "ec90aa8622010a43ec1ff03b3452ddb2",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/service/BatteryRateTracker.java": {
-    "mtime": 1790587796.4403977,
-    "seen": 1790587810.072899,
+    "mtime": 1791194924.9742212,
+    "seen": 1791194938.1806648,
     "ast_hash": "4affe5ae58c31ee60dd4cf6e00f5572b",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/service/BatteryTemperatureTracker.java": {
-    "mtime": 1790587796.4403977,
-    "seen": 1790587810.0729,
+    "mtime": 1791194924.9742212,
+    "seen": 1791194938.1806662,
     "ast_hash": "50c20637b98499f663467e5c51359f55",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/service/CurrentUnitCalibrator.java": {
-    "mtime": 1790587796.4403977,
-    "seen": 1790587810.0729015,
+    "mtime": 1791194924.9742212,
+    "seen": 1791194938.1806676,
     "ast_hash": "87046d941e8696219f4013ad1ed3586b",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/service/FastDrainDetector.java": {
-    "mtime": 1790587796.4403977,
-    "seen": 1790587810.0729024,
+    "mtime": 1791194924.9742212,
+    "seen": 1791194938.1806688,
     "ast_hash": "e0f2e0e476d585b83d21db264cf71067",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/service/NotificationChannels.java": {
-    "mtime": 1790587796.4403977,
-    "seen": 1790587810.0729036,
+    "mtime": 1791194924.9742212,
+    "seen": 1791194938.18067,
     "ast_hash": "1511a98b4ef0695105683384fb5cf313",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/service/NotificationConfig.java": {
-    "mtime": 1790587796.4403977,
-    "seen": 1790587810.072905,
+    "mtime": 1791194924.9742212,
+    "seen": 1791194938.1806712,
     "ast_hash": "be9c2d12643999a12625b0ccbb361e05",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/service/NotificationService.java": {
-    "mtime": 1790587796.4403977,
-    "seen": 1790587810.0729063,
+    "mtime": 1791194924.9742212,
+    "seen": 1791194938.1806722,
     "ast_hash": "5592623f08fda3f2dd61ee2d5c23c816",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/service/OngoingStatusContent.java": {
-    "mtime": 1790587796.4403977,
-    "seen": 1790587810.0729074,
+    "mtime": 1791194924.9742212,
+    "seen": 1791194938.1806738,
     "ast_hash": "49d90b17864efc65a5b7968c4c460bcc",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/service/PowerConnectionService.java": {
-    "mtime": 1790587796.4413524,
-    "seen": 1790587810.0729086,
+    "mtime": 1791194924.9750283,
+    "seen": 1791194938.180675,
     "ast_hash": "9b4fd019831af26877d44028f0d2b82a",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/service/QuietHours.java": {
-    "mtime": 1790587796.4413524,
-    "seen": 1790587810.0729096,
+    "mtime": 1791194924.9750283,
+    "seen": 1791194938.1806765,
     "ast_hash": "a47b4bfa5498d3d02b077e1a4b113057",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/service/SlowChargeDetector.java": {
-    "mtime": 1790587796.4413524,
-    "seen": 1790587810.0729108,
+    "mtime": 1791194924.9750283,
+    "seen": 1791194938.1806777,
     "ast_hash": "6d0fc05f772d56c23414bbb4f23e3232",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/service/SustainedConditionTracker.java": {
-    "mtime": 1790587796.4413524,
-    "seen": 1790587810.072912,
+    "mtime": 1791194924.9750283,
+    "seen": 1791194938.1806788,
     "ast_hash": "25230f72d99bc41e765a5b8dbb8494c7",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/service/SystemService.java": {
-    "mtime": 1790587796.4413524,
-    "seen": 1790587810.0729132,
+    "mtime": 1791194924.9750283,
+    "seen": 1791194938.1806803,
     "ast_hash": "52d70cb48cca634e903502b08a8643a9",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/service/TransientState.java": {
-    "mtime": 1790587796.4413524,
-    "seen": 1790587810.0729144,
+    "mtime": 1791194924.9750283,
+    "seen": 1791194938.1806815,
     "ast_hash": "47f6c60bc4f9306e622f0e820e1234d5",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/ui/AboutDialog.java": {
-    "mtime": 1790587796.4413524,
-    "seen": 1790587810.0729156,
+    "mtime": 1791194924.9750283,
+    "seen": 1791194938.1806827,
     "ast_hash": "da7e50febffbe83ea00a5aa54c90e678",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/ui/BaseActivity.java": {
-    "mtime": 1790587796.4420261,
-    "seen": 1790587810.0729167,
+    "mtime": 1791194924.9758387,
+    "seen": 1791194938.1806839,
     "ast_hash": "87564097b828e811d3710e8df5d5b5ff",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/ui/BatteryInsightsActivity.java": {
-    "mtime": 1790587796.4420261,
-    "seen": 1790587810.0729177,
+    "mtime": 1791194924.9758387,
+    "seen": 1791194938.180685,
     "ast_hash": "36360bba99719cfa3d6513ff5a05c8d9",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/ui/GaugeValueSmoother.java": {
-    "mtime": 1790587796.4420261,
-    "seen": 1790587810.072919,
+    "mtime": 1791194924.9758387,
+    "seen": 1791194938.1806862,
     "ast_hash": "7cf22982a1e1ccdacee3d42d857e0804",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/ui/MainActivity.java": {
-    "mtime": 1790587796.4420261,
-    "seen": 1790587810.0729198,
+    "mtime": 1791194924.9758387,
+    "seen": 1791194938.180688,
     "ast_hash": "594f27ac38f85209bd8b55aa1c291d77",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/ui/SettingsActivity.java": {
-    "mtime": 1790587796.4420261,
-    "seen": 1790587810.072921,
+    "mtime": 1791194924.9758387,
+    "seen": 1791194938.180689,
     "ast_hash": "8325304d1b3ae479b1aa1cbce565aa10",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/ui/fragment/BatteryDetailsFragment.java": {
-    "mtime": 1790587796.4423525,
-    "seen": 1790587810.0729225,
+    "mtime": 1791194924.9760282,
+    "seen": 1791194938.1806903,
     "ast_hash": "ce9313a3d045b9c34b49ced17018b4d7",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/ui/fragment/CardPreferenceFragment.java": {
-    "mtime": 1790587796.4426625,
-    "seen": 1790587810.0729234,
+    "mtime": 1791194924.9764493,
+    "seen": 1791194938.1806915,
     "ast_hash": "50347285a820291a7d621ef587b4b787",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/ui/fragment/GenericPreferenceFragment.java": {
-    "mtime": 1790587796.4426625,
-    "seen": 1790587810.0729246,
+    "mtime": 1791194924.9764493,
+    "seen": 1791194938.1806927,
     "ast_hash": "f446f6189fcec9caa0ac3420259191da",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/ui/fragment/SignatureFragment.java": {
-    "mtime": 1790587796.4426625,
-    "seen": 1790587810.0729258,
+    "mtime": 1791194924.9764493,
+    "seen": 1791194938.180694,
     "ast_hash": "0c7468a6e256fcf3990a3d169fffbf4f",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/ui/preference/BatteryRangeSliderHelper.java": {
-    "mtime": 1790587796.4426625,
-    "seen": 1790587810.0729272,
+    "mtime": 1791194924.9764493,
+    "seen": 1791194938.1806955,
     "ast_hash": "5439aaabb8f98707855826eff57c38c9",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/ui/preference/BatteryRangeSliderPreference.java": {
-    "mtime": 1790587796.4430864,
-    "seen": 1790587810.0729284,
+    "mtime": 1791194924.9768612,
+    "seen": 1791194938.1806967,
     "ast_hash": "4ccb40d253094427e24a8a8f609b5162",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/ui/preference/PreferenceCardDecoration.java": {
-    "mtime": 1790587796.4430864,
-    "seen": 1790587810.0729296,
+    "mtime": 1791194924.9768612,
+    "seen": 1791194938.1806984,
     "ast_hash": "3c8973aaf2e60cf80baaef91b7c0d070",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/ui/preference/RingtonePreference.java": {
-    "mtime": 1790587796.4430864,
-    "seen": 1790587810.0729306,
+    "mtime": 1791194924.9768612,
+    "seen": 1791194938.1806993,
     "ast_hash": "a785699068d2b2039b253c77b2ecca03",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/ui/preference/TimePickerPreference.java": {
-    "mtime": 1790587796.4430864,
-    "seen": 1790587810.0729318,
+    "mtime": 1791194924.9768612,
+    "seen": 1791194938.180701,
     "ast_hash": "b224d33901d97e36bde410115290564b",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/ui/preference/TimePickerPreferenceDialogFragmentCompat.java": {
-    "mtime": 1790587796.4430864,
-    "seen": 1790587810.0729332,
+    "mtime": 1791194924.9768612,
+    "seen": 1791194938.1807022,
     "ast_hash": "d01d9d270465b286350bf4708b914821",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/ui/widget/HorseshoeProgressBar.java": {
-    "mtime": 1790587796.4433525,
-    "seen": 1790587810.0729344,
+    "mtime": 1791194924.9768612,
+    "seen": 1791194938.1807034,
     "ast_hash": "f44206256a7cb0d279ff2488a3e9c704",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/ui/widget/MinMaxRangeView.java": {
-    "mtime": 1790587796.4435456,
-    "seen": 1790587810.0729353,
+    "mtime": 1791194924.9770281,
+    "seen": 1791194938.1807048,
     "ast_hash": "2025775f370fcc6aabb605646f61d63d",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/util/AppPrefs.java": {
-    "mtime": 1790587796.4435456,
-    "seen": 1790587810.0729368,
+    "mtime": 1791194924.9770281,
+    "seen": 1791194938.180706,
     "ast_hash": "ddd3643b01540b56033741e9d49a015b",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/util/BatteryPercentFormatter.java": {
-    "mtime": 1790587796.443732,
-    "seen": 1790587810.0729377,
+    "mtime": 1791194924.9774973,
+    "seen": 1791194938.1807072,
     "ast_hash": "e0777b8463077be04ff7f36f2965a613",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/util/BidiText.java": {
-    "mtime": 1790587796.443732,
-    "seen": 1790587810.0729387,
+    "mtime": 1791194924.9774973,
+    "seen": 1791194938.1807086,
     "ast_hash": "b2bef816ee0f97e81dbd6df9eac92a23",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/util/GeneralHelper.java": {
-    "mtime": 1790587796.443732,
-    "seen": 1790587810.0729399,
+    "mtime": 1791194924.9774973,
+    "seen": 1791194938.18071,
     "ast_hash": "541a54fedb7899bd05dbf0b1d9bc3dfc",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/util/TemperatureUtils.java": {
-    "mtime": 1790587796.443732,
-    "seen": 1790587810.072941,
+    "mtime": 1791194924.9774973,
+    "seen": 1791194938.1807115,
     "ast_hash": "1956ed65235c6dc268d78dc9db257b27",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/ArabicLiteralQuantityTest.java": {
-    "mtime": 1790587796.4481056,
-    "seen": 1790587810.0729434,
+    "mtime": 1791194924.9818745,
+    "seen": 1791194938.1807146,
     "ast_hash": "60832e5c0520a867d4ebfa0f60fe5570",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/BidiVisualOrder.java": {
-    "mtime": 1790587796.4481056,
-    "seen": 1790587810.0729456,
+    "mtime": 1791194924.9818745,
+    "seen": 1791194938.1807184,
     "ast_hash": "e596a699e3645cc2713c04c0a0de1e33",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/StringResourceDigitsTest.java": {
-    "mtime": 1790587796.4481056,
-    "seen": 1790587810.0729468,
+    "mtime": 1791194924.9818745,
+    "seen": 1791194938.1807196,
     "ast_hash": "fff4d71750f0d83db0513c1400629ded",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/model/BatteryDOTest.java": {
-    "mtime": 1790587796.4481056,
-    "seen": 1790587810.0729506,
+    "mtime": 1791194924.9818745,
+    "seen": 1791194938.1807241,
     "ast_hash": "144328218305a1162e34c48a03d95fbc",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/model/ChargeSpeedTest.java": {
-    "mtime": 1790587796.4483526,
-    "seen": 1790587810.0729518,
+    "mtime": 1791194924.9820282,
+    "seen": 1791194938.1807256,
     "ast_hash": "c60b02038e379486c93238736ba16a1f",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/receiver/BatteryLevelReceiverDecisionTest.java": {
-    "mtime": 1790587796.4483526,
-    "seen": 1790587810.072953,
+    "mtime": 1791194924.9820282,
+    "seen": 1791194938.180727,
     "ast_hash": "6be7400b1bcf124ca9a2a9caffe2b9ef",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/receiver/BatteryLevelReceiverTest.java": {
-    "mtime": 1790587796.4487817,
-    "seen": 1790587810.0729544,
+    "mtime": 1791194924.982571,
+    "seen": 1791194938.1807284,
     "ast_hash": "d9627c8526d3e72df722e405a1e51bdb",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/receiver/PowerConnectionReceiverTest.java": {
-    "mtime": 1790587796.4487817,
-    "seen": 1790587810.0729566,
+    "mtime": 1791194924.982571,
+    "seen": 1791194938.1807313,
     "ast_hash": "5be5b2b14bf0b3ff4e9225ac82a03158",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/service/AlertTypeTest.java": {
-    "mtime": 1790587796.4487817,
-    "seen": 1790587810.0729582,
+    "mtime": 1791194924.982571,
+    "seen": 1791194938.1807327,
     "ast_hash": "4e5c0f5995de8c49f666b068d6f40b86",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/service/ArabicAlertRenderingTest.java": {
-    "mtime": 1790587796.4490361,
-    "seen": 1790587810.0729594,
+    "mtime": 1791194924.9828308,
+    "seen": 1791194938.180734,
     "ast_hash": "78dc5691594aff6f2f0c0a62b10e5e28",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/service/BatteryCapacityTrackerTest.java": {
-    "mtime": 1790587796.4490361,
-    "seen": 1790587810.0729609,
+    "mtime": 1791194924.9828308,
+    "seen": 1791194938.1807353,
     "ast_hash": "9948e64cd1cf9ee6496c124d8fe42fc4",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/service/BatteryHealthTrackerStateTest.java": {
-    "mtime": 1790587796.4490361,
-    "seen": 1790587810.0729623,
+    "mtime": 1791194924.9828308,
+    "seen": 1791194938.1807365,
     "ast_hash": "b4648749a9919852c8dfab77b30547c9",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/service/BatteryHealthTrackerTest.java": {
-    "mtime": 1790587796.4490361,
-    "seen": 1790587810.0729635,
+    "mtime": 1791194924.9828308,
+    "seen": 1791194938.1807375,
     "ast_hash": "e3ee770e34ec99b1daaa71f962b0f06f",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/service/BatteryRateTrackerTest.java": {
-    "mtime": 1790587796.4490361,
-    "seen": 1790587810.0729647,
+    "mtime": 1791194924.9828308,
+    "seen": 1791194938.1807392,
     "ast_hash": "a9f6640191609987394e9c7d2b8bb51f",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/service/BatteryTemperatureTrackerTest.java": {
-    "mtime": 1790587796.4490361,
-    "seen": 1790587810.0729659,
+    "mtime": 1791194924.9828308,
+    "seen": 1791194938.1807404,
     "ast_hash": "02c805818d768bb61c4d1222e542a036",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/service/CurrentUnitCalibratorTest.java": {
-    "mtime": 1790587796.4490361,
-    "seen": 1790587810.0729668,
+    "mtime": 1791194924.9828308,
+    "seen": 1791194938.1807418,
     "ast_hash": "fa13b4342e8fcdc8f1920b83755316a6",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/service/FastDrainDetectorCleanupTest.java": {
-    "mtime": 1790587796.4493525,
-    "seen": 1790587810.0729682,
+    "mtime": 1791194924.9828308,
+    "seen": 1791194938.1807432,
     "ast_hash": "ca6a1498c6dcb5139b62ffaa9864db97",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/service/FastDrainDetectorTest.java": {
-    "mtime": 1790587796.4493525,
-    "seen": 1790587810.0729692,
+    "mtime": 1791194924.9830282,
+    "seen": 1791194938.1807444,
     "ast_hash": "aaf873476cc48778c5daabf1a2a09ac8",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/service/NotificationChannelsTest.java": {
-    "mtime": 1790587796.4493525,
-    "seen": 1790587810.0729702,
+    "mtime": 1791194924.9830282,
+    "seen": 1791194938.180746,
     "ast_hash": "6f895a7225b6c7405b1d402ae8a43d7d",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/service/NotificationConfigTest.java": {
-    "mtime": 1790587796.4493525,
-    "seen": 1790587810.0729716,
+    "mtime": 1791194924.9830282,
+    "seen": 1791194938.1807473,
     "ast_hash": "1db1ab841820460febcb33233cd893f1",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/service/NotificationServiceTest.java": {
-    "mtime": 1790587796.4493525,
-    "seen": 1790587810.0729728,
+    "mtime": 1791194924.9830282,
+    "seen": 1791194938.1807485,
     "ast_hash": "d112aba4b62c732d8dea366a47c88c32",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/service/OngoingStatusContentTest.java": {
-    "mtime": 1790587796.4493525,
-    "seen": 1790587810.0729737,
+    "mtime": 1791194924.9830282,
+    "seen": 1791194938.18075,
     "ast_hash": "96ac854fd440024181d209bd0b423f69",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/service/QuietHoursTest.java": {
-    "mtime": 1790587796.4493525,
-    "seen": 1790587810.0729766,
+    "mtime": 1791194924.9830282,
+    "seen": 1791194938.1807523,
     "ast_hash": "57bfa06504da3167e296a99920649d84",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/service/SlowChargeDetectorTest.java": {
-    "mtime": 1790587796.4493525,
-    "seen": 1790587810.0729778,
+    "mtime": 1791194924.9830282,
+    "seen": 1791194938.180754,
     "ast_hash": "a55c8661a1674eda0dfd8edfda2d4228",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/service/SustainedConditionTrackerTest.java": {
-    "mtime": 1790587796.4493525,
-    "seen": 1790587810.072979,
+    "mtime": 1791194924.9830282,
+    "seen": 1791194938.1807554,
     "ast_hash": "9ed6d7984c663aadcca41960152c7a13",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/service/SystemServiceTest.java": {
-    "mtime": 1790587796.4493525,
-    "seen": 1790587810.0729802,
+    "mtime": 1791194924.9830282,
+    "seen": 1791194938.1807573,
     "ast_hash": "6f191af28cb773dcd4c151d50e9aeccb",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/ui/CapacityRangeMessageTest.java": {
-    "mtime": 1790587796.4493525,
-    "seen": 1790587810.0729816,
+    "mtime": 1791194924.9830282,
+    "seen": 1791194938.1807587,
     "ast_hash": "4d9c3aa0a23072a61093d1cfe0803a17",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/ui/GaugeValueSmootherTest.java": {
-    "mtime": 1790587796.4502695,
-    "seen": 1790587810.0729854,
+    "mtime": 1791194924.9840672,
+    "seen": 1791194938.1807628,
     "ast_hash": "d82625b67fe2913c2cfc7d827b13d67d",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/ui/fragment/BatteryDetailsRowSyncTest.java": {
-    "mtime": 1790587796.4506736,
-    "seen": 1790587810.0729904,
+    "mtime": 1791194924.984451,
+    "seen": 1791194938.1807687,
     "ast_hash": "7c2ba58f3af866736de2b708125ecc8b",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/ui/fragment/ChargeTargetSummaryTest.java": {
-    "mtime": 1790587796.4506736,
-    "seen": 1790587810.0729918,
+    "mtime": 1791194924.984451,
+    "seen": 1791194938.1807702,
     "ast_hash": "2c9212f7f9583da0ee68b6e2235bf6d9",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/ui/preference/BatteryRangeSliderHelperTest.java": {
-    "mtime": 1790587796.4506736,
-    "seen": 1790587810.0729969,
+    "mtime": 1791194924.984451,
+    "seen": 1791194938.1807764,
     "ast_hash": "ced272709b84729fbc43393bcce6bdf7",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/ui/preference/TimePickerPreferenceDialogFragmentCompatTest.java": {
-    "mtime": 1790587796.45101,
-    "seen": 1790587810.0729992,
+    "mtime": 1791194924.9847867,
+    "seen": 1791194938.1807795,
     "ast_hash": "fd9919fa60b3c71c3c57318945eeca45",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/ui/widget/HorseshoeProgressBarTest.java": {
-    "mtime": 1790587796.45101,
-    "seen": 1790587810.0730004,
+    "mtime": 1791194924.9847867,
+    "seen": 1791194938.1807814,
     "ast_hash": "93aa8535886325f40249d0a0d57d527a",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/util/AppPrefsTest.java": {
-    "mtime": 1790587796.45101,
-    "seen": 1790587810.0730016,
+    "mtime": 1791194924.9847867,
+    "seen": 1791194938.1807826,
     "ast_hash": "0eeebf507564f8b7e2d01e67f82f68ef",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/util/BatteryPercentFormatterTest.java": {
-    "mtime": 1790587796.4513564,
-    "seen": 1790587810.0730028,
+    "mtime": 1791194924.985135,
+    "seen": 1791194938.1807842,
     "ast_hash": "5be8532e4f04fa69cca872649428b1c7",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/util/BidiTextTest.java": {
-    "mtime": 1790587796.4513564,
-    "seen": 1790587810.073004,
+    "mtime": 1791194924.985135,
+    "seen": 1791194938.180786,
     "ast_hash": "ee05e84af1592d264243d7aedfd578fc",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/util/GeneralHelperTest.java": {
-    "mtime": 1790587796.4513564,
-    "seen": 1790587810.0730052,
+    "mtime": 1791194924.985135,
+    "seen": 1791194938.1807878,
     "ast_hash": "d865a709cd27ad2a789b4c26cc7cacdb",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/util/TemperatureUtilsTest.java": {
-    "mtime": 1790587796.4513564,
-    "seen": 1790587810.0730069,
+    "mtime": 1791194924.985135,
+    "seen": 1791194938.180789,
     "ast_hash": "c38ab46202ffd697dca7d31a187a7a56",
     "semantic_hash": ""
   },
   "build.gradle": {
-    "mtime": 1790587796.4513564,
-    "seen": 1790587810.073008,
+    "mtime": 1791194924.985135,
+    "seen": 1791194938.1807904,
     "ast_hash": "0d9660b613d6b82293aaa66ba5cb7ace",
     "semantic_hash": ""
   },
   "release-please-config.json": {
-    "mtime": 1790587796.4683526,
-    "seen": 1790587810.0730097,
+    "mtime": 1791194925.0020282,
+    "seen": 1791194938.180792,
     "ast_hash": "0a458654c63147dfd76e6605d546fa85",
     "semantic_hash": ""
   },
   "settings.gradle": {
-    "mtime": 1790587796.4683526,
-    "seen": 1790587810.073011,
+    "mtime": 1791194925.0020282,
+    "seen": 1791194938.1807935,
     "ast_hash": "fa70d3933f4355a055bfb919d10b8264",
     "semantic_hash": ""
   },
   ".claude/guidelines.md": {
-    "mtime": 1790587796.4363525,
-    "seen": 1790587810.073012,
+    "mtime": 1791194924.9700282,
+    "seen": 1791194938.1807952,
     "ast_hash": "6d38a67aabdab37d6f7e340902aa2d46",
     "semantic_hash": ""
   },
   ".claude/guidelines/android.md": {
-    "mtime": 1790587796.4373448,
-    "seen": 1790587810.0730135,
+    "mtime": 1791194924.9711514,
+    "seen": 1791194938.1807966,
     "ast_hash": "9a451a5a16739f8877c90399ba638be3",
     "semantic_hash": ""
   },
   ".claude/guidelines/patterns.md": {
-    "mtime": 1790587796.4374428,
-    "seen": 1790587810.073015,
+    "mtime": 1791194924.971251,
+    "seen": 1791194938.180798,
     "ast_hash": "831af67206a83d434f86c9b70023aeb1",
     "semantic_hash": ""
   },
   ".claude/guidelines/testing.md": {
-    "mtime": 1790587796.4374428,
-    "seen": 1790587810.0730166,
+    "mtime": 1791194924.971251,
+    "seen": 1791194938.1807995,
     "ast_hash": "fad2e21c502476eba4c5553742657cf9",
     "semantic_hash": ""
   },
   ".github/FUNDING.yml": {
-    "mtime": 1790587796.4374428,
-    "seen": 1790587810.073018,
+    "mtime": 1791194924.971251,
+    "seen": 1791194938.180801,
     "ast_hash": "f87090e873ee1d33a32f01444390e925",
     "semantic_hash": ""
   },
   ".github/ISSUE_TEMPLATE/bug_report.yml": {
-    "mtime": 1790587796.438025,
-    "seen": 1790587810.07302,
+    "mtime": 1791194924.9718666,
+    "seen": 1791194938.180803,
     "ast_hash": "150a1f7d7caa2108db6c08d98f2281fb",
     "semantic_hash": ""
   },
   ".github/ISSUE_TEMPLATE/config.yml": {
-    "mtime": 1790587796.438085,
-    "seen": 1790587810.0730214,
+    "mtime": 1791194924.9719312,
+    "seen": 1791194938.1808045,
     "ast_hash": "87ee42c4e4786b9c90c80e6886f95793",
     "semantic_hash": ""
   },
   ".github/ISSUE_TEMPLATE/feature_request.yml": {
-    "mtime": 1790587796.438085,
-    "seen": 1790587810.0730226,
+    "mtime": 1791194924.9719312,
+    "seen": 1791194938.1808062,
     "ast_hash": "abe09b7c26c7386cd4679943f8f4cc81",
     "semantic_hash": ""
   },
   ".github/ISSUE_TEMPLATE/feedback.yml": {
-    "mtime": 1790587796.438085,
-    "seen": 1790587810.073024,
+    "mtime": 1791194924.9719312,
+    "seen": 1791194938.1808076,
     "ast_hash": "1ea679ab41a754b6541e403c208b7e7b",
     "semantic_hash": ""
   },
   ".github/copilot-instructions.md": {
-    "mtime": 1790587796.438085,
-    "seen": 1790587810.0730252,
+    "mtime": 1791194924.9719312,
+    "seen": 1791194938.1808093,
     "ast_hash": "17a4f5c5b7caec84ce4bf12878718b85",
     "semantic_hash": ""
   },
   ".github/dependabot.yml": {
-    "mtime": 1790587796.438085,
-    "seen": 1790587810.073027,
+    "mtime": 1791194924.9719312,
+    "seen": 1791194938.1808105,
     "ast_hash": "e77798e6fc1b4f0f6a37f9cac5729b27",
     "semantic_hash": ""
   },
   ".github/workflows/android-ci.yml": {
-    "mtime": 1790587796.438085,
-    "seen": 1790587810.073028,
+    "mtime": 1791194924.9719312,
+    "seen": 1791194938.180812,
     "ast_hash": "461751399d50890297e65fb5952883de",
     "semantic_hash": ""
   },
   ".github/workflows/pr-title-lint.yml": {
-    "mtime": 1790587796.4383523,
-    "seen": 1790587810.0730329,
+    "mtime": 1791194924.9721766,
+    "seen": 1791194938.1808171,
     "ast_hash": "e0f2e79d344edf8d2c391f0f0d3c9c1c",
     "semantic_hash": ""
   },
   ".github/workflows/release-please.yml": {
-    "mtime": 1790587796.4383523,
-    "seen": 1790587810.0730343,
+    "mtime": 1791194924.9721766,
+    "seen": 1791194938.180818,
     "ast_hash": "890752635d70e1ee3c5ee14690beb532",
     "semantic_hash": ""
   },
   "CLAUDE.md": {
-    "mtime": 1790587796.4383523,
-    "seen": 1790587810.073037,
+    "mtime": 1791194924.9721766,
+    "seen": 1791194938.1808214,
     "ast_hash": "9195bafebc4eefc43e7b88e0cf05280f",
     "semantic_hash": ""
   },
   "CODE_REVIEW_GUIDELINES.md": {
-    "mtime": 1790587796.4383523,
-    "seen": 1790587810.073038,
+    "mtime": 1791194924.9721766,
+    "seen": 1791194938.1808228,
     "ast_hash": "425f3c83736c1f9522d5949b7e24243d",
     "semantic_hash": ""
   },
   "CONTEXT.md": {
-    "mtime": 1790587796.4383523,
-    "seen": 1790587810.0730393,
+    "mtime": 1791194924.9721766,
+    "seen": 1791194938.1808245,
     "ast_hash": "b654a24258ccc27e73b7cf1174c1242f",
     "semantic_hash": ""
   },
   "LICENSE.md": {
-    "mtime": 1790587796.4383523,
-    "seen": 1790587810.0730407,
+    "mtime": 1791194924.9721766,
+    "seen": 1791194938.1808262,
     "ast_hash": "5b4473596678d62d9d83096273422c8c",
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1790587796.4383523,
-    "seen": 1790587810.073042,
+    "mtime": 1791194924.9721766,
+    "seen": 1791194938.180828,
     "ast_hash": "b7cf0ae73a083585d6124a7efb318000",
     "semantic_hash": ""
   },
   "play/README.md": {
-    "mtime": 1790587796.4573524,
-    "seen": 1790587810.073043,
+    "mtime": 1791194924.9910283,
+    "seen": 1791194938.1808298,
     "ast_hash": "f1282f04750497639e77d93c68744a6c",
     "semantic_hash": ""
   },
   "app/src/main/res/mipmap-xxxhdpi/ic_launcher.png": {
-    "mtime": 1790587796.4462662,
-    "seen": 1790587810.0730448,
+    "mtime": 1791194924.9800446,
+    "seen": 1791194938.1808312,
     "ast_hash": "94557955fff3393ee82134ba525bb093",
     "semantic_hash": "94557955fff3393ee82134ba525bb093"
   },
   "app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png": {
-    "mtime": 1790587796.4463525,
-    "seen": 1790587810.0730462,
+    "mtime": 1791194924.980516,
+    "seen": 1791194938.180833,
     "ast_hash": "0675971499ac64ee1985cf84ecb0ae9c",
     "semantic_hash": "0675971499ac64ee1985cf84ecb0ae9c"
   },
   "play/feature-graphic-1024x500.png": {
-    "mtime": 1790587796.458393,
-    "seen": 1790587810.0730476,
+    "mtime": 1791194924.992059,
+    "seen": 1791194938.1808345,
     "ast_hash": "da052d5d2fd97640d0aa18e98860680a",
     "semantic_hash": "da052d5d2fd97640d0aa18e98860680a"
   },
   "play/screenshots/1_charging.jpg": {
-    "mtime": 1790587796.4593525,
-    "seen": 1790587810.0730488,
+    "mtime": 1791194924.9930282,
+    "seen": 1791194938.1808357,
     "ast_hash": "aabbdb434fd5e914cda0d69df90a64ea",
     "semantic_hash": "aabbdb434fd5e914cda0d69df90a64ea"
   },
   "play/screenshots/2_discharging.jpg": {
-    "mtime": 1790587796.4613526,
-    "seen": 1790587810.07305,
+    "mtime": 1791194924.9940283,
+    "seen": 1791194938.1808376,
     "ast_hash": "d1ad3e501e84ad53f9a679ede7d6f864",
     "semantic_hash": "d1ad3e501e84ad53f9a679ede7d6f864"
   },
   "play/screenshots/3_insights.jpg": {
-    "mtime": 1790587796.4623525,
-    "seen": 1790587810.0730515,
+    "mtime": 1791194924.9960282,
+    "seen": 1791194938.1808388,
     "ast_hash": "1cdd4e2fd8b76f2eaa32e29993d12ca8",
     "semantic_hash": "1cdd4e2fd8b76f2eaa32e29993d12ca8"
   },
   "play/screenshots/4_settings_alerts.jpg": {
-    "mtime": 1790587796.4633524,
-    "seen": 1790587810.0730526,
+    "mtime": 1791194924.997028,
+    "seen": 1791194938.1808403,
     "ast_hash": "7044fc001adfdd55f3867498f2e09b95",
     "semantic_hash": "7044fc001adfdd55f3867498f2e09b95"
   },
   "play/screenshots/5_settings_behaviour.jpg": {
-    "mtime": 1790587796.4643526,
-    "seen": 1790587810.0730538,
+    "mtime": 1791194924.9980283,
+    "seen": 1791194938.1808414,
     "ast_hash": "4a8b54db1f7a5c30719e79cc7f7cd5c4",
     "semantic_hash": "4a8b54db1f7a5c30719e79cc7f7cd5c4"
   },
   "play/screenshots/6_notification.jpg": {
-    "mtime": 1790587796.4673526,
-    "seen": 1790587810.0730553,
+    "mtime": 1791194925.0010283,
+    "seen": 1791194938.180843,
     "ast_hash": "f46272eba3dabbcc12c6e8c4376112b2",
     "semantic_hash": "f46272eba3dabbcc12c6e8c4376112b2"
   },
   "play/store-icon-512.png": {
-    "mtime": 1790587796.4683526,
-    "seen": 1790587810.0730565,
+    "mtime": 1791194925.0020282,
+    "seen": 1791194938.180844,
     "ast_hash": "424c20a26e53a53b4ff09bfdc7c967ea",
     "semantic_hash": "424c20a26e53a53b4ff09bfdc7c967ea"
   },
   "AGENTS.md": {
-    "mtime": 1790587796.4383523,
-    "seen": 1790587810.0730355,
+    "mtime": 1791194924.9721766,
+    "seen": 1791194938.18082,
     "ast_hash": "3a8eaaa073377f268a55929b371fa625",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/service/PowerConnectionServiceForegroundStartTest.java": {
-    "mtime": 1790587796.4493525,
-    "seen": 1790587810.0729754,
+    "mtime": 1791194924.9830282,
+    "seen": 1791194938.180751,
     "ast_hash": "2153b38b19d782353944efe8c2de2c1f",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/ui/fragment/RingtonePickApplyTest.java": {
-    "mtime": 1790587796.4506736,
-    "seen": 1790587810.072993,
+    "mtime": 1791194924.984451,
+    "seen": 1791194938.1807718,
     "ast_hash": "38fc65a02890db8bd8aa4050a4236dfc",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/ui/fragment/RingtonePickSurvivesRecreationTest.java": {
-    "mtime": 1790587796.4506736,
-    "seen": 1790587810.0729942,
+    "mtime": 1791194924.984451,
+    "seen": 1791194938.1807733,
     "ast_hash": "9b98483f4ae965c7eaac6ab5fab958bb",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/ui/fragment/AlertSoundBucketTest.java": {
-    "mtime": 1790587796.4503524,
-    "seen": 1790587810.0729892,
+    "mtime": 1791194924.9840672,
+    "seen": 1791194938.1807675,
     "ast_hash": "4a7c5a5e9b61e83f2f1f5e03ead18caa",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/ui/fragment/SettingsScreen.java": {
-    "mtime": 1790587796.4506736,
-    "seen": 1790587810.0729957,
+    "mtime": 1791194924.984451,
+    "seen": 1791194938.180775,
     "ast_hash": "159bf843d94fdccae924074f3f375c8d",
     "semantic_hash": ""
   },
   ".githooks/pre-commit": {
-    "mtime": 1790587796.4374428,
-    "seen": 1790587810.0728672,
+    "mtime": 1791194924.971251,
+    "seen": 1791194938.180631,
     "ast_hash": "4db1eff6d55777678d76772f14c00f5f",
     "semantic_hash": ""
   },
   ".github/workflows/graphify-guard.yml": {
-    "mtime": 1790587796.4383483,
-    "seen": 1790587810.073029,
+    "mtime": 1791194924.9721766,
+    "seen": 1791194938.180813,
     "ast_hash": "4056080662013545205bf23713c94a89",
     "semantic_hash": ""
   },
   ".github/workflows/graphify-refresh.yml": {
-    "mtime": 1790587796.4383483,
-    "seen": 1790587810.0730307,
+    "mtime": 1791194924.9721766,
+    "seen": 1791194938.1808143,
     "ast_hash": "eb935a1906043f5ca51aa8b7d6180cd7",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/BattWatchApplication.java": {
-    "mtime": 1790587796.439585,
-    "seen": 1790587810.072879,
+    "mtime": 1791194924.9734085,
+    "seen": 1791194938.1806433,
     "ast_hash": "f62b8f5ebb39d49bac827675872e0f0b",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/BattWatchApplicationTest.java": {
-    "mtime": 1790587796.4481056,
-    "seen": 1790587810.0729446,
+    "mtime": 1791194924.9818745,
+    "seen": 1791194938.1807163,
     "ast_hash": "c857cd7b2936bb94c1541fc1470a96fc",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/ThemeAttributes.java": {
-    "mtime": 1790587796.4481056,
-    "seen": 1790587810.0729482,
+    "mtime": 1791194924.9818745,
+    "seen": 1791194938.180721,
     "ast_hash": "3ce65e628ae37efd846819face969cec",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/ui/GaugeThemeToggleTest.java": {
-    "mtime": 1790587796.4502695,
-    "seen": 1790587810.0729842,
+    "mtime": 1791194924.9840672,
+    "seen": 1791194938.1807613,
     "ast_hash": "9eab38de013e46a990a0ad2a41540889",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/ui/SnackbarActionContrastTest.java": {
-    "mtime": 1790587796.4502695,
-    "seen": 1790587810.0729866,
+    "mtime": 1791194924.9840672,
+    "seen": 1791194938.1807644,
     "ast_hash": "ef0ed909f77caf46aceb4f6a13bfb5e8",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/ui/preference/PreferenceDialogThemeTest.java": {
-    "mtime": 1790587796.45101,
-    "seen": 1790587810.072998,
+    "mtime": 1791194924.9847867,
+    "seen": 1791194938.180778,
     "ast_hash": "c2fb03e731ba8211312836bf79728dcf",
     "semantic_hash": ""
   },
   ".github/workflows/pages.yml": {
-    "mtime": 1790587796.4383523,
-    "seen": 1790587810.0730317,
+    "mtime": 1791194924.9721766,
+    "seen": 1791194938.1808157,
     "ast_hash": "104180819e4d3db60f3b4bef6116cf82",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/AppPalette.java": {
-    "mtime": 1790587796.4479773,
-    "seen": 1790587810.0729423,
+    "mtime": 1791194924.9817486,
+    "seen": 1791194938.180713,
     "ast_hash": "8e437c00ac969a07c38d79a4f85747c2",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/WcagContrast.java": {
-    "mtime": 1790587796.4481056,
-    "seen": 1790587810.0729494,
+    "mtime": 1791194924.9818745,
+    "seen": 1791194938.1807225,
     "ast_hash": "4356c40a62e2c2832402871ee3641d70",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/ui/GaugeIntroSweepTest.java": {
-    "mtime": 1790587796.4502695,
-    "seen": 1790587810.072983,
+    "mtime": 1791194924.9840672,
+    "seen": 1791194938.1807601,
     "ast_hash": "b5e64251a38ada6d731d416090170383",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/ui/SurfacePaletteTest.java": {
-    "mtime": 1790587796.4503524,
-    "seen": 1790587810.0729878,
+    "mtime": 1791194924.9840672,
+    "seen": 1791194938.1807659,
     "ast_hash": "35cd3d2023f7d027a14ae5160172a3e9",
     "semantic_hash": ""
   },
   "app/src/main/java/com/almothafar/simplebatterynotifier/receiver/MonitoringRestartReceiver.java": {
-    "mtime": 1790587796.440187,
-    "seen": 1790587810.0728903,
+    "mtime": 1791194924.974016,
+    "seen": 1791194938.1806557,
     "ast_hash": "15ffee318ff24116ccf41d87e8841089",
     "semantic_hash": ""
   },
   "app/src/test/java/com/almothafar/simplebatterynotifier/receiver/MonitoringRestartReceiverTest.java": {
-    "mtime": 1790587796.4487817,
-    "seen": 1790587810.0729554,
+    "mtime": 1791194924.982571,
+    "seen": 1791194938.1807299,
     "ast_hash": "9750df95456636ef2a69d72e3032a1d6",
     "semantic_hash": ""
   }
