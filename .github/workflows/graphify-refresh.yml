@@ -48,7 +48,7 @@ jobs:
       # the committed graph any more (the pre-commit hook and Graphify Guard stop a local rebuild reaching the repo at all), but so that a local
       # `graphify query` reads a graph written by a version it understands. Note the local copy is a `uv tool install`, which `pip install -U` does not touch.
       - name: Install graphify
-        run: pip install graphifyy==0.9.53
+        run: pip install graphifyy==0.9.92
 
       # AST-only — no API key, no cost. `graphify label` is the LLM half and deliberately stays out of a scheduled job, because renaming communities spends
       # money on every run; its cadence is tracked separately. No --force either: if the rebuild finds fewer nodes than the tracked graph, graphify refuses to
