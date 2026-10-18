@@ -14,7 +14,8 @@ This file carries the rules that apply to any edit. The rest live alongside it a
 
 - [`guidelines/android.md`](guidelines/android.md) — API-level branches, deprecation policy, reflection ban, UI components, threading, accessibility/RTL, permissions & storage, performance, Gradle/ProGuard.
 - [`guidelines/testing.md`](guidelines/testing.md) — JUnit vs. Robolectric, what to cover, the `@Config(sdk = 34)` constraint.
-- [`guidelines/patterns.md`](guidelines/patterns.md) — house patterns to copy (builder, null-safety, switch expressions, resource cleanup), JavaDoc & comment format, architectural decision log.
+- [`guidelines/patterns.md`](guidelines/patterns.md) — house patterns to copy (builder, null-safety, switch expressions, resource cleanup), JavaDoc & comment format.
+- [`../docs/adr/`](../docs/adr/) — architectural decision records, one file per decision.
 
 ## Code Style
 
