@@ -46,7 +46,7 @@ jobs:
       # The same pin as graphify-refresh.yml, and it has to stay the same: otherwise the published viewer and
       # the committed graph are built by different versions of the tool. Bump the two together.
       - name: Install graphify
-        run: pip install graphifyy==0.9.53
+        run: pip install graphifyy==0.9.92
 
       - name: Rebuild the graph and its viewer
         run: graphify update .

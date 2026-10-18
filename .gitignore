@@ -58,3 +58,7 @@ graphify-out/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/
 # Wrong on every other machine, rewritten on each run.
 graphify-out/.graphify_python
 graphify-out/.graphify_root
+
+# Fallback community names (each cluster's biggest symbol), split out of .graphify_labels.json in 0.9.90 so that file holds only names someone set.
+# Recomputed from the graph by every rebuild that relabels, and already carried in graph.json as each node's community_name - nothing to review or keep.
+graphify-out/.graphify_labels.pending.json
