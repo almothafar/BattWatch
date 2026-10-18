@@ -1,6 +1,6 @@
-# BattWatch — patterns, JavaDoc & decision log
+# BattWatch — patterns & JavaDoc
 
-> Detail companion to [`../guidelines.md`](../guidelines.md). The house patterns to copy, the JavaDoc/comment format, and why the current shapes were chosen. Check here before inventing a new shape for something the codebase already does.
+> Detail companion to [`../guidelines.md`](../guidelines.md). The house patterns to copy and the JavaDoc/comment format. Check here before inventing a new shape for something the codebase already does. Architectural decisions are recorded one per file in [`docs/adr/`](../../docs/adr/).
 
 ## Architecture Decisions
 
@@ -84,32 +84,3 @@ try (final TypedArray styledAttributes = context.obtainStyledAttributes(attrs, R
     // No need to call recycle() - try-with-resources handles it
 }
 ```
-
-## Recent Architectural Decisions
-
-### BatteryHealthStatus Enum (2025)
-- **Decision**: Replace boolean flags (`warningHealth`, `criticalHealth`) with `BatteryHealthStatus` enum
-- **Rationale**:
-  - Type safety
-  - Single source of truth
-  - No hidden side effects
-  - Easier to extend with new health states
-- **Implementation**: `BatteryHealthStatus` with values: GOOD, WARNING, CRITICAL, UNKNOWN
-
-### Method Separation (2025)
-- **Decision**: Split `determineHealthString` into two separate methods
-- **Rationale**: Single Responsibility Principle - avoid side effects
-- **Implementation**:
-  - `determineHealthStatus(int health)` - returns enum, no side effects
-  - `getHealthString(int health, Resources resources)` - returns string, no side effects
-
-
-### Adaptive-Icon Background Gradient (2026)
-- **Decision**: Keep the artwork baked into `ic_launcher_foreground`; make `ic_launcher_background` a gradient measured from it rather than a flat colour (#289)
-- **Rationale**: A real background layer must fill 108dp and only 71.5dp of art exists, with no vector source — a split means redrawing the icon. The background is invisible under static masks, so a gradient improves parallax without risking the common case.
-- **Implementation**: `res/drawable/ic_launcher_background.xml`, stops `#D8F3EC` → `#A3E3D7` → `#6DD3C5` sampled from the xxxhdpi foreground; the `@color` of the same name is gone.
-
-### Family-Driven Collapsed Notification Line (2026)
-- **Decision**: The ongoing notification's **collapsed** line renders from a user-ordered registry of metric *families* (Speed, Current, Time, Temperature, Power source), each family rendering its own state-appropriate form. The **expanded** view is deliberately left out of that model and stays fixed (#356)
-- **Rationale**: The expanded view's lines are not families — `Live` is current *plus* watts, `Average` is avg current *plus* %/h — so honouring the user's selection there means restructuring the view first, and #193 and #354 are already rewriting exactly those lines. Extending the family model to it now means writing the restructure twice and conflicting with two open issues. Filtering the expanded view by the selection is rejected outright on its own merits: it being the "everything" view is what makes the collapsed line's silent segment-collapse acceptable, so ordering it is a future option and hiding from it is not.
-- **Implementation**: `OngoingStatusContent.statusDetail()` renders from the ordered selection; `statusDetailExpanded()` is untouched and keeps its fixed Live/Average/Time/Temperature shape. Ordering the expanded view by the same selection, and giving it the `calculating` hints the details table already has (#216), are tracked in #361 and blocked on #193 and #354.
