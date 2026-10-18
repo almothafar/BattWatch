@@ -394,7 +394,7 @@ public final class BatteryRateTracker {
 
 	/**
 	 * Formats the rate magnitude for display, e.g. {@code "9%/h"}, with Western digits in every locale
-	 * (#96), matching the compact form recorded in {@code CONTEXT.md}.
+	 * (#96), matching the compact form recorded in {@code GLOSSARY.md}.
 	 *
 	 * @param context        Application context
 	 * @param percentPerHour rate magnitude in %/h
