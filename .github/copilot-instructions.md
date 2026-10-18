@@ -19,6 +19,6 @@ Do not hand-edit version numbers. The version lives in `.release-please-manifest
 
 ## Conventions
 
-- Use the domain vocabulary defined in `CONTEXT.md` (drain rate, charge rate, design capacity).
+- Use the domain vocabulary defined in `GLOSSARY.md` (drain rate, charge rate, design capacity).
 - Follow `CODE_REVIEW_GUIDELINES.md` (e.g. no `final` on parameters).
 - Every user-facing string needs an Arabic translation or the build fails (`MissingTranslation`).
