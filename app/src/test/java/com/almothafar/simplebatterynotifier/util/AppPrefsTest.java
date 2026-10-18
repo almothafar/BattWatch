@@ -11,6 +11,7 @@ import androidx.preference.SeekBarPreference;
 import androidx.test.core.app.ApplicationProvider;
 
 import com.almothafar.simplebatterynotifier.R;
+import com.almothafar.simplebatterynotifier.model.DetailFamily;
 import com.almothafar.simplebatterynotifier.model.LevelThresholds;
 
 import org.junit.Before;
@@ -26,6 +27,7 @@ import org.xmlpull.v1.XmlPullParser;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -50,6 +52,23 @@ public class AppPrefsTest {
 		@Before
 		public void setUp() {
 			context = ApplicationProvider.getApplicationContext();
+		}
+
+		@Test
+		public void notificationDetails_roundTripInOrder() {
+			AppPrefs.setNotificationDetails(context, List.of(DetailFamily.POWER_SOURCE, DetailFamily.SPEED));
+			assertEquals(List.of(DetailFamily.POWER_SOURCE, DetailFamily.SPEED), AppPrefs.notificationDetails(context));
+		}
+
+		@Test
+		public void notificationDetails_keepsAnEmptyChoice_ratherThanFallingBackToTheDefault() {
+			AppPrefs.setNotificationDetails(context, List.of());
+			assertEquals(List.of(), AppPrefs.notificationDetails(context));
+		}
+
+		@Test
+		public void notificationDetails_defaultToSpeedCurrentTime() {
+			assertEquals(List.of(DetailFamily.SPEED, DetailFamily.CURRENT, DetailFamily.TIME), AppPrefs.notificationDetails(context));
 		}
 
 		@Test
@@ -648,6 +667,36 @@ public class AppPrefsTest {
 		@Test
 		public void matchesExpected() {
 			assertEquals(expected, AppPrefs.clampDrainLimit(stored));
+		}
+	}
+
+	/**
+	 * {@link AppPrefs#detailFamiliesOf}: a stored notification-details value from a newer build, a downgrade or a corrupt write still yields a usable choice,
+	 * in stored order and never past the cap (#357). Pure, so no context is needed.
+	 */
+	@RunWith(Parameterized.class)
+	public static class DetailFamiliesOf {
+
+		@Parameter public String stored;
+		@Parameter(1) public List<DetailFamily> expected;
+
+		@Parameters(name = "detailFamiliesOf(\"{0}\") = {1}")
+		public static Collection<Object[]> data() {
+			return Arrays.asList(new Object[][]{
+					{"speed,current,time", List.of(DetailFamily.SPEED, DetailFamily.CURRENT, DetailFamily.TIME)},
+					{"time,speed", List.of(DetailFamily.TIME, DetailFamily.SPEED)},                     // stored order, not declaration order
+					{"", List.of()},                                                                   // an empty choice is a choice
+					{"temperature,power_source", List.of(DetailFamily.TEMPERATURE, DetailFamily.POWER_SOURCE)},
+					{"speed,voltage,time", List.of(DetailFamily.SPEED, DetailFamily.TIME)},            // an id this build doesn't know
+					{"speed,speed,time", List.of(DetailFamily.SPEED, DetailFamily.TIME)},              // a repeat
+					{"speed,current,time,temperature", List.of(DetailFamily.SPEED, DetailFamily.CURRENT, DetailFamily.TIME)}, // past the cap
+					{"SPEED", List.of()},                                                              // ids are case-sensitive
+			});
+		}
+
+		@Test
+		public void matchesExpected() {
+			assertEquals(expected, AppPrefs.detailFamiliesOf(stored));
 		}
 	}
 

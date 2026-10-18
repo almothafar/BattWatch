@@ -38,6 +38,10 @@ _Avoid_: charge limit, charge cap (that is the OEM hardware feature), threshold.
 The opt-in repeat of the full-battery alert, re-posted every N minutes for as long as the battery stays on the charger at or above the charge target (default off, gap 15 min, range 5–60). It repeats the one alert rather than adding a second one, and the charger coming out is the only thing that ends it.
 _Avoid_: nag, snooze, recurring alert, repeat notification.
 
+**Notification details**:
+What the status notification's collapsed line shows, chosen by the user from five families — Speed, Current, Time, Temperature, Power source — up to three at once. **Speed** is only a family name: the drain rate while discharging, the charge power while charging. It never stands in for "drain rate" anywhere else.
+_Avoid_: notification metrics, detail fields.
+
 **Temperature range**:
 The lowest and highest battery temperature seen since the battery last finished charging, in the
 user's display unit. Accumulated from the readings the monitoring service observes; finishing a

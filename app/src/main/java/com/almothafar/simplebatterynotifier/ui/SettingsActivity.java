@@ -10,6 +10,7 @@ import androidx.preference.PreferenceFragmentCompat;
 import com.almothafar.simplebatterynotifier.R;
 import com.almothafar.simplebatterynotifier.ui.fragment.CardPreferenceFragment;
 import com.almothafar.simplebatterynotifier.ui.fragment.GenericPreferenceFragment;
+import com.almothafar.simplebatterynotifier.ui.fragment.NotificationDetailsFragment;
 
 import java.util.Set;
 
@@ -74,17 +75,20 @@ public class SettingsActivity extends BaseActivity implements PreferenceFragment
 	 * <p>
 	 * The {@code android:fragment} attribute still has to stay in the XML: {@code PreferenceFragmentCompat} only
 	 * routes a click here when {@code getFragment()} is non-null. Its value is no longer read.
+	 * <p>
+	 * The one row that opens something else — the notification-details picker (#357) — is told apart by its key, for the same reason.
 	 *
 	 * @param caller The calling preference fragment
 	 * @param pref   The preference that was clicked
 	 * @return True if fragment navigation was handled
 	 */
 	@Override
-	public boolean onPreferenceStartFragment(@NonNull final PreferenceFragmentCompat caller, final Preference pref) {
-		// The category extra picks which preference screen this instance loads.
-		final Bundle args = pref.getExtras();
-		final Fragment fragment = new GenericPreferenceFragment();
-		fragment.setArguments(args);
+	public boolean onPreferenceStartFragment(@NonNull PreferenceFragmentCompat caller, Preference pref) {
+		final Fragment fragment = getString(R.string._pref_key_notification_details).equals(pref.getKey())
+		                          ? new NotificationDetailsFragment()
+		                          : new GenericPreferenceFragment();
+		// For a GenericPreferenceFragment, the category extra picks which preference screen it loads.
+		fragment.setArguments(pref.getExtras());
 		// setTargetFragment() removed - deprecated API, no longer needed for fragment navigation
 
 		// Replace the existing Fragment with the new Fragment

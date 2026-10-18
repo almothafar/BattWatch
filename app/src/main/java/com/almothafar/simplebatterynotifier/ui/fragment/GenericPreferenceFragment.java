@@ -173,6 +173,7 @@ public class GenericPreferenceFragment extends CardPreferenceFragment
 					setPreferencesFromResource(R.xml.pref_general, rootKey);
 					configureLanguagePreference();
 					configureThemePreference();
+					configureNotificationDetailsEntry();
 				} else if (category.equals(getString(R.string.pref_category_alerts))) {
 					setPreferencesFromResource(R.xml.pref_alerts, rootKey);
 					configureTemperatureThreshold();
@@ -230,6 +231,20 @@ public class GenericPreferenceFragment extends CardPreferenceFragment
 			AppCompatDelegate.setDefaultNightMode(AppPrefs.themeModeOf((String) newValue));
 			return true;
 		});
+	}
+
+	/**
+	 * Summarise the notification-details choice on the row that opens its picker (#357). A provider rather than a set summary, so the row reads the saved
+	 * choice each time it is drawn — including on the way back from the picker, which rebuilds this screen's views but not its preferences.
+	 */
+	private void configureNotificationDetailsEntry() {
+		final Preference entry = findPreference(getString(R.string._pref_key_notification_details));
+		if (nonNull(entry)) {
+			entry.setSummaryProvider(row -> {
+				final Context context = row.getContext();
+				return NotificationDetailsFragment.summaryOf(context, AppPrefs.notificationDetails(context));
+			});
+		}
 	}
 
 	/**

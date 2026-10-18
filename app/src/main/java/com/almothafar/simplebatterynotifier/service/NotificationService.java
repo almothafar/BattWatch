@@ -12,6 +12,7 @@ import android.graphics.drawable.Icon;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
+import android.service.notification.StatusBarNotification;
 import android.util.Log;
 import android.widget.Toast;
 import androidx.core.app.NotificationCompat;
@@ -386,7 +387,42 @@ public final class NotificationService {
 		post(context, ONGOING_NOTIFICATION_ID, buildOngoingNotification(context, batteryDO, rate));
 	}
 
+	/**
+	 * Re-post the status notification from a fresh reading, for a settings change that alters its text (#357). Nothing else reaches it until the next battery
+	 * broadcast, which can be minutes away on a quiet phone.
+	 * <p>
+	 * Only replaces a notification that is already up. When it isn't — the system stopped monitoring (#302), or notifications are off — posting from a settings
+	 * screen would raise a status notification that no service stands behind.
+	 *
+	 * @param context The application context
+	 */
+	public static void refreshOngoingNotification(Context context) {
+		if (lacksOngoingNotification(context)) {
+			return;
+		}
+		final BatteryDO batteryDO = SystemService.getBatteryInfo(context);
+		if (isNull(batteryDO)) {
+			// Re-posting from no reading would replace live text with "0% · Unknown"; the next broadcast brings the change instead.
+			Log.w(TAG, "No battery reading; status notification left for the next broadcast to refresh");
+			return;
+		}
+		updateOngoingNotification(context, batteryDO, BatteryRateTracker.getRate(context, batteryDO));
+	}
+
 	// ========== Private Helper Methods ==========
+
+	private static boolean lacksOngoingNotification(Context context) {
+		final NotificationManager manager = getNotificationManager(context);
+		if (isNull(manager)) {
+			return true;
+		}
+		for (StatusBarNotification active : manager.getActiveNotifications()) {
+			if (active.getId() == ONGOING_NOTIFICATION_ID) {
+				return false;
+			}
+		}
+		return true;
+	}
 
 	/**
 	 * Send an alert on its own channel and notification ID, honouring quiet hours, silent-mode and

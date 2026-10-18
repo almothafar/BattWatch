@@ -41,14 +41,13 @@
         android:title="@string/pref_cat_title_status_notification"
         app:iconSpaceReserved="false">
 
-        <SwitchPreference
-            android:defaultValue="true"
-            android:key="@string/_pref_key_show_rate_in_notification"
-            android:summaryOff="@string/show_rate_in_notification_summary_off"
-            android:summaryOn="@string/show_rate_in_notification_summary_on"
-            android:switchTextOff="@string/off"
-            android:switchTextOn="@string/on"
-            android:title="@string/show_rate_in_notification"
+        <!-- Opens the picker (#357). SettingsActivity routes it by key; android:fragment is only there because PreferenceFragmentCompat ignores a click on a
+             row without one. The summary is set in code, from the saved choice. -->
+        <Preference
+            android:fragment="com.almothafar.simplebatterynotifier.ui.fragment.NotificationDetailsFragment"
+            android:key="@string/_pref_key_notification_details"
+            android:persistent="false"
+            android:title="@string/notification_details_title"
             app:iconSpaceReserved="false" />
 
     </PreferenceCategory>

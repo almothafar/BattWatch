@@ -9,6 +9,8 @@ import androidx.test.core.app.ApplicationProvider;
 
 import com.almothafar.simplebatterynotifier.R;
 import com.almothafar.simplebatterynotifier.model.BatteryDO;
+import com.almothafar.simplebatterynotifier.model.DetailFamily;
+import com.almothafar.simplebatterynotifier.util.AppPrefs;
 import com.almothafar.simplebatterynotifier.util.TemperatureUtils;
 
 import org.junit.Before;
@@ -17,8 +19,12 @@ import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 
+import java.util.List;
+import java.util.Locale;
+
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * The ongoing status notification (#192 title + #194 expandable body): the title is the stable
@@ -49,9 +55,13 @@ public class OngoingStatusContentTest {
 
 	private static BatteryDO charging80() {
 		// 2 A × 5 V = 10 W.
-		return new BatteryDO().setLevel(80).setScale(100)
-				.setStatus(BatteryManager.BATTERY_STATUS_CHARGING)
-				.setTemperature(346).setCurrentMicroAmps(2_000_000).setVoltage(5000);
+		return new BatteryDO().setLevel(80)
+		                      .setScale(100)
+		                      .setStatus(BatteryManager.BATTERY_STATUS_CHARGING)
+		                      .setPlugged(BatteryManager.BATTERY_PLUGGED_AC)
+		                      .setTemperature(346)
+		                      .setCurrentMicroAmps(2_000_000)
+		                      .setVoltage(5000);
 	}
 
 	/** Rate with a %/h only (no current/average yet) — the warm-up shape. */
@@ -124,6 +134,104 @@ public class OngoingStatusContentTest {
 				OngoingStatusContent.statusDetail(context, discharging85(), loneCurrent));
 	}
 
+	// --- Notification details: the user-chosen families (#357) ----------------------------------
+
+	private void select(DetailFamily... families) {
+		AppPrefs.setNotificationDetails(context, List.of(families));
+	}
+
+	/** The collapsed line with only {@code family} chosen. */
+	private String alone(DetailFamily family, BatteryDO batteryDO, BatteryRateTracker.BatteryRate rate) {
+		select(family);
+		return OngoingStatusContent.statusDetail(context, batteryDO, rate);
+	}
+
+	@Test
+	public void speed_isTheDrainRate_whileDischarging_andTheWattage_whileCharging() {
+		assertEquals("9%/h", alone(DetailFamily.SPEED, discharging85(), rateFull(false, 9, -250, -338)));
+		assertEquals("~10 W", alone(DetailFamily.SPEED, charging80(), rateFull(true, 20, 2000, 1900)));
+	}
+
+	@Test
+	public void speed_fallsBackToTheChargeRate_whenTheWattageIsUnknown() {
+		// No current and no voltage → no wattage estimate, so the %/h stands in (the pre-#357 behaviour).
+		final BatteryDO noWattage = new BatteryDO().setLevel(80).setScale(100).setStatus(BatteryManager.BATTERY_STATUS_CHARGING).setTemperature(346);
+		assertEquals("20%/h", alone(DetailFamily.SPEED, noWattage, rate(true, 20)));
+	}
+
+	@Test
+	public void current_isWorded_inBothDirections() {
+		assertEquals(curCollapsed(false, -250), alone(DetailFamily.CURRENT, discharging85(), rateFull(false, 9, -250, -338)));
+		assertEquals(curCollapsed(true, 2000), alone(DetailFamily.CURRENT, charging80(), rateFull(true, 20, 2000, 1900)));
+	}
+
+	@Test
+	public void time_isRemaining_whileDischarging_andToFull_whileCharging() {
+		assertEquals(context.getString(R.string.notification_status_time_remaining, "~9h 27m"),
+				alone(DetailFamily.TIME, discharging85(), rateFull(false, 9, -250, -338)));
+		assertEquals(context.getString(R.string.notification_status_time_to_full, "~1h 0m"),
+				alone(DetailFamily.TIME, charging80(), rateFull(true, 20, 2000, 1900)));
+	}
+
+	@Test
+	public void temperature_isTheSame_inBothDirections() {
+		assertEquals(temp(), alone(DetailFamily.TEMPERATURE, discharging85(), rateFull(false, 9, -250, -338)));
+		assertEquals(temp(), alone(DetailFamily.TEMPERATURE, charging80(), rateFull(true, 20, 2000, 1900)));
+	}
+
+	@Test
+	public void powerSource_isOnBattery_whileUnplugged_andTheChargerType_whilePlugged() {
+		assertEquals("On battery", alone(DetailFamily.POWER_SOURCE, discharging85(), rateFull(false, 9, -250, -338)));
+		assertEquals("AC", alone(DetailFamily.POWER_SOURCE, charging80(), rateFull(true, 20, 2000, 1900)));
+		assertEquals("USB", alone(DetailFamily.POWER_SOURCE, charging80().setPlugged(BatteryManager.BATTERY_PLUGGED_USB), rateFull(true, 20, 2000, 1900)));
+		assertEquals("Wireless",
+				alone(DetailFamily.POWER_SOURCE, charging80().setPlugged(BatteryManager.BATTERY_PLUGGED_WIRELESS), rateFull(true, 20, 2000, 1900)));
+	}
+
+	@Test
+	public void aFamilyWithNoDataYet_dropsOutSilently() {
+		// Warm-up: no current yet, so Current vanishes and its neighbours close up around it.
+		select(DetailFamily.SPEED, DetailFamily.CURRENT, DetailFamily.POWER_SOURCE);
+		assertEquals("9%/h" + SEP + "On battery", OngoingStatusContent.statusDetail(context, discharging85(), rate(false, 9)));
+	}
+
+	@Test
+	@Config(qualifiers = "ar-rEG")
+	public void arabic_keepsWesternDigits_inEveryFamily() {
+		// Premise: a region-bearing Arabic locale really localises digits. Bare "ar" picks Western ones and would pass against the defect (#241).
+		assertEquals("ar-rEG should select Eastern Arabic digits", "٤٠", String.format(Locale.getDefault(), "%d", 40));
+
+		select(DetailFamily.SPEED, DetailFamily.CURRENT, DetailFamily.TIME);
+		final String dischargingLine = OngoingStatusContent.statusDetail(context, discharging85(), rateFull(false, 9, -250, -338));
+		final String chargingLine = OngoingStatusContent.statusDetail(context, charging80(), rateFull(true, 20, 2000, 1900));
+		select(DetailFamily.TEMPERATURE, DetailFamily.POWER_SOURCE);
+		final String staticLine = OngoingStatusContent.statusDetail(context, charging80(), rateFull(true, 20, 2000, 1900));
+
+		// values-ar was really loaded, so these are assertions about the Arabic copy and not an English fallback.
+		assertTrue(dischargingLine, dischargingLine.contains("استهلاك"));
+		assertTrue(chargingLine, chargingLine.contains("واط") && chargingLine.contains("حتى الاكتمال"));
+		assertTrue(staticLine, staticLine.contains("شاحن جداري"));
+		for (String line : List.of(dischargingLine, chargingLine, staticLine)) {
+			assertFalse(line, line.matches(".*[٠-٩].*"));
+		}
+		assertTrue(dischargingLine, dischargingLine.contains("250") && dischargingLine.contains("27"));
+		assertTrue(chargingLine, chargingLine.contains("10") && chargingLine.contains("2000"));
+		assertTrue(staticLine, staticLine.contains("34.6"));
+	}
+
+	@Test
+	public void anEmptyChoice_rendersAnEmptyLine() {
+		select();
+		assertEquals("", OngoingStatusContent.statusDetail(context, discharging85(), rateFull(false, 9, -250, -338)));
+	}
+
+	@Test
+	public void collapsed_followsTheStoredOrder_notTheRegistryOrder() {
+		select(DetailFamily.TIME, DetailFamily.SPEED);
+		final String remaining = context.getString(R.string.notification_status_time_remaining, "~9h 27m");
+		assertEquals(remaining + SEP + "9%/h", OngoingStatusContent.statusDetail(context, discharging85(), rateFull(false, 9, -250, -338)));
+	}
+
 	@Test
 	public void expanded_isLabelledBreakdown_whileDischarging() {
 		final String expected = String.join("\n",
@@ -163,17 +271,41 @@ public class OngoingStatusContentTest {
 				String.valueOf(bigText));
 	}
 
+	/** Stores a value for the show-rate switch #357 removed, as an existing install would have it. */
+	private void legacyShowRate(boolean on) {
+		PreferenceManager.getDefaultSharedPreferences(context).edit().putBoolean(context.getString(R.string._pref_key_show_rate_in_notification), on).commit();
+	}
+
 	@Test
-	public void rateDisplayOff_showsTemperatureOnly_andNotExpandable() {
-		PreferenceManager.getDefaultSharedPreferences(context).edit()
-				.putBoolean(context.getString(R.string._pref_key_show_rate_in_notification), false)
-				.commit();
-		// Collapsed: bare temperature. Expanded: a single "Temperature: …" line → no BigText.
+	public void legacyRateSwitchOff_carriesOverAsTemperatureOnly() {
+		legacyShowRate(false);
+		// What the switch showed while off: the bare temperature, even with a full rate available.
 		assertEquals(temp(), OngoingStatusContent.statusDetail(context, discharging85(), rateFull(false, 9, -250, -338)));
-		assertEquals(line(R.string.temperature, temp()),
-				OngoingStatusContent.statusDetailExpanded(context, discharging85(), rateFull(false, 9, -250, -338)));
+	}
+
+	@Test
+	public void legacyRateSwitchOn_carriesOverAsSpeedCurrentTime() {
+		legacyShowRate(true);
+		final String remaining = context.getString(R.string.notification_status_time_remaining, "~9h 27m");
+		assertEquals("9%/h" + SEP + curCollapsed(false, -250) + SEP + remaining,
+				OngoingStatusContent.statusDetail(context, discharging85(), rateFull(false, 9, -250, -338)));
+	}
+
+	@Test
+	public void savedChoice_supersedesTheLegacySwitch() {
+		legacyShowRate(false);
+		select(DetailFamily.SPEED);
+		assertEquals("9%/h", OngoingStatusContent.statusDetail(context, discharging85(), rateFull(false, 9, -250, -338)));
+	}
+
+	@Test
+	public void expanded_ignoresTheChoice_andStaysTheFullBreakdown() {
+		// docs/adr/0002: the expanded view is the everything view, so narrowing the collapsed line must not narrow it.
+		select(DetailFamily.TEMPERATURE);
 		final Notification built = NotificationService.buildOngoingNotification(context, discharging85(), rateFull(false, 9, -250, -338));
-		assertNull(built.extras.getCharSequence(Notification.EXTRA_BIG_TEXT));
+		assertEquals(OngoingStatusContent.statusDetailExpanded(context, discharging85(), rateFull(false, 9, -250, -338)),
+				String.valueOf(built.extras.getCharSequence(Notification.EXTRA_BIG_TEXT)));
+		assertEquals(4, String.valueOf(built.extras.getCharSequence(Notification.EXTRA_BIG_TEXT)).split("\n").length);
 	}
 
 	@Test

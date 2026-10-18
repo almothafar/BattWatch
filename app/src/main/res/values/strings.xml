@@ -230,11 +230,30 @@
          caller. "Using" while discharging, "Charging" while charging. e.g. "Using 199 mA" / "Charging 1500 mA" -->
     <string name="notification_status_current_using">Using %1$s</string>
     <string name="notification_status_current_charging">Charging %1$s</string>
+    <!-- #357: the collapsed Power source segment. Shorter than the details table's charger labels, since it shares the line with up to two others. -->
+    <string name="notification_status_source_battery">On battery</string>
+    <string name="notification_status_source_usb">USB</string>
+    <string name="notification_status_source_ac">AC</string>
+    <string name="notification_status_source_wireless">Wireless</string>
+    <!-- Any other charger Android reports: a dock (API 33+), or a type added later -->
+    <string name="notification_status_source_other">Plugged in</string>
     <!-- #194: expanded (pull-down) breakdown — one "label: value" line each. Labels for Time remaining /
          Time to full / Temperature / Drain rate are reused from the details table. -->
     <string name="notification_detail_line">%1$s: %2$s</string>
     <string name="notification_label_now">Live</string>
     <string name="notification_label_average">Average</string>
+    <!-- #357: General → Status Notification → Notification details, the picker for what the collapsed line shows -->
+    <string name="notification_details_title">Notification details</string>
+    <!-- Summary when the user chose nothing; otherwise the summary is the chosen family names joined by " · " -->
+    <string name="notification_details_summary_none">Nothing selected</string>
+    <!-- %1$s is the cap, %2$s how many are chosen — both Western-digit numbers (String.valueOf), 0-9 in every locale (#96) -->
+    <string name="notification_details_header">Choose up to %1$s · %2$s selected</string>
+    <string name="notification_details_header_empty">Nothing selected — the notification shows only the title</string>
+    <string name="detail_family_speed">Speed</string>
+    <string name="detail_family_current">Current</string>
+    <string name="detail_family_time">Time</string>
+    <string name="detail_family_temperature">Temperature</string>
+    <string name="detail_family_power_source">Power source</string>
 
     <!-- High temperature alert -->
     <string name="notify_high_temperature">High Temperature Alert</string>
@@ -261,9 +280,6 @@
     <string name="time_to_full_value_hm">~%1$sh %2$sm</string>
     <string name="time_to_full_value_m">~%1$sm</string>
     <string name="pref_cat_title_drain">Battery Drain</string>
-    <string name="show_rate_in_notification">Show rate &amp; time in status notification</string>
-    <string name="show_rate_in_notification_summary_on">The ongoing notification adds the live rate/power and estimated time to the percentage, status and temperature</string>
-    <string name="show_rate_in_notification_summary_off">The ongoing notification shows the percentage, status and temperature only</string>
     <string name="drain_limit">High drain limit</string>
     <string name="drain_limit_summary">The drain rate turns amber near this limit and red at or above it, and the fast-drain alert fires when it stays there. Measured in percentage points per hour.</string>
 
@@ -460,8 +476,11 @@
     <string name="_pref_key_unplug_reminder_minutes" translatable="false">key_unplug_reminder_minutes</string>
     <string name="_pref_key_notify_high_temperature" translatable="false">key_notify_high_temperature</string>
     <string name="_pref_key_high_temperature_threshold" translatable="false">key_high_temperature_threshold</string>
-    <!-- #108/#109: append the rate to the ongoing notification, and the shared "high drain" limit (%/h) -->
+    <!-- #357: the families the ongoing notification's collapsed line shows, as ordered comma-separated ids ("speed,current,time"; "" = none) -->
+    <string name="_pref_key_notification_details" translatable="false">key_notification_details</string>
+    <!-- #108: the show-rate switch #357 replaced. No longer written; read only to carry an existing choice over until the user saves notification details. -->
     <string name="_pref_key_show_rate_in_notification" translatable="false">key_show_rate_in_notification</string>
+    <!-- #109: the shared "high drain" limit (%/h) -->
     <string name="_pref_key_fast_drain_limit" translatable="false">key_fast_drain_limit</string>
     <!-- #109: fast-drain alert enable + timing -->
     <string name="_pref_key_notify_fast_drain" translatable="false">key_notify_fast_drain</string>
