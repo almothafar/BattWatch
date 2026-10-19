@@ -239,12 +239,13 @@ public class GenericPreferenceFragment extends CardPreferenceFragment
 	 */
 	private void configureNotificationDetailsEntry() {
 		final Preference entry = findPreference(getString(R.string._pref_key_notification_details));
-		if (nonNull(entry)) {
-			entry.setSummaryProvider(row -> {
-				final Context context = row.getContext();
-				return NotificationDetailsFragment.summaryOf(context, AppPrefs.notificationDetails(context));
-			});
+		if (isNull(entry)) {
+			return;
 		}
+		entry.setSummaryProvider(row -> {
+			final Context context = row.getContext();
+			return NotificationDetailsFragment.summaryOf(context, AppPrefs.notificationDetails(context));
+		});
 	}
 
 	/**

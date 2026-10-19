@@ -24,6 +24,7 @@ import java.util.Locale;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -186,6 +187,8 @@ public class OngoingStatusContentTest {
 		assertEquals("USB", alone(DetailFamily.POWER_SOURCE, charging80().setPlugged(BatteryManager.BATTERY_PLUGGED_USB), rateFull(true, 20, 2000, 1900)));
 		assertEquals("Wireless",
 				alone(DetailFamily.POWER_SOURCE, charging80().setPlugged(BatteryManager.BATTERY_PLUGGED_WIRELESS), rateFull(true, 20, 2000, 1900)));
+		// BATTERY_PLUGGED_DOCK (8) arrived in API 33, after the app's charger names were written.
+		assertEquals("Plugged in", alone(DetailFamily.POWER_SOURCE, charging80().setPlugged(8), rateFull(true, 20, 2000, 1900)));
 	}
 
 	@Test
@@ -211,12 +214,19 @@ public class OngoingStatusContentTest {
 		assertTrue(dischargingLine, dischargingLine.contains("استهلاك"));
 		assertTrue(chargingLine, chargingLine.contains("واط") && chargingLine.contains("حتى الاكتمال"));
 		assertTrue(staticLine, staticLine.contains("شاحن جداري"));
-		for (String line : List.of(dischargingLine, chargingLine, staticLine)) {
+		for (final String line : List.of(dischargingLine, chargingLine, staticLine)) {
 			assertFalse(line, line.matches(".*[٠-٩].*"));
 		}
 		assertTrue(dischargingLine, dischargingLine.contains("250") && dischargingLine.contains("27"));
 		assertTrue(chargingLine, chargingLine.contains("10") && chargingLine.contains("2000"));
 		assertTrue(staticLine, staticLine.contains("34.6"));
+	}
+
+	@Test
+	public void aChoiceWithNothingToShowYet_fallsBackToTheTemperature() {
+		// Kept from before #357, so the line is never blank on a warm-up tick; slice 3 (#359) replaces it with "Calculating…".
+		select(DetailFamily.CURRENT, DetailFamily.TIME);
+		assertEquals(temp(), OngoingStatusContent.statusDetail(context, discharging85(), BatteryRateTracker.BatteryRate.empty()));
 	}
 
 	@Test
@@ -281,6 +291,25 @@ public class OngoingStatusContentTest {
 		legacyShowRate(false);
 		// What the switch showed while off: the bare temperature, even with a full rate available.
 		assertEquals(temp(), OngoingStatusContent.statusDetail(context, discharging85(), rateFull(false, 9, -250, -338)));
+		assertEquals(temp(), OngoingStatusContent.statusDetail(context, charging80(), rateFull(true, 20, 2000, 1900)));
+	}
+
+	@Test
+	public void legacyRateSwitchOff_keepsThePullDownTemperatureOnly_andNotExpandable() {
+		// The switch governed the pull-down too, and nothing replaces that half of it. Until the user saves a choice, theirs stays the single
+		// "Temperature: …" line, which earns no expand chevron (#194).
+		legacyShowRate(false);
+		assertEquals(line(R.string.temperature, temp()),
+				OngoingStatusContent.statusDetailExpanded(context, discharging85(), rateFull(false, 9, -250, -338)));
+		final Notification built = NotificationService.buildOngoingNotification(context, discharging85(), rateFull(false, 9, -250, -338));
+		assertNull(built.extras.getCharSequence(Notification.EXTRA_BIG_TEXT));
+	}
+
+	@Test
+	public void savingAChoice_retiresTheLegacySwitch_soThePullDownIsTheFullBreakdown() {
+		legacyShowRate(false);
+		select(DetailFamily.TEMPERATURE);
+		assertEquals(4, OngoingStatusContent.statusDetailExpanded(context, discharging85(), rateFull(false, 9, -250, -338)).split("\n").length);
 	}
 
 	@Test
@@ -289,6 +318,9 @@ public class OngoingStatusContentTest {
 		final String remaining = context.getString(R.string.notification_status_time_remaining, "~9h 27m");
 		assertEquals("9%/h" + SEP + curCollapsed(false, -250) + SEP + remaining,
 				OngoingStatusContent.statusDetail(context, discharging85(), rateFull(false, 9, -250, -338)));
+		final String toFull = context.getString(R.string.notification_status_time_to_full, "~1h 0m");
+		assertEquals("~10 W" + SEP + curCollapsed(true, 2000) + SEP + toFull,
+				OngoingStatusContent.statusDetail(context, charging80(), rateFull(true, 20, 2000, 1900)));
 	}
 
 	@Test

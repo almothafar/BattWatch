@@ -39,8 +39,11 @@ The opt-in repeat of the full-battery alert, re-posted every N minutes for as lo
 _Avoid_: nag, snooze, recurring alert, repeat notification.
 
 **Notification details**:
-What the status notification's collapsed line shows, chosen by the user from five families — Speed, Current, Time, Temperature, Power source — up to three at once. **Speed** is only a family name: the drain rate while discharging, the charge power while charging. It never stands in for "drain rate" anywhere else.
+What the status notification's collapsed line shows: up to three families the user picks from Speed, Current, Time, Temperature and Power source.
 _Avoid_: notification metrics, detail fields.
+
+**Speed**:
+The notification-details family for how fast the level is moving: the drain rate while discharging; while charging, the charge power, or the charge rate when the power cannot be estimated. A family name only, never a synonym for drain rate.
 
 **Temperature range**:
 The lowest and highest battery temperature seen since the battery last finished charging, in the

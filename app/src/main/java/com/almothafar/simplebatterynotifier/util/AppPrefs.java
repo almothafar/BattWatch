@@ -493,14 +493,26 @@ public final class AppPrefs {
 	 * @return the chosen families, at most {@link DetailFamily#MAX_SELECTED}
 	 */
 	public static List<DetailFamily> notificationDetails(Context context) {
-		final SharedPreferences prefs = prefs(context);
-		final String stored = prefs.getString(context.getString(R.string._pref_key_notification_details), null);
+		final String stored = prefs(context).getString(context.getString(R.string._pref_key_notification_details), null);
 		if (nonNull(stored)) {
 			return detailFamiliesOf(stored);
 		}
-		return prefs.getBoolean(context.getString(R.string._pref_key_show_rate_in_notification), true)
-		       ? DEFAULT_NOTIFICATION_DETAILS
-		       : RATE_OFF_NOTIFICATION_DETAILS;
+		return legacyShowRateOn(context) ? DEFAULT_NOTIFICATION_DETAILS : RATE_OFF_NOTIFICATION_DETAILS;
+	}
+
+	/**
+	 * Whether the show-rate switch #357 removed is still on, as the user left it — true unless they turned it off and have not saved notification details
+	 * since, because saving clears it ({@link #setNotificationDetails}).
+	 * <p>
+	 * The switch governed the expanded view's rate lines as well as the collapsed line, and nothing replaced that half of it, so it keeps governing them until
+	 * the user's first save. That is what lets the upgrade change nobody's notification, pulled down or not.
+	 *
+	 * @param context Application context
+	 *
+	 * @return false only for a user who turned the switch off and has not saved notification details since
+	 */
+	public static boolean legacyShowRateOn(Context context) {
+		return prefs(context).getBoolean(context.getString(R.string._pref_key_show_rate_in_notification), true);
 	}
 
 	/**

@@ -22,10 +22,14 @@ import com.almothafar.simplebatterynotifier.R;
 import com.almothafar.simplebatterynotifier.model.BatteryDO;
 import com.almothafar.simplebatterynotifier.model.ChargeSpeed;
 import com.almothafar.simplebatterynotifier.model.ChargeSpeedTier;
+import com.almothafar.simplebatterynotifier.model.DetailFamily;
 import com.almothafar.simplebatterynotifier.ui.MainActivity;
 import com.almothafar.simplebatterynotifier.util.AppPrefs;
 import com.almothafar.simplebatterynotifier.util.BatteryPercentFormatter;
 import com.almothafar.simplebatterynotifier.util.TemperatureUtils;
+
+import java.util.EnumMap;
+import java.util.Map;
 
 import static com.almothafar.simplebatterynotifier.util.BidiText.isolate;
 import static java.util.Objects.isNull;
@@ -394,7 +398,7 @@ public final class NotificationService {
 	 * Only replaces a notification that is already up. When it isn't — the system stopped monitoring (#302), or notifications are off — posting from a settings
 	 * screen would raise a status notification that no service stands behind.
 	 *
-	 * @param context The application context
+	 * @param context The application context — the one the monitoring service builds this notification from, so a refresh words it in the same language
 	 */
 	public static void refreshOngoingNotification(Context context) {
 		if (lacksOngoingNotification(context)) {
@@ -409,6 +413,28 @@ public final class NotificationService {
 		updateOngoingNotification(context, batteryDO, BatteryRateTracker.getRate(context, batteryDO));
 	}
 
+	/**
+	 * Each family's segment as the collapsed line would render it from a fresh reading — the notification-details picker's live-value column (#357).
+	 *
+	 * @param context The picker's own context, so the segments are worded in the language the screen is showing
+	 * @return each family that has something to show, mapped to its segment; empty when there is no battery reading
+	 */
+	public static Map<DetailFamily, String> liveDetailSegments(Context context) {
+		final Map<DetailFamily, String> segments = new EnumMap<>(DetailFamily.class);
+		final BatteryDO batteryDO = SystemService.getBatteryInfo(context);
+		if (isNull(batteryDO)) {
+			return segments;
+		}
+		final BatteryRateTracker.BatteryRate rate = BatteryRateTracker.getRate(context, batteryDO);
+		for (final DetailFamily family : DetailFamily.values()) {
+			final String segment = OngoingStatusContent.detailSegment(context, family, batteryDO, rate);
+			if (nonNull(segment)) {
+				segments.put(family, segment);
+			}
+		}
+		return segments;
+	}
+
 	// ========== Private Helper Methods ==========
 
 	private static boolean lacksOngoingNotification(Context context) {
@@ -416,7 +442,7 @@ public final class NotificationService {
 		if (isNull(manager)) {
 			return true;
 		}
-		for (StatusBarNotification active : manager.getActiveNotifications()) {
+		for (final StatusBarNotification active : manager.getActiveNotifications()) {
 			if (active.getId() == ONGOING_NOTIFICATION_ID) {
 				return false;
 			}

@@ -72,6 +72,8 @@
     <string name="charger_ac">AC Charger</string>
     <string name="charger_usb">USB Port</string>
     <string name="charger_wireless">Wireless Charger</string>
+    <!-- A charger Android reports but the app has no name for: a dock (API 33+), or a type added later -->
+    <string name="charger_other">Plugged In</string>
 
     <!-- Settings root screen: the three headers (#112). Each summary describes what's inside. -->
     <string name="pref_header_general">General</string>

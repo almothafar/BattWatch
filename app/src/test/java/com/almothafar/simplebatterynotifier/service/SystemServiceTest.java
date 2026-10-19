@@ -40,6 +40,24 @@ public class SystemServiceTest {
 	 * non-positive, matching {@link SystemService#getChargeCycleCount}, so per-tick consumers never
 	 * need a second sticky-broadcast read.
 	 */
+	/**
+	 * The details table's power-source label: a charger Android reports but the app has no name for — a dock, since API 33 — is still a charger. It used to
+	 * fall through to "On Battery", and the status notification's Power source segment (#357) would then have disagreed with the table.
+	 */
+	@RunWith(RobolectricTestRunner.class)
+	@Config(sdk = 34)
+	public static class PowerSourceLabel {
+
+		@Test
+		public void anUnnamedCharger_readsAsPluggedIn_notOnBattery() {
+			final Intent battery = new Intent(Intent.ACTION_BATTERY_CHANGED);
+			battery.putExtra(BatteryManager.EXTRA_LEVEL, 50);
+			battery.putExtra(BatteryManager.EXTRA_SCALE, 100);
+			battery.putExtra(BatteryManager.EXTRA_PLUGGED, 8);
+			assertEquals("Plugged In", SystemService.getBatteryInfo(ApplicationProvider.getApplicationContext(), battery).getPowerSource());
+		}
+	}
+
 	@RunWith(RobolectricTestRunner.class)
 	@Config(sdk = 34)
 	public static class SnapshotCycleCount {

@@ -30,12 +30,16 @@
         android:textAppearance="?android:attr/textAppearanceListItem"
         android:textColor="?android:attr/textColorPrimary" />
 
-    <!-- The family's live value, so a device that never reports one is visible here rather than only by its absence from the shade (#356) -->
+    <!-- The family's live value, so a device that never reports one is visible here rather than only by its absence from the shade (#356). It shares the width
+         with the name rather than taking what it needs first: at a large font size a long value ("~9h 27m remaining") would otherwise squeeze the name to
+         nothing, where now both wrap. -->
     <TextView
         android:id="@+id/detail_value"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
+        android:layout_weight="1"
+        android:gravity="end"
         android:textAppearance="?android:attr/textAppearanceListItemSecondary"
         android:textColor="?android:attr/textColorSecondary" />
 

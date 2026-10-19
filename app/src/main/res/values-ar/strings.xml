@@ -76,6 +76,7 @@
     <string name="charger_ac">مقبس طاقة</string>
     <string name="charger_usb">مدخل يو اس بي</string>
     <string name="charger_wireless">شاحن لاسلكي</string>
+    <string name="charger_other">موصول بالطاقة</string>
 
     <!-- Settings root screen: the three headers (#112) -->
     <string name="pref_header_general">عام</string>

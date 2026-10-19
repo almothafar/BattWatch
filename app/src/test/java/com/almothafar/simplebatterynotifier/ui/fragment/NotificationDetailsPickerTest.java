@@ -13,6 +13,7 @@ import android.widget.CheckBox;
 import android.widget.TextView;
 
 import androidx.preference.Preference;
+import androidx.preference.PreferenceFragmentCompat;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.test.core.app.ApplicationProvider;
 
@@ -36,16 +37,18 @@ import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
 
 import java.util.List;
+import java.util.Locale;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
 /**
  * The notification-details picker (#357), driven through its rows the way a user taps them: what a tap saves, the three-family cap, the empty choice, the
- * live-value column, and the status notification being refreshed on the way out — which no preference change did before.
+ * live-value column, the toolbar title on the way back, and the status notification being refreshed on the way out — which no preference change did before.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 34)
@@ -63,7 +66,7 @@ public class NotificationDetailsPickerTest {
 		context = ApplicationProvider.getApplicationContext();
 		shadowOf((Application) context).grantPermissions(Manifest.permission.POST_NOTIFICATIONS);
 		manager = context.getSystemService(NotificationManager.class);
-		publishBattery();
+		publishBattery(TEMPERATURE);
 		controller = Robolectric.buildActivity(SettingsActivity.class).setup();
 	}
 
@@ -75,7 +78,7 @@ public class NotificationDetailsPickerTest {
 	@Test
 	public void openingThePicker_checksTheSavedChoice() {
 		openPicker();
-		for (DetailFamily family : DetailFamily.values()) {
+		for (final DetailFamily family : DetailFamily.values()) {
 			assertEquals(family.name(), AppPrefs.DEFAULT_NOTIFICATION_DETAILS.contains(family), checkBox(family).isChecked());
 		}
 	}
@@ -131,6 +134,35 @@ public class NotificationDetailsPickerTest {
 	}
 
 	@Test
+	public void theLiveValues_followTheBattery_whileThePickerIsOpen() {
+		openPicker();
+		publishBattery(412);
+		shadowOf(Looper.getMainLooper()).idle();
+		assertEquals(TemperatureUtils.format(context, 412), value(DetailFamily.TEMPERATURE));
+	}
+
+	@Test
+	public void tappingARow_rebindsItInPlace_soTalkBackKeepsItsFocus() {
+		// A default change animation swaps a fresh view into the row and fades the tapped one out, and TalkBack's focus goes with the old view.
+		openPicker();
+		final View tapped = row(DetailFamily.SPEED);
+		tap(DetailFamily.SPEED);
+		assertSame(tapped, row(DetailFamily.SPEED));
+	}
+
+	@Test
+	@Config(qualifiers = "ar-rEG")
+	public void header_keepsWesternDigits_inArabic() {
+		// Premise: a region-bearing Arabic locale really localises digits. Bare "ar" picks Western ones and would pass against the defect (#241).
+		assertEquals("ar-rEG should select Eastern Arabic digits", "٣", String.format(Locale.getDefault(), "%d", 3));
+		openPicker();
+		final String text = header().getText().toString();
+		assertTrue(text, text.contains("اختر"));
+		assertFalse(text, text.matches(".*[٠-٩].*"));
+		assertTrue(text, text.contains("3"));
+	}
+
+	@Test
 	public void leaving_refreshesTheStatusNotification() {
 		postStatusNotification();
 		openPicker();
@@ -164,6 +196,27 @@ public class NotificationDetailsPickerTest {
 	}
 
 	@Test
+	public void goingBack_fromThePicker_restoresTheTitleOfTheScreenBelow() {
+		// The picker is the first settings screen two levels deep, so Back lands on another sub-screen rather than the root — the one case the old
+		// "reset the title at the root" rule never reached.
+		final PreferenceFragmentCompat root = (PreferenceFragmentCompat) controller.get().getSupportFragmentManager().findFragmentById(R.id.settings_container);
+		assertTrue("the root settings screen is not showing", root instanceof SettingsActivity.HeaderFragment);
+		root.findPreference("general").performClick();
+		shadowOf(Looper.getMainLooper()).idle();
+		SettingsScreen.current(controller).findPreference(context.getString(R.string._pref_key_notification_details)).performClick();
+		shadowOf(Looper.getMainLooper()).idle();
+		assertEquals(context.getString(R.string.notification_details_title), String.valueOf(controller.get().getTitle()));
+
+		controller.get().getOnBackPressedDispatcher().onBackPressed();
+		shadowOf(Looper.getMainLooper()).idle();
+		assertEquals(context.getString(R.string.pref_header_general), String.valueOf(controller.get().getTitle()));
+
+		controller.get().getOnBackPressedDispatcher().onBackPressed();
+		shadowOf(Looper.getMainLooper()).idle();
+		assertEquals(context.getString(R.string.title_activity_settings), String.valueOf(controller.get().getTitle()));
+	}
+
+	@Test
 	public void generalScreen_opensThePicker() {
 		generalScreenEntry().performClick();
 		shadowOf(Looper.getMainLooper()).idle();
@@ -174,15 +227,15 @@ public class NotificationDetailsPickerTest {
 
 	// --- Helpers ----------------------------------------------------------------------------------
 
-	/** A plugged-out battery at 85%, published as the sticky broadcast {@code SystemService} reads. */
+	/** A plugged-out battery at 85%, published as the sticky broadcast {@code SystemService} reads and the picker listens for. */
 	@SuppressWarnings("deprecation")
-	private void publishBattery() {
+	private void publishBattery(int temperature) {
 		final Intent battery = new Intent(Intent.ACTION_BATTERY_CHANGED);
 		battery.putExtra(BatteryManager.EXTRA_LEVEL, 85);
 		battery.putExtra(BatteryManager.EXTRA_SCALE, 100);
 		battery.putExtra(BatteryManager.EXTRA_STATUS, BatteryManager.BATTERY_STATUS_DISCHARGING);
 		battery.putExtra(BatteryManager.EXTRA_PLUGGED, 0);
-		battery.putExtra(BatteryManager.EXTRA_TEMPERATURE, TEMPERATURE);
+		battery.putExtra(BatteryManager.EXTRA_TEMPERATURE, temperature);
 		battery.putExtra(BatteryManager.EXTRA_PRESENT, true);
 		context.sendStickyBroadcast(battery);
 	}

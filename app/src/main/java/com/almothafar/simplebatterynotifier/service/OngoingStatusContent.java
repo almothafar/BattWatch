@@ -7,6 +7,7 @@ import com.almothafar.simplebatterynotifier.R;
 import com.almothafar.simplebatterynotifier.model.BatteryDO;
 import com.almothafar.simplebatterynotifier.model.ChargeSpeed;
 import com.almothafar.simplebatterynotifier.model.DetailFamily;
+import com.almothafar.simplebatterynotifier.model.PowerSource;
 import com.almothafar.simplebatterynotifier.util.AppPrefs;
 import com.almothafar.simplebatterynotifier.util.BatteryPercentFormatter;
 import com.almothafar.simplebatterynotifier.util.TemperatureUtils;
@@ -106,7 +107,7 @@ public final class OngoingStatusContent {
 	 * while charging (#194, #207).
 	 * <p>
 	 * A family with nothing to show yet drops out silently. When a non-empty choice shows nothing at all — a warm-up tick — the line falls back to the
-	 * temperature so it is never blank. An empty choice renders an empty line: the user asked for the title alone.
+	 * Temperature family, which always has a reading, so it is never blank. An empty choice renders an empty line: the user asked for the title alone.
 	 *
 	 * @param context   The application context
 	 * @param batteryDO Current battery snapshot, or null if unavailable
@@ -120,18 +121,18 @@ public final class OngoingStatusContent {
 		final List<DetailFamily> selection = AppPrefs.notificationDetails(context);
 		final BatteryRateTracker.BatteryRate rateOrEmpty = nonNull(rate) ? rate : BatteryRateTracker.BatteryRate.empty();
 		final List<String> parts = new ArrayList<>(selection.size());
-		for (DetailFamily family : selection) {
+		for (final DetailFamily family : selection) {
 			addIfPresent(parts, detailSegment(context, family, batteryDO, rateOrEmpty));
 		}
 		if (parts.isEmpty() && !selection.isEmpty()) {
-			return isolate(TemperatureUtils.format(context, batteryDO.getTemperature()));
+			return detailSegment(context, DetailFamily.TEMPERATURE, batteryDO, rateOrEmpty);
 		}
 		return String.join(DETAIL_SEPARATOR, parts);
 	}
 
 	/**
 	 * One family's segment of the collapsed line, in the form the charge direction calls for (#356). Each is worded to read on its own, because any of them can
-	 * end up alone on the line (#207). Public so the notification-details picker can show each family's live value beside its checkbox.
+	 * end up alone on the line (#207). The picker's live-value column shows the same segments, through {@link NotificationService#liveDetailSegments}.
 	 *
 	 * @param context   The application context
 	 * @param family    The family to render
@@ -139,7 +140,7 @@ public final class OngoingStatusContent {
 	 * @param rate      The precomputed charge/drain rate
 	 * @return the segment, bidi-isolated where it carries a Latin value; null when the family has nothing to show yet
 	 */
-	public static String detailSegment(Context context, DetailFamily family, BatteryDO batteryDO, BatteryRateTracker.BatteryRate rate) {
+	static String detailSegment(Context context, DetailFamily family, BatteryDO batteryDO, BatteryRateTracker.BatteryRate rate) {
 		return switch (family) {
 			case SPEED -> rateOrPowerSegment(context, batteryDO, rate);
 			case CURRENT -> collapsedCurrentSegment(context, rate);
@@ -159,7 +160,8 @@ public final class OngoingStatusContent {
 	 * line (no expansion) when nothing but temperature is available.
 	 * <p>
 	 * Deliberately blind to the notification details the collapsed line follows: this is the everything view, which is what makes the collapsed line's silent
-	 * drop-outs acceptable (docs/adr/0002).
+	 * drop-outs acceptable (docs/adr/0002). Its rate lines still follow the show-rate switch #357 removed, for a user who turned it off and has not saved
+	 * notification details since ({@link AppPrefs#legacyShowRateOn}), so the upgrade leaves their pull-down as it was too.
 	 *
 	 * @param context   The application context
 	 * @param batteryDO Current battery snapshot, or null if unavailable
@@ -168,7 +170,7 @@ public final class OngoingStatusContent {
 	 */
 	static String statusDetailExpanded(Context context, BatteryDO batteryDO, BatteryRateTracker.BatteryRate rate) {
 		final List<String> lines = new ArrayList<>(4);
-		if (nonNull(batteryDO) && nonNull(rate)) {
+		if (AppPrefs.legacyShowRateOn(context) && nonNull(batteryDO) && nonNull(rate)) {
 			addLine(context, lines, R.string.notification_label_now, nowSegment(context, batteryDO, rate));
 			addAverageLine(context, lines, rate);
 			addTimeLine(context, lines, batteryDO, rate);
@@ -330,16 +332,16 @@ public final class OngoingStatusContent {
 
 	/**
 	 * The collapsed power-source segment: "On battery" while unplugged, otherwise the charger type. Shorter than the details table's labels ("USB Port",
-	 * "AC Charger"), which have a row to themselves; this one shares the line with up to two others.
+	 * "AC Charger"), which have a row to themselves; this one shares the line with up to two others. Both decode the plugged reading through
+	 * {@link PowerSource}, so they never disagree about which source it is.
 	 */
 	private static String powerSourceSegment(Context context, BatteryDO batteryDO) {
-		return context.getString(switch (batteryDO.getPlugged()) {
-			case 0 -> R.string.notification_status_source_battery;
-			case BatteryManager.BATTERY_PLUGGED_USB -> R.string.notification_status_source_usb;
-			case BatteryManager.BATTERY_PLUGGED_AC -> R.string.notification_status_source_ac;
-			case BatteryManager.BATTERY_PLUGGED_WIRELESS -> R.string.notification_status_source_wireless;
-			// A dock (API 33+) or a type added later: plugged in either way, which is what the segment is for.
-			default -> R.string.notification_status_source_other;
+		return context.getString(switch (PowerSource.fromPlugged(batteryDO.getPlugged())) {
+			case BATTERY -> R.string.notification_status_source_battery;
+			case USB -> R.string.notification_status_source_usb;
+			case AC -> R.string.notification_status_source_ac;
+			case WIRELESS -> R.string.notification_status_source_wireless;
+			case OTHER -> R.string.notification_status_source_other;
 		});
 	}
 

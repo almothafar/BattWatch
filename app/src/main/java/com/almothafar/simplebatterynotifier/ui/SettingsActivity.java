@@ -5,6 +5,7 @@ import android.view.MenuItem;
 import androidx.annotation.NonNull;
 import androidx.appcompat.widget.Toolbar;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
 import com.almothafar.simplebatterynotifier.R;
@@ -77,6 +78,8 @@ public class SettingsActivity extends BaseActivity implements PreferenceFragment
 	 * routes a click here when {@code getFragment()} is non-null. Its value is no longer read.
 	 * <p>
 	 * The one row that opens something else — the notification-details picker (#357) — is told apart by its key, for the same reason.
+	 * <p>
+	 * The title is not set here: the back-stack entry carries it, and {@link #showTitleOfTopScreen} applies it once the transaction lands.
 	 *
 	 * @param caller The calling preference fragment
 	 * @param pref   The preference that was clicked
@@ -94,9 +97,8 @@ public class SettingsActivity extends BaseActivity implements PreferenceFragment
 		// Replace the existing Fragment with the new Fragment
 		getSupportFragmentManager().beginTransaction()
 		                           .replace(R.id.settings_container, fragment)
-		                           .addToBackStack(null)
+		                           .addToBackStack(String.valueOf(pref.getTitle()))
 		                           .commit();
-		setTitle(pref.getTitle());
 		return true;
 	}
 
@@ -136,11 +138,21 @@ public class SettingsActivity extends BaseActivity implements PreferenceFragment
 			setTitle(savedInstanceState.getCharSequence(TITLE_TAG));
 		}
 
-		getSupportFragmentManager().addOnBackStackChangedListener(() -> {
-			if (getSupportFragmentManager().getBackStackEntryCount() == 0) {
-				setTitle(R.string.title_activity_settings);
-			}
-		});
+		getSupportFragmentManager().addOnBackStackChangedListener(this::showTitleOfTopScreen);
+	}
+
+	/**
+	 * Title the toolbar after the screen now on top, whichever way the back stack just moved. Each entry is named with its screen's title, so going back
+	 * restores the title of the screen it lands on — not always the root since the notification-details picker (#357), which sits two levels deep.
+	 */
+	private void showTitleOfTopScreen() {
+		final FragmentManager fragments = getSupportFragmentManager();
+		final int depth = fragments.getBackStackEntryCount();
+		if (depth == 0) {
+			setTitle(R.string.title_activity_settings);
+		} else {
+			setTitle(fragments.getBackStackEntryAt(depth - 1).getName());
+		}
 	}
 
 	/**
