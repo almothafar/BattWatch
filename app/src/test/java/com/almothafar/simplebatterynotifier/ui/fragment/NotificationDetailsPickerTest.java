@@ -17,7 +17,6 @@ import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
 import androidx.fragment.app.Fragment;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
-import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.test.core.app.ApplicationProvider;
 
@@ -49,14 +48,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
 /**
  * The notification-details picker (#357), driven through its rows the way a user taps them: what a tap saves, the three-family cap, the empty choice, the
- * live-value column, the toolbar title on the way back, and the status notification being refreshed on the way out — which no preference change did before.
+ * live-value column, the toolbar title on the way back, and the status notification being refreshed with each tap and again on the way out — which no
+ * preference change did before.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 34)
@@ -236,7 +235,8 @@ public class NotificationDetailsPickerTest {
 	}
 
 	@Test
-	public void leaving_refreshesTheStatusNotification() {
+	public void aTap_redrawsTheStatusNotification_whileThePickerIsStillOpen() {
+		// Pulling the shade down over the picker doesn't pause it, so a redraw saved for the way out would show the old line meanwhile.
 		postStatusNotification();
 		openPicker();
 		tap(DetailFamily.SPEED);
@@ -244,29 +244,37 @@ public class NotificationDetailsPickerTest {
 		tap(DetailFamily.TIME);
 		tap(DetailFamily.POWER_SOURCE);
 
-		controller.pause();
-
-		// Before: no rate yet, so the default choice fell back to the temperature. After: the one family now chosen.
+		// Before: no rate yet, so the default choice fell back to the temperature. Now: the one family chosen.
 		assertEquals("On battery", statusText());
 	}
 
 	@Test
-	public void leaving_postsNothing_whenNoStatusNotificationIsUp() {
+	public void leaving_redrawsItOnceMore_soAnUpdateTheSystemDroppedIsMadeGood() {
+		// The system drops a notification update that follows the last one too closely, so a fast run of taps can leave the shade on a choice from the middle.
+		postStatusNotification();
+		final Notification stale = posted();
 		openPicker();
 		tap(DetailFamily.SPEED);
+		tap(DetailFamily.CURRENT);
+		tap(DetailFamily.TIME);
+		tap(DetailFamily.POWER_SOURCE);
+		manager.notify(NotificationService.getOngoingNotificationId(), stale);
 
 		controller.pause();
 
-		assertEquals(0, manager.getActiveNotifications().length);
+		assertEquals("On battery", statusText());
 	}
 
 	@Test
-	public void leaving_postsNothing_whenTheChoiceEndsWhereItStarted() {
+	public void leaving_postsNothing_whenThisVisitTappedNothing() {
 		postStatusNotification();
-		final Notification before = posted();
 		openPicker();
 		tap(DetailFamily.SPEED);
-		tap(DetailFamily.SPEED);
+		controller.pause();
+		// Back on the picker, from the launcher say. The earlier visit's taps were made good when it ended.
+		controller.resume();
+		shadowOf(Looper.getMainLooper()).idle();
+		final Notification before = posted();
 
 		controller.pause();
 
@@ -274,19 +282,13 @@ public class NotificationDetailsPickerTest {
 	}
 
 	@Test
-	public void leaving_refreshes_whenRetiringTheOldSwitchIsTheOnlyChange() {
-		// Ticking a family off and on again ends on the same choice, but saving it retired the replaced show-rate switch — which reshapes the pull-down for
-		// someone who had that switch off, so leaving still owes the notification a refresh.
-		legacyShowRate(false);
-		postStatusNotification();
-		final Notification before = posted();
+	public void nothingIsPosted_whenNoStatusNotificationIsUp() {
 		openPicker();
-		tap(DetailFamily.TEMPERATURE);
-		tap(DetailFamily.TEMPERATURE);
+		tap(DetailFamily.SPEED);
 
 		controller.pause();
 
-		assertNotSame(before, posted());
+		assertEquals(0, manager.getActiveNotifications().length);
 	}
 
 	@Test
@@ -360,11 +362,6 @@ public class NotificationDetailsPickerTest {
 		battery.putExtra(BatteryManager.EXTRA_TEMPERATURE, temperature);
 		battery.putExtra(BatteryManager.EXTRA_PRESENT, true);
 		return battery;
-	}
-
-	/** Store the show-rate switch #357 replaced, as an upgraded install keeps it until its first saved choice. */
-	private void legacyShowRate(boolean on) {
-		PreferenceManager.getDefaultSharedPreferences(context).edit().putBoolean(context.getString(R.string._pref_key_show_rate_in_notification), on).commit();
 	}
 
 	/** Put the status notification up, as the monitoring service keeps it. */

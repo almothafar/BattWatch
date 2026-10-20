@@ -43,8 +43,8 @@ import static java.util.Objects.isNull;
  * The notification-details picker (#357): which families the status notification's collapsed line shows, up to {@link DetailFamily#MAX_SELECTED}, none allowed.
  * Each row carries its family's live value, kept current from the battery broadcasts while the screen is in front.
  * <p>
- * A tap is saved at once, so a rotation or a reclaimed process loses nothing. The status notification is refreshed on the way out, because no preference change
- * reaches it before the next battery broadcast. Rows list in the registry's order and a choice is saved in that order; reordering is #358.
+ * A tap is saved at once, so a rotation or a reclaimed process loses nothing, and re-posts the status notification, which no preference change reaches before
+ * the next battery broadcast; leaving re-posts it once more. Rows list in the registry's order and a choice is saved in that order; reordering is #358.
  */
 public class NotificationDetailsFragment extends Fragment {
 
@@ -68,8 +68,8 @@ public class NotificationDetailsFragment extends Fragment {
 	};
 	private Map<DetailFamily, String> liveValues = new EnumMap<>(DetailFamily.class);
 	private TextView header;
-	/** What the notification was built from when this visit began, so leaving re-posts it only when that moved. */
-	private NotificationSettings settingsAtResume;
+	/** Whether a tap was saved since this visit began. Each one re-posts the status notification, and leaving owes it one more. */
+	private boolean savedThisVisit;
 
 	/**
 	 * Inflate the screen: a header line over a card of rows.
@@ -113,7 +113,7 @@ public class NotificationDetailsFragment extends Fragment {
 		super.onResume();
 		final Context context = requireContext();
 		requireActivity().setTitle(R.string.notification_details_title);
-		settingsAtResume = NotificationSettings.read(context);
+		savedThisVisit = false;
 		// A protected system broadcast, so it takes no export flag — the monitoring service registers for it the same way. Registering returns the current
 		// sticky reading, which shows the values without asking the system for it a second time.
 		final Intent battery = context.registerReceiver(batteryChanges, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
@@ -121,16 +121,16 @@ public class NotificationDetailsFragment extends Fragment {
 		render();
 	}
 
-	/** Stop following the battery, and refresh the status notification if this visit changed what it is built from. */
+	/** Stop following the battery, and re-post the status notification once more if a tap was saved during this visit. */
 	@Override
 	public void onPause() {
 		super.onPause();
 		final Context context = requireContext();
 		context.unregisterReceiver(batteryChanges);
-		if (!NotificationSettings.read(context).equals(settingsAtResume)) {
-			// The application context, not this screen's: the monitoring service builds the notification from its Service context, which shares the
-			// application's resources — so the refresh words it as the next battery broadcast will, whatever language this screen is showing.
-			NotificationService.refreshOngoingNotification(context.getApplicationContext());
+		if (savedThisVisit) {
+			// The system drops a notification update that follows the last one too closely, so a fast run of taps can leave the shade on a choice from the
+			// middle of the run.
+			refreshNotification(context);
 		}
 	}
 
@@ -192,8 +192,21 @@ public class NotificationDetailsFragment extends Fragment {
 		}
 		selection.clear();
 		selection.addAll(next);
-		AppPrefs.setNotificationDetails(requireContext(), next);
+		final Context context = requireContext();
+		AppPrefs.setNotificationDetails(context, next);
 		render();
+		// Now rather than on the way out: pulling the shade down over this screen doesn't pause it.
+		refreshNotification(context);
+		savedThisVisit = true;
+	}
+
+	/**
+	 * Re-post the status notification from the saved choice. The application context, not this screen's: the monitoring service builds the notification from
+	 * its Service context, which shares the application's resources — so the refresh words it as the next battery broadcast will, whatever language this
+	 * screen is showing.
+	 */
+	private static void refreshNotification(Context context) {
+		NotificationService.refreshOngoingNotification(context.getApplicationContext());
 	}
 
 	/** Redraw just the rows whose value moved: the battery broadcast fires every few seconds, and usually moves a value or two of the five. */
@@ -320,20 +333,6 @@ public class NotificationDetailsFragment extends Fragment {
 
 		void showValue(String valueText) {
 			value.setText(isNull(valueText) ? "" : valueText);
-		}
-	}
-
-	/**
-	 * What the status notification is built from that this screen can change: the chosen details, and whether the pull-down still follows the show-rate switch
-	 * #357 replaced. The first saved choice retires that switch, so a tap and its undo can leave the details as they were and the pull-down not.
-	 *
-	 * @param details           the chosen families, in display order
-	 * @param pullDownShowsRate whether the pull-down carries its rate and time lines
-	 */
-	private record NotificationSettings(List<DetailFamily> details, boolean pullDownShowsRate) {
-
-		static NotificationSettings read(Context context) {
-			return new NotificationSettings(AppPrefs.notificationDetails(context), AppPrefs.legacyShowRateOn(context));
 		}
 	}
 }

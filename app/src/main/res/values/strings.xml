@@ -235,7 +235,8 @@
     <!-- #357: the collapsed Power source segment. Shorter than the details table's charger labels, since it shares the line with up to two others. -->
     <string name="notification_status_source_battery">On battery</string>
     <string name="notification_status_source_usb">USB</string>
-    <string name="notification_status_source_ac">AC</string>
+    <!-- Android's AC reading. Many power banks and fast chargers report it too, so this names no wall socket (#122). -->
+    <string name="notification_status_source_ac">Charger</string>
     <string name="notification_status_source_wireless">Wireless</string>
     <!-- Any other charger Android reports: a dock (API 33+), or a type added later -->
     <string name="notification_status_source_other">Plugged in</string>

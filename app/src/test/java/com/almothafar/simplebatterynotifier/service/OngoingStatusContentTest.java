@@ -183,7 +183,8 @@ public class OngoingStatusContentTest {
 	@Test
 	public void powerSource_isOnBattery_whileUnplugged_andTheChargerType_whilePlugged() {
 		assertEquals("On battery", alone(DetailFamily.POWER_SOURCE, discharging85(), rateFull(false, 9, -250, -338)));
-		assertEquals("AC", alone(DetailFamily.POWER_SOURCE, charging80(), rateFull(true, 20, 2000, 1900)));
+		// Not "AC": many power banks and fast chargers report BATTERY_PLUGGED_AC too, so the line claims no wall socket (#122).
+		assertEquals("Charger", alone(DetailFamily.POWER_SOURCE, charging80(), rateFull(true, 20, 2000, 1900)));
 		assertEquals("USB", alone(DetailFamily.POWER_SOURCE, charging80().setPlugged(BatteryManager.BATTERY_PLUGGED_USB), rateFull(true, 20, 2000, 1900)));
 		assertEquals("Wireless",
 				alone(DetailFamily.POWER_SOURCE, charging80().setPlugged(BatteryManager.BATTERY_PLUGGED_WIRELESS), rateFull(true, 20, 2000, 1900)));
@@ -213,7 +214,9 @@ public class OngoingStatusContentTest {
 		// values-ar was really loaded, so these are assertions about the Arabic copy and not an English fallback.
 		assertTrue(dischargingLine, dischargingLine.contains("استهلاك"));
 		assertTrue(chargingLine, chargingLine.contains("واط") && chargingLine.contains("حتى الاكتمال"));
-		assertTrue(staticLine, staticLine.contains("شاحن جداري"));
+		assertTrue(staticLine, staticLine.contains("شاحن"));
+		// "Charger", not "wall charger": power banks report AC too (#122).
+		assertFalse(staticLine, staticLine.contains("جداري"));
 		for (final String line : List.of(dischargingLine, chargingLine, staticLine)) {
 			assertFalse(line, line.matches(".*[٠-٩].*"));
 		}
@@ -338,6 +341,38 @@ public class OngoingStatusContentTest {
 		assertEquals(OngoingStatusContent.statusDetailExpanded(context, discharging85(), rateFull(false, 9, -250, -338)),
 				String.valueOf(built.extras.getCharSequence(Notification.EXTRA_BIG_TEXT)));
 		assertEquals(4, String.valueOf(built.extras.getCharSequence(Notification.EXTRA_BIG_TEXT)).split("\n").length);
+	}
+
+	@Test
+	public void aWarmUpPullDown_opensOntoTheTemperature_whenTheLineLeavesItOut() {
+		// Right after a plug change nothing is measured yet, so the pull-down is the temperature alone. A line still showing another family puts the
+		// temperature nowhere else, so that one line earns its expand chevron after all.
+		select(DetailFamily.POWER_SOURCE);
+		final Notification built = NotificationService.buildOngoingNotification(context, discharging85(), BatteryRateTracker.BatteryRate.empty());
+		assertEquals("On battery", String.valueOf(built.extras.getCharSequence(Notification.EXTRA_TEXT)));
+		assertEquals(line(R.string.temperature, temp()), String.valueOf(built.extras.getCharSequence(Notification.EXTRA_BIG_TEXT)));
+	}
+
+	@Test
+	public void aWarmUpPullDown_staysShut_whenTheLineAlreadyShowsTheTemperature() {
+		// A chevron would open onto the reading the line already shows (#194): the line's own fallback to it, and a choice that includes it.
+		select(DetailFamily.SPEED, DetailFamily.CURRENT, DetailFamily.TIME);
+		final Notification fellBack = NotificationService.buildOngoingNotification(context, discharging85(), BatteryRateTracker.BatteryRate.empty());
+		assertEquals(temp(), String.valueOf(fellBack.extras.getCharSequence(Notification.EXTRA_TEXT)));
+		assertNull(fellBack.extras.getCharSequence(Notification.EXTRA_BIG_TEXT));
+
+		select(DetailFamily.TEMPERATURE, DetailFamily.POWER_SOURCE);
+		final Notification chosen = NotificationService.buildOngoingNotification(context, discharging85(), BatteryRateTracker.BatteryRate.empty());
+		assertEquals(temp() + SEP + "On battery", String.valueOf(chosen.extras.getCharSequence(Notification.EXTRA_TEXT)));
+		assertNull(chosen.extras.getCharSequence(Notification.EXTRA_BIG_TEXT));
+	}
+
+	@Test
+	public void noReadingYet_stillBuildsTheNotification_withoutAPullDown() {
+		// The monitoring service builds its first notification this way when no battery reading has arrived, so deciding on the pull-down must not need one.
+		final Notification built = NotificationService.buildOngoingNotification(context, null);
+		assertEquals("", String.valueOf(built.extras.getCharSequence(Notification.EXTRA_TEXT)));
+		assertNull(built.extras.getCharSequence(Notification.EXTRA_BIG_TEXT));
 	}
 
 	@Test

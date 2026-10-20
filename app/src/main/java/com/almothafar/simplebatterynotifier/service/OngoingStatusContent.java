@@ -145,9 +145,27 @@ public final class OngoingStatusContent {
 			case SPEED -> rateOrPowerSegment(context, batteryDO, rate);
 			case CURRENT -> collapsedCurrentSegment(context, rate);
 			case TIME -> collapsedTimeSegment(context, batteryDO, rate);
-			case TEMPERATURE -> isolate(TemperatureUtils.format(context, batteryDO.getTemperature()));
+			case TEMPERATURE -> temperatureSegment(context, batteryDO);
 			case POWER_SOURCE -> isolate(powerSourceSegment(context, batteryDO));
 		};
+	}
+
+	/**
+	 * Whether the pull-down says anything the collapsed line doesn't, and so earns an expand chevron (#194). The labelled breakdown always does. On a warm-up
+	 * tick the pull-down is the temperature alone, which adds something only when the line leaves the temperature out: a choice without Temperature that still
+	 * has another family to show (#357). This reads the rendered line, so the line's fallback to the temperature needs no second copy here.
+	 *
+	 * @param context   The application context
+	 * @param batteryDO Current battery snapshot, or null if unavailable
+	 * @param collapsed The collapsed line, from {@link #statusDetail}
+	 * @param expanded  The pull-down, from {@link #statusDetailExpanded}
+	 * @return true when the notification should offer the pull-down
+	 */
+	static boolean pullDownAddsToLine(Context context, BatteryDO batteryDO, String collapsed, String expanded) {
+		if (expanded.indexOf('\n') >= 0) {
+			return true;
+		}
+		return !expanded.isEmpty() && !collapsed.contains(temperatureSegment(context, batteryDO));
 	}
 
 	/**
@@ -157,7 +175,7 @@ public final class OngoingStatusContent {
 	 * charging); "Average" is the windowed average, carrying the smoothed %/h while discharging — the app
 	 * computes a single smoothed rate, which is itself an average, so there is no separate instantaneous
 	 * %/h. Every line is dropped when its data is absent; the temperature always shows. Returns a single
-	 * line (no expansion) when nothing but temperature is available.
+	 * line when nothing but temperature is available, which {@link #pullDownAddsToLine} offers only where the line leaves it out.
 	 * <p>
 	 * Deliberately blind to the notification details the collapsed line follows: this is the everything view, which is what makes the collapsed line's silent
 	 * drop-outs acceptable (docs/adr/0002). Its rate lines still follow the show-rate switch #357 removed, for a user who turned it off and has not saved
@@ -328,6 +346,11 @@ public final class OngoingStatusContent {
 		return context.getString(rate.charging()
 				? R.string.notification_status_time_to_full
 				: R.string.notification_status_time_remaining, duration);
+	}
+
+	/** The collapsed temperature segment, which always has a reading. */
+	private static String temperatureSegment(Context context, BatteryDO batteryDO) {
+		return isolate(TemperatureUtils.format(context, batteryDO.getTemperature()));
 	}
 
 	/**

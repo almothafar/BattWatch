@@ -366,9 +366,8 @@ public final class NotificationService {
 				.setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
 				.setCategory(NotificationCompat.CATEGORY_STATUS);
 
-		// Make it expandable only when the pull-down actually adds something (a multi-line breakdown);
-		// a single-line expanded view (e.g. temperature only) would show a pointless expand chevron (#194).
-		if (expanded.indexOf('\n') >= 0) {
+		// Make it expandable only when the pull-down adds something the line doesn't say; one that repeats it would show a pointless expand chevron (#194).
+		if (OngoingStatusContent.pullDownAddsToLine(context, batteryDO, collapsed, expanded)) {
 			builder.setStyle(new NotificationCompat.BigTextStyle().bigText(expanded));
 		}
 		return builder.build();

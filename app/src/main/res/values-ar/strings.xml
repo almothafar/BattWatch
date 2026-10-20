@@ -217,7 +217,7 @@
     <string name="notification_status_current_charging">شحن %1$s</string>
     <string name="notification_status_source_battery">على البطارية</string>
     <string name="notification_status_source_usb">USB</string>
-    <string name="notification_status_source_ac">شاحن جداري</string>
+    <string name="notification_status_source_ac">شاحن</string>
     <string name="notification_status_source_wireless">لاسلكي</string>
     <string name="notification_status_source_other">موصول بالطاقة</string>
     <!-- #194: التفصيل الموسّع (عند السحب للأسفل) — سطر "التسمية: القيمة". تسميات الوقت المتبقي/الوقت
