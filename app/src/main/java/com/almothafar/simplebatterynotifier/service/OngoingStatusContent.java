@@ -178,8 +178,8 @@ public final class OngoingStatusContent {
 	 * line when nothing but temperature is available, which {@link #pullDownAddsToLine} offers only where the line leaves it out.
 	 * <p>
 	 * Deliberately blind to the notification details the collapsed line follows: this is the everything view, which is what makes the collapsed line's silent
-	 * drop-outs acceptable (docs/adr/0002). Its rate lines still follow the show-rate switch #357 removed, for a user who turned it off and has not saved
-	 * notification details since ({@link AppPrefs#legacyShowRateOn}), so the upgrade leaves their pull-down as it was too.
+	 * drop-outs acceptable (docs/adr/0002). It is blind to the show-rate switch #357 removed for the same reason, though that switch used to hide its rate
+	 * lines: only what the switch did to the collapsed line carries over ({@link AppPrefs#notificationDetails}).
 	 *
 	 * @param context   The application context
 	 * @param batteryDO Current battery snapshot, or null if unavailable
@@ -188,7 +188,7 @@ public final class OngoingStatusContent {
 	 */
 	static String statusDetailExpanded(Context context, BatteryDO batteryDO, BatteryRateTracker.BatteryRate rate) {
 		final List<String> lines = new ArrayList<>(4);
-		if (AppPrefs.legacyShowRateOn(context) && nonNull(batteryDO) && nonNull(rate)) {
+		if (nonNull(batteryDO) && nonNull(rate)) {
 			addLine(context, lines, R.string.notification_label_now, nowSegment(context, batteryDO, rate));
 			addAverageLine(context, lines, rate);
 			addTimeLine(context, lines, batteryDO, rate);

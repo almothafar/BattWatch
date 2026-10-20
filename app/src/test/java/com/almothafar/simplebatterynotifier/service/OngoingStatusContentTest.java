@@ -298,21 +298,14 @@ public class OngoingStatusContentTest {
 	}
 
 	@Test
-	public void legacyRateSwitchOff_keepsThePullDownTemperatureOnly_andNotExpandable() {
-		// The switch governed the pull-down too, and nothing replaces that half of it. Until the user saves a choice, theirs stays the single
-		// "Temperature: …" line, which earns no expand chevron (#194).
+	public void legacyRateSwitchOff_keepsItsLine_butGetsTheFullPullDown() {
+		// The switch hid the pull-down's rate lines too. Only the line carries over: the pull-down is the everything view for everyone (docs/adr/0002).
 		legacyShowRate(false);
-		assertEquals(line(R.string.temperature, temp()),
-				OngoingStatusContent.statusDetailExpanded(context, discharging85(), rateFull(false, 9, -250, -338)));
 		final Notification built = NotificationService.buildOngoingNotification(context, discharging85(), rateFull(false, 9, -250, -338));
-		assertNull(built.extras.getCharSequence(Notification.EXTRA_BIG_TEXT));
-	}
-
-	@Test
-	public void savingAChoice_retiresTheLegacySwitch_soThePullDownIsTheFullBreakdown() {
-		legacyShowRate(false);
-		select(DetailFamily.TEMPERATURE);
-		assertEquals(4, OngoingStatusContent.statusDetailExpanded(context, discharging85(), rateFull(false, 9, -250, -338)).split("\n").length);
+		assertEquals(temp(), String.valueOf(built.extras.getCharSequence(Notification.EXTRA_TEXT)));
+		final String pullDown = String.valueOf(built.extras.getCharSequence(Notification.EXTRA_BIG_TEXT));
+		assertEquals(pullDown, 4, pullDown.split("\n").length);
+		assertTrue(pullDown, pullDown.startsWith(line(R.string.notification_label_now, cur(-250))));
 	}
 
 	@Test

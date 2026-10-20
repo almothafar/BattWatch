@@ -501,21 +501,6 @@ public final class AppPrefs {
 	}
 
 	/**
-	 * Whether the show-rate switch #357 removed is still on, as the user left it — true unless they turned it off and have not saved notification details
-	 * since, because saving clears it ({@link #setNotificationDetails}).
-	 * <p>
-	 * The switch governed the expanded view's rate lines as well as the collapsed line, and nothing replaced that half of it, so it keeps governing them until
-	 * the user's first save. That is what lets the upgrade change nobody's notification, pulled down or not.
-	 *
-	 * @param context Application context
-	 *
-	 * @return false only for a user who turned the switch off and has not saved notification details since
-	 */
-	public static boolean legacyShowRateOn(Context context) {
-		return prefs(context).getBoolean(context.getString(R.string._pref_key_show_rate_in_notification), true);
-	}
-
-	/**
 	 * Persist the notification details, in order (#357). Drops the show-rate switch's old value in the same edit, since a saved choice supersedes it.
 	 *
 	 * @param context  Application context
@@ -544,6 +529,14 @@ public final class AppPrefs {
 		             .distinct()
 		             .limit(DetailFamily.MAX_SELECTED)
 		             .collect(Collectors.toList());
+	}
+
+	/**
+	 * Whether the show-rate switch #357 removed is still on, as the user left it: true unless they turned it off and have not saved notification details since,
+	 * because saving clears it ({@link #setNotificationDetails}).
+	 */
+	private static boolean legacyShowRateOn(Context context) {
+		return prefs(context).getBoolean(context.getString(R.string._pref_key_show_rate_in_notification), true);
 	}
 
 	private static SharedPreferences prefs(Context context) {
