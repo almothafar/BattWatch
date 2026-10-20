@@ -251,11 +251,10 @@
     <!-- %1$s is the cap, %2$s how many are chosen — both Western-digit numbers (String.valueOf), 0-9 in every locale (#96) -->
     <string name="notification_details_header">Choose up to %1$s · %2$s selected</string>
     <string name="notification_details_header_empty">Nothing selected — the notification shows only the title</string>
+    <!-- Family names. Current, Temperature and Power source go by the details table's labels (battery_current, temperature, power_source), so a family
+         reads the same in the picker, the table and the pull-down. -->
     <string name="detail_family_speed">Speed</string>
-    <string name="detail_family_current">Current</string>
     <string name="detail_family_time">Time</string>
-    <string name="detail_family_temperature">Temperature</string>
-    <string name="detail_family_power_source">Power source</string>
 
     <!-- High temperature alert -->
     <string name="notify_high_temperature">High Temperature Alert</string>

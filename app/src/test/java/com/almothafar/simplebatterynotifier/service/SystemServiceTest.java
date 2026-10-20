@@ -35,12 +35,6 @@ import static org.robolectric.Shadows.shadowOf;
 public class SystemServiceTest {
 
 	/**
-	 * The OS cycle count rides on the {@code BatteryDO} snapshot (#161), extracted from the same
-	 * {@code ACTION_BATTERY_CHANGED} intent as everything else — normalized to -1 when absent or
-	 * non-positive, matching {@link SystemService#getChargeCycleCount}, so per-tick consumers never
-	 * need a second sticky-broadcast read.
-	 */
-	/**
 	 * The details table's power-source label: a charger Android reports but the app has no name for — a dock, since API 33 — is still a charger. It used to
 	 * fall through to "On Battery", and the status notification's Power source segment (#357) would then have disagreed with the table.
 	 */
@@ -58,6 +52,12 @@ public class SystemServiceTest {
 		}
 	}
 
+	/**
+	 * The OS cycle count rides on the {@code BatteryDO} snapshot (#161), extracted from the same
+	 * {@code ACTION_BATTERY_CHANGED} intent as everything else — normalized to -1 when absent or
+	 * non-positive, matching {@link SystemService#getChargeCycleCount}, so per-tick consumers never
+	 * need a second sticky-broadcast read.
+	 */
 	@RunWith(RobolectricTestRunner.class)
 	@Config(sdk = 34)
 	public static class SnapshotCycleCount {

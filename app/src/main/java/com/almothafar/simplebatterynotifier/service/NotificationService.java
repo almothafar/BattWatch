@@ -398,7 +398,8 @@ public final class NotificationService {
 	 * Only replaces a notification that is already up. When it isn't — the system stopped monitoring (#302), or notifications are off — posting from a settings
 	 * screen would raise a status notification that no service stands behind.
 	 *
-	 * @param context The application context — the one the monitoring service builds this notification from, so a refresh words it in the same language
+	 * @param context The application context. The monitoring service builds this notification from its Service context, which shares the application's
+	 *                resources, so a refresh words it as the next battery broadcast will — where an Activity might be showing another language
 	 */
 	public static void refreshOngoingNotification(Context context) {
 		if (lacksOngoingNotification(context)) {
@@ -414,14 +415,15 @@ public final class NotificationService {
 	}
 
 	/**
-	 * Each family's segment as the collapsed line would render it from a fresh reading — the notification-details picker's live-value column (#357).
+	 * Each family's segment as the collapsed line would render it from a battery reading — the notification-details picker's live-value column (#357).
 	 *
 	 * @param context The picker's own context, so the segments are worded in the language the screen is showing
+	 * @param battery The {@code ACTION_BATTERY_CHANGED} broadcast just received, or the sticky copy registering for it returned; null when there is none
 	 * @return each family that has something to show, mapped to its segment; empty when there is no battery reading
 	 */
-	public static Map<DetailFamily, String> liveDetailSegments(Context context) {
+	public static Map<DetailFamily, String> liveDetailSegments(Context context, Intent battery) {
 		final Map<DetailFamily, String> segments = new EnumMap<>(DetailFamily.class);
-		final BatteryDO batteryDO = SystemService.getBatteryInfo(context);
+		final BatteryDO batteryDO = SystemService.getBatteryInfo(context, battery);
 		if (isNull(batteryDO)) {
 			return segments;
 		}

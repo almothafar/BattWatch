@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.accessibility.AccessibilityEvent;
 import android.widget.CheckBox;
 import android.widget.TextView;
 
@@ -32,6 +33,7 @@ import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static com.almothafar.simplebatterynotifier.util.BidiText.isolate;
@@ -48,20 +50,26 @@ public class NotificationDetailsFragment extends Fragment {
 
 	/** The rows, in registry order — cached because {@code values()} hands back a fresh copy on every call. */
 	private static final DetailFamily[] FAMILIES = DetailFamily.values();
+	/** Rebind payload for a row whose live value is all that moved: its name, box and enabled state stay as they are. */
+	private static final Object LIVE_VALUE = new Object();
 
 	private final List<DetailFamily> selection = new ArrayList<>(DetailFamily.MAX_SELECTED);
 	private final RowAdapter adapter = new RowAdapter();
-	/** Re-reads the live values on each battery broadcast while the screen is in front, so they move as the battery does. */
+	/** Moves the live values with each battery broadcast while the screen is in front, reading them from the broadcast itself (#159). */
 	private final BroadcastReceiver batteryChanges = new BroadcastReceiver() {
 		@Override
 		public void onReceive(Context context, Intent intent) {
-			showLiveValues(NotificationService.liveDetailSegments(context));
+			// Registering hands back this same sticky reading, and onResume has already shown it.
+			if (isInitialStickyBroadcast()) {
+				return;
+			}
+			showLiveValues(NotificationService.liveDetailSegments(context, intent));
 		}
 	};
 	private Map<DetailFamily, String> liveValues = new EnumMap<>(DetailFamily.class);
 	private TextView header;
-	/** Whether this visit changed the choice, so looking without touching doesn't re-post the notification. */
-	private boolean changed;
+	/** What the notification was built from when this visit began, so leaving re-posts it only when that moved. */
+	private NotificationSettings settingsAtResume;
 
 	/**
 	 * Inflate the screen: a header line over a card of rows.
@@ -99,27 +107,29 @@ public class NotificationDetailsFragment extends Fragment {
 		}
 	}
 
-	/** Show the live values, and start following the battery so they stay current while the screen is in front. */
+	/** Title the screen, show the live values, and start following the battery so they stay current while the screen is in front. */
 	@Override
 	public void onResume() {
 		super.onResume();
 		final Context context = requireContext();
-		liveValues = NotificationService.liveDetailSegments(context);
+		requireActivity().setTitle(R.string.notification_details_title);
+		settingsAtResume = NotificationSettings.read(context);
+		// A protected system broadcast, so it takes no export flag — the monitoring service registers for it the same way. Registering returns the current
+		// sticky reading, which shows the values without asking the system for it a second time.
+		final Intent battery = context.registerReceiver(batteryChanges, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+		liveValues = NotificationService.liveDetailSegments(context, battery);
 		render();
-		// A protected system broadcast, so it takes no export flag — the monitoring service registers for it the same way.
-		context.registerReceiver(batteryChanges, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
 	}
 
-	/** Stop following the battery, and refresh the status notification if this visit changed the choice. */
+	/** Stop following the battery, and refresh the status notification if this visit changed what it is built from. */
 	@Override
 	public void onPause() {
 		super.onPause();
 		final Context context = requireContext();
 		context.unregisterReceiver(batteryChanges);
-		if (changed) {
-			changed = false;
-			// The application context, which the monitoring service builds the notification from — so the refresh can't word it in another language than the
-			// next battery broadcast will.
+		if (!NotificationSettings.read(context).equals(settingsAtResume)) {
+			// The application context, not this screen's: the monitoring service builds the notification from its Service context, which shares the
+			// application's resources — so the refresh words it as the next battery broadcast will, whatever language this screen is showing.
 			NotificationService.refreshOngoingNotification(context.getApplicationContext());
 		}
 	}
@@ -158,7 +168,8 @@ public class NotificationDetailsFragment extends Fragment {
 	}
 
 	/**
-	 * The name a family goes by, in the picker and in the General screen's summary.
+	 * The name a family goes by, in the picker and in the General screen's summary. Where the details table already names the same reading, this is its name,
+	 * so a family reads the same in the picker, the table and the pull-down.
 	 *
 	 * @param family a family
 	 * @return its name's string resource
@@ -167,10 +178,10 @@ public class NotificationDetailsFragment extends Fragment {
 	static int labelRes(DetailFamily family) {
 		return switch (family) {
 			case SPEED -> R.string.detail_family_speed;
-			case CURRENT -> R.string.detail_family_current;
+			case CURRENT -> R.string.battery_current;
 			case TIME -> R.string.detail_family_time;
-			case TEMPERATURE -> R.string.detail_family_temperature;
-			case POWER_SOURCE -> R.string.detail_family_power_source;
+			case TEMPERATURE -> R.string.temperature;
+			case POWER_SOURCE -> R.string.power_source;
 		};
 	}
 
@@ -182,17 +193,18 @@ public class NotificationDetailsFragment extends Fragment {
 		selection.clear();
 		selection.addAll(next);
 		AppPrefs.setNotificationDetails(requireContext(), next);
-		changed = true;
 		render();
 	}
 
-	/** Rebind the rows for new live values; skipped when nothing moved, since the battery broadcast fires every few seconds. */
+	/** Redraw just the rows whose value moved: the battery broadcast fires every few seconds, and usually moves a value or two of the five. */
 	private void showLiveValues(Map<DetailFamily, String> values) {
-		if (values.equals(liveValues)) {
-			return;
-		}
+		final Map<DetailFamily, String> shown = liveValues;
 		liveValues = values;
-		adapter.notifyItemRangeChanged(0, adapter.getItemCount());
+		for (final DetailFamily family : FAMILIES) {
+			if (!Objects.equals(shown.get(family), values.get(family))) {
+				adapter.notifyItemChanged(family.ordinal(), LIVE_VALUE);
+			}
+		}
 	}
 
 	/** Refresh the header and every row: one tap can enable or disable all the unchecked rows at once. */
@@ -242,6 +254,22 @@ public class NotificationDetailsFragment extends Fragment {
 			});
 		}
 
+		/**
+		 * Bind a row, or only move its live value when that is all that changed ({@link #LIVE_VALUE}).
+		 *
+		 * @param holder   the row to bind
+		 * @param position the family's place in the registry
+		 * @param payloads {@link #LIVE_VALUE} for each value-only change since the last bind; empty when the row needs binding in full
+		 */
+		@Override
+		public void onBindViewHolder(@NonNull RowHolder holder, int position, @NonNull List<Object> payloads) {
+			if (payloads.isEmpty()) {
+				onBindViewHolder(holder, position);
+			} else {
+				holder.showValue(liveValues.get(FAMILIES[position]));
+			}
+		}
+
 		/** @return one row per family */
 		@Override
 		public int getItemCount() {
@@ -261,25 +289,51 @@ public class NotificationDetailsFragment extends Fragment {
 			checkBox = itemView.findViewById(R.id.detail_checkbox);
 			label = itemView.findViewById(R.id.detail_label);
 			value = itemView.findViewById(R.id.detail_value);
+			// Both halves of what TalkBack hears: the node it reads a focused row from, and the click event it announces a tap from.
 			ViewCompat.setAccessibilityDelegate(itemView, new AccessibilityDelegateCompat() {
 				@Override
 				public void onInitializeAccessibilityNodeInfo(@NonNull View host, @NonNull AccessibilityNodeInfoCompat info) {
 					super.onInitializeAccessibilityNodeInfo(host, info);
 					info.setClassName(CheckBox.class.getName());
 					info.setCheckable(true);
-					info.setChecked(checkBox.isChecked());
+					info.setChecked(checkBox.isChecked() ? AccessibilityNodeInfoCompat.CHECKED_STATE_TRUE : AccessibilityNodeInfoCompat.CHECKED_STATE_FALSE);
+				}
+
+				@Override
+				public void onInitializeAccessibilityEvent(@NonNull View host, @NonNull AccessibilityEvent event) {
+					super.onInitializeAccessibilityEvent(host, event);
+					event.setClassName(CheckBox.class.getName());
+					event.setChecked(checkBox.isChecked());
 				}
 			});
 		}
 
 		void bind(String labelText, String valueText, boolean checked, boolean enabled) {
 			label.setText(labelText);
-			value.setText(isNull(valueText) ? "" : valueText);
+			showValue(valueText);
 			checkBox.setChecked(checked);
 			itemView.setEnabled(enabled);
 			checkBox.setEnabled(enabled);
 			label.setEnabled(enabled);
 			value.setEnabled(enabled);
+		}
+
+		void showValue(String valueText) {
+			value.setText(isNull(valueText) ? "" : valueText);
+		}
+	}
+
+	/**
+	 * What the status notification is built from that this screen can change: the chosen details, and whether the pull-down still follows the show-rate switch
+	 * #357 replaced. The first saved choice retires that switch, so a tap and its undo can leave the details as they were and the pull-down not.
+	 *
+	 * @param details           the chosen families, in display order
+	 * @param pullDownShowsRate whether the pull-down carries its rate and time lines
+	 */
+	private record NotificationSettings(List<DetailFamily> details, boolean pullDownShowsRate) {
+
+		static NotificationSettings read(Context context) {
+			return new NotificationSettings(AppPrefs.notificationDetails(context), AppPrefs.legacyShowRateOn(context));
 		}
 	}
 }
