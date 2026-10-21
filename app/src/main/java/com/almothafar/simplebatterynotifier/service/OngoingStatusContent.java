@@ -3,11 +3,12 @@ package com.almothafar.simplebatterynotifier.service;
 import android.content.Context;
 import android.os.BatteryManager;
 
-import androidx.preference.PreferenceManager;
-
 import com.almothafar.simplebatterynotifier.R;
 import com.almothafar.simplebatterynotifier.model.BatteryDO;
 import com.almothafar.simplebatterynotifier.model.ChargeSpeed;
+import com.almothafar.simplebatterynotifier.model.DetailFamily;
+import com.almothafar.simplebatterynotifier.model.PowerSource;
+import com.almothafar.simplebatterynotifier.util.AppPrefs;
 import com.almothafar.simplebatterynotifier.util.BatteryPercentFormatter;
 import com.almothafar.simplebatterynotifier.util.TemperatureUtils;
 
@@ -28,10 +29,10 @@ import static java.util.Objects.nonNull;
  * ({@code OngoingStatusContentTest}). The RTL bidi-isolation this file introduced for #194 now lives in
  * {@link com.almothafar.simplebatterynotifier.util.BidiText}, shared with the alert copy that needs it too (#275).
  */
-final class OngoingStatusContent {
+public final class OngoingStatusContent {
 
-	/** Joins the ongoing notification's detail segments (rate/power · current · time). */
-	private static final String DETAIL_SEPARATOR = " · ";
+	/** Joins the ongoing notification's detail segments (rate/power · current · time), and the family names that summarise a choice of them. */
+	public static final String DETAIL_SEPARATOR = " · ";
 
 	/**
 	 * One rung of a level→icon ladder: the lowest battery level that {@code iconRes} covers. The two
@@ -101,29 +102,70 @@ final class OngoingStatusContent {
 	}
 
 	/**
-	 * The collapsed content line — the volatile numbers under the stable title, joined by
-	 * "{@value #DETAIL_SEPARATOR}": rate/power · current · time, e.g. "9%/h · Using 250 mA · ~9h 27m remaining"
-	 * or "~18 W · Charging 1500 mA · ~45m to full" (#194, #207). The current is worded so it stays meaningful
-	 * even alone. Temperature moves to the expanded view. Each segment is
-	 * shown only when available and only when the show-rate setting is on; if nothing qualifies (setting
-	 * off, or a warm-up tick) it falls back to the temperature so the line is never empty.
+	 * The collapsed content line — the volatile numbers under the stable title: the user's chosen notification details (#357), in their order, joined by
+	 * "{@value #DETAIL_SEPARATOR}". The default is "9%/h · Using 250 mA · ~9h 27m remaining" while discharging and "~18 W · Charging 1500 mA · ~45m to full"
+	 * while charging (#194, #207).
+	 * <p>
+	 * A family with nothing to show yet drops out silently. When a non-empty choice shows nothing at all — a warm-up tick — the line falls back to the
+	 * Temperature family, which always has a reading, so it is never blank. An empty choice renders an empty line: the user asked for the title alone.
 	 *
 	 * @param context   The application context
 	 * @param batteryDO Current battery snapshot, or null if unavailable
-	 * @param rate      The precomputed charge/drain rate
+	 * @param rate      The precomputed charge/drain rate, or null if unavailable
 	 * @return Formatted collapsed text (empty when there's no snapshot at all)
 	 */
 	static String statusDetail(Context context, BatteryDO batteryDO, BatteryRateTracker.BatteryRate rate) {
-		final List<String> parts = new ArrayList<>(3);
-		if (showRateEnabled(context) && nonNull(batteryDO) && nonNull(rate)) {
-			addIfPresent(parts, rateOrPowerSegment(context, batteryDO, rate));
-			addIfPresent(parts, collapsedCurrentSegment(context, rate));
-			addIfPresent(parts, collapsedTimeSegment(context, batteryDO, rate));
+		if (isNull(batteryDO)) {
+			return "";
 		}
-		if (parts.isEmpty()) {
-			return nonNull(batteryDO) ? isolate(TemperatureUtils.format(context, batteryDO.getTemperature())) : "";
+		final List<DetailFamily> selection = AppPrefs.notificationDetails(context);
+		final BatteryRateTracker.BatteryRate rateOrEmpty = nonNull(rate) ? rate : BatteryRateTracker.BatteryRate.empty();
+		final List<String> parts = new ArrayList<>(selection.size());
+		for (final DetailFamily family : selection) {
+			addIfPresent(parts, detailSegment(context, family, batteryDO, rateOrEmpty));
+		}
+		if (parts.isEmpty() && !selection.isEmpty()) {
+			return detailSegment(context, DetailFamily.TEMPERATURE, batteryDO, rateOrEmpty);
 		}
 		return String.join(DETAIL_SEPARATOR, parts);
+	}
+
+	/**
+	 * One family's segment of the collapsed line, in the form the charge direction calls for (#356). Each is worded to read on its own, because any of them can
+	 * end up alone on the line (#207). The picker's live-value column shows the same segments, through {@link NotificationService#liveDetailSegments}.
+	 *
+	 * @param context   The application context
+	 * @param family    The family to render
+	 * @param batteryDO Current battery snapshot
+	 * @param rate      The precomputed charge/drain rate
+	 * @return the segment, bidi-isolated where it carries a Latin value; null when the family has nothing to show yet
+	 */
+	static String detailSegment(Context context, DetailFamily family, BatteryDO batteryDO, BatteryRateTracker.BatteryRate rate) {
+		return switch (family) {
+			case SPEED -> rateOrPowerSegment(context, batteryDO, rate);
+			case CURRENT -> collapsedCurrentSegment(context, rate);
+			case TIME -> collapsedTimeSegment(context, batteryDO, rate);
+			case TEMPERATURE -> temperatureSegment(context, batteryDO);
+			case POWER_SOURCE -> isolate(powerSourceSegment(context, batteryDO));
+		};
+	}
+
+	/**
+	 * Whether the pull-down says anything the collapsed line doesn't, and so earns an expand chevron (#194). The labelled breakdown always does. On a warm-up
+	 * tick the pull-down is the temperature alone, which adds something only when the line leaves the temperature out: a choice without Temperature that still
+	 * has another family to show (#357). This reads the rendered line, so the line's fallback to the temperature needs no second copy here.
+	 *
+	 * @param context   The application context
+	 * @param batteryDO Current battery snapshot, or null if unavailable
+	 * @param collapsed The collapsed line, from {@link #statusDetail}
+	 * @param expanded  The pull-down, from {@link #statusDetailExpanded}
+	 * @return true when the notification should offer the pull-down
+	 */
+	static boolean pullDownAddsToLine(Context context, BatteryDO batteryDO, String collapsed, String expanded) {
+		if (expanded.indexOf('\n') >= 0) {
+			return true;
+		}
+		return !expanded.isEmpty() && !collapsed.contains(temperatureSegment(context, batteryDO));
 	}
 
 	/**
@@ -133,7 +175,11 @@ final class OngoingStatusContent {
 	 * charging); "Average" is the windowed average, carrying the smoothed %/h while discharging — the app
 	 * computes a single smoothed rate, which is itself an average, so there is no separate instantaneous
 	 * %/h. Every line is dropped when its data is absent; the temperature always shows. Returns a single
-	 * line (no expansion) when nothing but temperature is available.
+	 * line when nothing but temperature is available, which {@link #pullDownAddsToLine} offers only where the line leaves it out.
+	 * <p>
+	 * Deliberately blind to the notification details the collapsed line follows: this is the everything view, which is what makes the collapsed line's silent
+	 * drop-outs acceptable (docs/adr/0002). It is blind to the show-rate switch #357 removed for the same reason, though that switch used to hide its rate
+	 * lines: only what the switch did to the collapsed line carries over ({@link AppPrefs#notificationDetails}).
 	 *
 	 * @param context   The application context
 	 * @param batteryDO Current battery snapshot, or null if unavailable
@@ -142,7 +188,7 @@ final class OngoingStatusContent {
 	 */
 	static String statusDetailExpanded(Context context, BatteryDO batteryDO, BatteryRateTracker.BatteryRate rate) {
 		final List<String> lines = new ArrayList<>(4);
-		if (showRateEnabled(context) && nonNull(batteryDO) && nonNull(rate)) {
+		if (nonNull(batteryDO) && nonNull(rate)) {
 			addLine(context, lines, R.string.notification_label_now, nowSegment(context, batteryDO, rate));
 			addAverageLine(context, lines, rate);
 			addTimeLine(context, lines, batteryDO, rate);
@@ -302,6 +348,26 @@ final class OngoingStatusContent {
 				: R.string.notification_status_time_remaining, duration);
 	}
 
+	/** The collapsed temperature segment, which always has a reading. */
+	private static String temperatureSegment(Context context, BatteryDO batteryDO) {
+		return isolate(TemperatureUtils.format(context, batteryDO.getTemperature()));
+	}
+
+	/**
+	 * The collapsed power-source segment: "On battery" while unplugged, otherwise the charger type. Shorter than the details table's labels ("USB Port",
+	 * "AC Charger"), which have a row to themselves; this one shares the line with up to two others. Both decode the plugged reading through
+	 * {@link PowerSource}, so they never disagree about which source it is.
+	 */
+	private static String powerSourceSegment(Context context, BatteryDO batteryDO) {
+		return context.getString(switch (PowerSource.fromPlugged(batteryDO.getPlugged())) {
+			case BATTERY -> R.string.notification_status_source_battery;
+			case USB -> R.string.notification_status_source_usb;
+			case AC -> R.string.notification_status_source_ac;
+			case WIRELESS -> R.string.notification_status_source_wireless;
+			case OTHER -> R.string.notification_status_source_other;
+		});
+	}
+
 	/**
 	 * The estimated minutes to full (charging) or empty (discharging), mirroring the details table's
 	 * gating (#124/#188): 0 when there's no trustworthy rate or the estimate degenerates (already
@@ -336,15 +402,4 @@ final class OngoingStatusContent {
 		return context.getString(R.string.notification_status_watts, String.valueOf(speed.getWatts()));
 	}
 
-	/**
-	 * Whether the "show rate & time in status notification" setting is on (default on). Governs the
-	 * rate/power and the derived time estimate in the detail line; the temperature shows regardless.
-	 *
-	 * @param context The application context
-	 * @return true when the rate/power (and its derived estimate) should be shown
-	 */
-	private static boolean showRateEnabled(Context context) {
-		return PreferenceManager.getDefaultSharedPreferences(context)
-		                        .getBoolean(context.getString(R.string._pref_key_show_rate_in_notification), true);
-	}
 }

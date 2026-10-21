@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One family in the notification-details picker: the whole row is the touch target and reports itself to TalkBack as the checkbox, so the box itself
+     takes no clicks or focus of its own. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="?attr/selectableItemBackground"
+    android:clickable="true"
+    android:focusable="true"
+    android:gravity="center_vertical"
+    android:minHeight="56dp"
+    android:orientation="horizontal"
+    android:paddingStart="?android:attr/listPreferredItemPaddingStart"
+    android:paddingEnd="?android:attr/listPreferredItemPaddingEnd">
+
+    <com.google.android.material.checkbox.MaterialCheckBox
+        android:id="@+id/detail_checkbox"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:clickable="false"
+        android:focusable="false"
+        android:importantForAccessibility="no" />
+
+    <TextView
+        android:id="@+id/detail_label"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_weight="1"
+        android:textAppearance="?android:attr/textAppearanceListItem"
+        android:textColor="?android:attr/textColorPrimary" />
+
+    <!-- The family's live value, so a device that never reports one is visible here rather than only by its absence from the shade (#356). It shares the width
+         with the name rather than taking what it needs first: at a large font size a long value ("~9h 27m remaining") would otherwise squeeze the name to
+         nothing, where now both wrap. -->
+    <TextView
+        android:id="@+id/detail_value"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_weight="1"
+        android:gravity="end"
+        android:textAppearance="?android:attr/textAppearanceListItemSecondary"
+        android:textColor="?android:attr/textColorSecondary" />
+
+</LinearLayout>

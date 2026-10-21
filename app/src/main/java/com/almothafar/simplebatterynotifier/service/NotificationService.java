@@ -12,6 +12,7 @@ import android.graphics.drawable.Icon;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
+import android.service.notification.StatusBarNotification;
 import android.util.Log;
 import android.widget.Toast;
 import androidx.core.app.NotificationCompat;
@@ -21,10 +22,14 @@ import com.almothafar.simplebatterynotifier.R;
 import com.almothafar.simplebatterynotifier.model.BatteryDO;
 import com.almothafar.simplebatterynotifier.model.ChargeSpeed;
 import com.almothafar.simplebatterynotifier.model.ChargeSpeedTier;
+import com.almothafar.simplebatterynotifier.model.DetailFamily;
 import com.almothafar.simplebatterynotifier.ui.MainActivity;
 import com.almothafar.simplebatterynotifier.util.AppPrefs;
 import com.almothafar.simplebatterynotifier.util.BatteryPercentFormatter;
 import com.almothafar.simplebatterynotifier.util.TemperatureUtils;
+
+import java.util.EnumMap;
+import java.util.Map;
 
 import static com.almothafar.simplebatterynotifier.util.BidiText.isolate;
 import static java.util.Objects.isNull;
@@ -361,9 +366,8 @@ public final class NotificationService {
 				.setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
 				.setCategory(NotificationCompat.CATEGORY_STATUS);
 
-		// Make it expandable only when the pull-down actually adds something (a multi-line breakdown);
-		// a single-line expanded view (e.g. temperature only) would show a pointless expand chevron (#194).
-		if (expanded.indexOf('\n') >= 0) {
+		// Make it expandable only when the pull-down adds something the line doesn't say; one that repeats it would show a pointless expand chevron (#194).
+		if (OngoingStatusContent.pullDownAddsToLine(context, batteryDO, collapsed, expanded)) {
 			builder.setStyle(new NotificationCompat.BigTextStyle().bigText(expanded));
 		}
 		return builder.build();
@@ -386,7 +390,66 @@ public final class NotificationService {
 		post(context, ONGOING_NOTIFICATION_ID, buildOngoingNotification(context, batteryDO, rate));
 	}
 
+	/**
+	 * Re-post the status notification from a fresh reading, for a settings change that alters its text (#357). Nothing else reaches it until the next battery
+	 * broadcast, which can be minutes away on a quiet phone.
+	 * <p>
+	 * Only replaces a notification that is already up. When it isn't — the system stopped monitoring (#302), or notifications are off — posting from a settings
+	 * screen would raise a status notification that no service stands behind.
+	 *
+	 * @param context The application context. The monitoring service builds this notification from its Service context, which shares the application's
+	 *                resources, so a refresh words it as the next battery broadcast will — where an Activity might be showing another language
+	 */
+	public static void refreshOngoingNotification(Context context) {
+		if (lacksOngoingNotification(context)) {
+			return;
+		}
+		final BatteryDO batteryDO = SystemService.getBatteryInfo(context);
+		if (isNull(batteryDO)) {
+			// Re-posting from no reading would replace live text with "0% · Unknown"; the next broadcast brings the change instead.
+			Log.w(TAG, "No battery reading; status notification left for the next broadcast to refresh");
+			return;
+		}
+		updateOngoingNotification(context, batteryDO, BatteryRateTracker.getRate(context, batteryDO));
+	}
+
+	/**
+	 * Each family's segment as the collapsed line would render it from a battery reading — the notification-details picker's live-value column (#357).
+	 *
+	 * @param context The picker's own context, so the segments are worded in the language the screen is showing
+	 * @param battery The {@code ACTION_BATTERY_CHANGED} broadcast just received, or the sticky copy registering for it returned; null when there is none
+	 * @return each family that has something to show, mapped to its segment; empty when there is no battery reading
+	 */
+	public static Map<DetailFamily, String> liveDetailSegments(Context context, Intent battery) {
+		final Map<DetailFamily, String> segments = new EnumMap<>(DetailFamily.class);
+		final BatteryDO batteryDO = SystemService.getBatteryInfo(context, battery);
+		if (isNull(batteryDO)) {
+			return segments;
+		}
+		final BatteryRateTracker.BatteryRate rate = BatteryRateTracker.getRate(context, batteryDO);
+		for (final DetailFamily family : DetailFamily.values()) {
+			final String segment = OngoingStatusContent.detailSegment(context, family, batteryDO, rate);
+			if (nonNull(segment)) {
+				segments.put(family, segment);
+			}
+		}
+		return segments;
+	}
+
 	// ========== Private Helper Methods ==========
+
+	private static boolean lacksOngoingNotification(Context context) {
+		final NotificationManager manager = getNotificationManager(context);
+		if (isNull(manager)) {
+			return true;
+		}
+		for (final StatusBarNotification active : manager.getActiveNotifications()) {
+			if (active.getId() == ONGOING_NOTIFICATION_ID) {
+				return false;
+			}
+		}
+		return true;
+	}
 
 	/**
 	 * Send an alert on its own channel and notification ID, honouring quiet hours, silent-mode and

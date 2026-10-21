@@ -7,9 +7,16 @@ import androidx.appcompat.app.AppCompatDelegate;
 import androidx.preference.PreferenceManager;
 
 import com.almothafar.simplebatterynotifier.R;
+import com.almothafar.simplebatterynotifier.model.DetailFamily;
 import com.almothafar.simplebatterynotifier.model.LevelThresholds;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 
 /**
  * Typed facade over the app's default {@link SharedPreferences} (#162): the single owner of each
@@ -39,8 +46,8 @@ import static java.util.Objects.isNull;
  * The restatements that remain are the defaults the framework instantiates straight from XML and so cannot share a constant with: each slider's in
  * {@code pref_alerts.xml} and the theme picker's in {@code pref_general.xml}. A comment ties each pair, and {@code AppPrefsTest} asserts they stay equal.
  * Remaining settings migrate incrementally; new ones (the
- * charge target #263, the unplug reminder #264) are born here, along with the one value here that is no setting at all: the pending "monitoring stopped"
- * report (#302).
+ * charge target #263, the unplug reminder #264, the notification details #357) are born here, along with the one value here that is no setting at all: the
+ * pending "monitoring stopped" report (#302).
  */
 public final class AppPrefs {
 
@@ -122,6 +129,14 @@ public final class AppPrefs {
 	public static final String THEME_LIGHT = "light";
 	/** Stored value for the always-dark theme. */
 	public static final String THEME_DARK = "dark";
+
+	/** The notification details a new install shows (#357) — also what the removed show-rate switch showed while on, its default. */
+	public static final List<DetailFamily> DEFAULT_NOTIFICATION_DETAILS = List.of(DetailFamily.SPEED, DetailFamily.CURRENT, DetailFamily.TIME);
+	/** What the removed show-rate switch showed while off: the temperature alone (#357). */
+	private static final List<DetailFamily> RATE_OFF_NOTIFICATION_DETAILS = List.of(DetailFamily.TEMPERATURE);
+
+	/** Joins the storage ids in the persisted notification-details value. */
+	private static final String DETAIL_STORAGE_SEPARATOR = ",";
 
 	/** Milliseconds in a minute — the conversion between the minutes every timing slider speaks in and the millis the decision cores measure in. */
 	private static final long MS_PER_MINUTE = 60_000L;
@@ -464,6 +479,64 @@ public final class AppPrefs {
 	 */
 	public static void setThemeLeftSystem(Context context, boolean pending) {
 		prefs(context).edit().putBoolean(context.getString(R.string._pref_key_theme_left_system), pending).apply();
+	}
+
+	/**
+	 * The families the ongoing notification's collapsed line shows, in the order it shows them (#357). Empty is a real choice — the line then carries nothing.
+	 * <p>
+	 * Until the user first saves a choice, the answer comes from the show-rate switch this setting replaced: on (its default) maps to
+	 * {@link #DEFAULT_NOTIFICATION_DETAILS}, off to {@link #RATE_OFF_NOTIFICATION_DETAILS}. Each reproduces what that switch showed, so an upgrade changes
+	 * nobody's line, and reading the mapping here rather than rewriting the old value means there is no migration step to run or to fail.
+	 *
+	 * @param context Application context
+	 *
+	 * @return the chosen families, at most {@link DetailFamily#MAX_SELECTED}
+	 */
+	public static List<DetailFamily> notificationDetails(Context context) {
+		final String stored = prefs(context).getString(context.getString(R.string._pref_key_notification_details), null);
+		if (nonNull(stored)) {
+			return detailFamiliesOf(stored);
+		}
+		return legacyShowRateOn(context) ? DEFAULT_NOTIFICATION_DETAILS : RATE_OFF_NOTIFICATION_DETAILS;
+	}
+
+	/**
+	 * Persist the notification details, in order (#357). Drops the show-rate switch's old value in the same edit, since a saved choice supersedes it.
+	 *
+	 * @param context  Application context
+	 * @param families the chosen families, in display order; may be empty
+	 */
+	public static void setNotificationDetails(Context context, List<DetailFamily> families) {
+		final String stored = families.stream().map(DetailFamily::storageId).collect(Collectors.joining(DETAIL_STORAGE_SEPARATOR));
+		prefs(context).edit()
+		              .putString(context.getString(R.string._pref_key_notification_details), stored)
+		              .remove(context.getString(R.string._pref_key_show_rate_in_notification))
+		              .apply();
+	}
+
+	/**
+	 * Parse a persisted notification-details value. Ids this build does not know (a newer build's family, or a corrupt value) and repeats are skipped, and the
+	 * result is capped at {@link DetailFamily#MAX_SELECTED}, so a bad value can't overfill the line. Pure so it is unit-testable.
+	 *
+	 * @param stored the persisted comma-separated storage ids; empty for an empty selection
+	 *
+	 * @return the families it names, in stored order
+	 */
+	public static List<DetailFamily> detailFamiliesOf(String stored) {
+		return Arrays.stream(stored.split(DETAIL_STORAGE_SEPARATOR))
+		             .map(DetailFamily::fromStorageId)
+		             .filter(Objects::nonNull)
+		             .distinct()
+		             .limit(DetailFamily.MAX_SELECTED)
+		             .collect(Collectors.toList());
+	}
+
+	/**
+	 * Whether the show-rate switch #357 removed is still on, as the user left it: true unless they turned it off and have not saved notification details since,
+	 * because saving clears it ({@link #setNotificationDetails}).
+	 */
+	private static boolean legacyShowRateOn(Context context) {
+		return prefs(context).getBoolean(context.getString(R.string._pref_key_show_rate_in_notification), true);
 	}
 
 	private static SharedPreferences prefs(Context context) {

@@ -15,6 +15,7 @@ import android.util.Log;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.annotation.StringRes;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.os.LocaleListCompat;
 import androidx.fragment.app.DialogFragment;
@@ -65,6 +66,12 @@ public class GenericPreferenceFragment extends CardPreferenceFragment
 
 	private String pendingRingtoneKey;
 	private ActivityResultLauncher<Intent> ringtonePickerLauncher;
+	/**
+	 * The toolbar title this screen sets each time it comes on top: its header row's title, picked with the screen itself in {@link #onCreatePreferences}.
+	 * Re-read from resources on every resume rather than kept as text, so it follows an in-app language switch.
+	 */
+	@StringRes
+	private int titleRes = R.string.title_activity_settings;
 
 	/**
 	 * Called when the fragment is first created
@@ -171,13 +178,17 @@ public class GenericPreferenceFragment extends CardPreferenceFragment
 			if (nonNull(category)) {
 				if (category.equals(getString(R.string.pref_category_general))) {
 					setPreferencesFromResource(R.xml.pref_general, rootKey);
+					titleRes = R.string.pref_header_general;
 					configureLanguagePreference();
 					configureThemePreference();
+					configureNotificationDetailsEntry();
 				} else if (category.equals(getString(R.string.pref_category_alerts))) {
 					setPreferencesFromResource(R.xml.pref_alerts, rootKey);
+					titleRes = R.string.pref_header_alerts;
 					configureTemperatureThreshold();
 				} else if (category.equals(getString(R.string.pref_category_behaviour))) {
 					setPreferencesFromResource(R.xml.pref_behaviour, rootKey);
+					titleRes = R.string.pref_header_behaviour;
 				}
 			}
 		}
@@ -229,6 +240,21 @@ public class GenericPreferenceFragment extends CardPreferenceFragment
 		pref.setOnPreferenceChangeListener((preference, newValue) -> {
 			AppCompatDelegate.setDefaultNightMode(AppPrefs.themeModeOf((String) newValue));
 			return true;
+		});
+	}
+
+	/**
+	 * Summarise the notification-details choice on the row that opens its picker (#357). A provider rather than a set summary, so the row reads the saved
+	 * choice each time it is drawn — including on the way back from the picker, which rebuilds this screen's views but not its preferences.
+	 */
+	private void configureNotificationDetailsEntry() {
+		final Preference entry = findPreference(getString(R.string._pref_key_notification_details));
+		if (isNull(entry)) {
+			return;
+		}
+		entry.setSummaryProvider(row -> {
+			final Context context = row.getContext();
+			return NotificationDetailsFragment.summaryOf(context, AppPrefs.notificationDetails(context));
 		});
 	}
 
@@ -311,11 +337,12 @@ public class GenericPreferenceFragment extends CardPreferenceFragment
 	}
 
 	/**
-	 * Register preference change listener and initialize summaries
+	 * Title the toolbar for this screen, register the preference change listener and initialize summaries
 	 */
 	@Override
 	public void onResume() {
 		super.onResume();
+		requireActivity().setTitle(titleRes);
 		// Register preference change listener
 		final PreferenceScreen preferenceScreen = getPreferenceScreen();
 		if (nonNull(preferenceScreen)) {

@@ -76,6 +76,7 @@
     <string name="charger_ac">مقبس طاقة</string>
     <string name="charger_usb">مدخل يو اس بي</string>
     <string name="charger_wireless">شاحن لاسلكي</string>
+    <string name="charger_other">موصول بالطاقة</string>
 
     <!-- Settings root screen: the three headers (#112) -->
     <string name="pref_header_general">عام</string>
@@ -214,11 +215,22 @@
          "استهلاك" أثناء التفريغ، "شحن" أثناء الشحن. مثل "استهلاك 199 mA" / "شحن 1500 mA" -->
     <string name="notification_status_current_using">استهلاك %1$s</string>
     <string name="notification_status_current_charging">شحن %1$s</string>
+    <string name="notification_status_source_battery">على البطارية</string>
+    <string name="notification_status_source_usb">USB</string>
+    <string name="notification_status_source_ac">شاحن</string>
+    <string name="notification_status_source_wireless">لاسلكي</string>
+    <string name="notification_status_source_other">موصول بالطاقة</string>
     <!-- #194: التفصيل الموسّع (عند السحب للأسفل) — سطر "التسمية: القيمة". تسميات الوقت المتبقي/الوقت
          حتى الاكتمال/الحرارة/معدل الاستهلاك مُعاد استخدامها من جدول التفاصيل. -->
     <string name="notification_detail_line">%1$s: %2$s</string>
     <string name="notification_label_now">مباشر</string>
     <string name="notification_label_average">المتوسط</string>
+    <string name="notification_details_title">تفاصيل الإشعار</string>
+    <string name="notification_details_summary_none">لم يُختر شيء</string>
+    <string name="notification_details_header">اختر حتى %1$s · تم اختيار %2$s</string>
+    <string name="notification_details_header_empty">لم يُختر شيء — يعرض الإشعار العنوان فقط</string>
+    <string name="detail_family_speed">السرعة</string>
+    <string name="detail_family_time">الوقت</string>
 
     <!-- High temperature alert -->
     <string name="notify_high_temperature">تنبيه ارتفاع الحرارة</string>
@@ -242,9 +254,6 @@
     <string name="time_to_full_value_hm">~%1$sh %2$sm</string>
     <string name="time_to_full_value_m">~%1$sm</string>
     <string name="pref_cat_title_drain">استهلاك البطارية</string>
-    <string name="show_rate_in_notification">إظهار المعدل والوقت في إشعار الحالة</string>
-    <string name="show_rate_in_notification_summary_on">يضيف الإشعار المستمر المعدل/القدرة المباشرة والوقت المقدّر إلى النسبة المئوية والحالة ودرجة الحرارة</string>
-    <string name="show_rate_in_notification_summary_off">يعرض الإشعار المستمر النسبة المئوية والحالة ودرجة الحرارة فقط</string>
     <string name="drain_limit">حد الاستهلاك المرتفع</string>
     <string name="drain_limit_summary">يتحول معدل الاستهلاك إلى اللون الكهرماني عند الاقتراب من هذا الحد وإلى الأحمر عند بلوغه أو تجاوزه، ويُطلق تنبيه الاستهلاك السريع عند بقائه عند الحد. يُقاس بنقاط مئوية في الساعة.</string>
 

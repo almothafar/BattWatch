@@ -22,6 +22,7 @@ import com.almothafar.simplebatterynotifier.R;
 import com.almothafar.simplebatterynotifier.model.BatteryDO;
 import com.almothafar.simplebatterynotifier.model.BatteryHealthStatus;
 import com.almothafar.simplebatterynotifier.model.ChargeSpeed;
+import com.almothafar.simplebatterynotifier.model.PowerSource;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -238,29 +239,22 @@ public final class SystemService {
 	}
 
 	/**
-	 * Determine the charger type string based on plugged status
+	 * Determine the details table's charger label from the plugged status. A charger the app has no name for (a dock, API 33+) reads as plugged in — it used
+	 * to fall through to "On Battery", which a docked phone is not.
 	 *
 	 * @param plugged   The plugged status from BatteryManager
 	 * @param resources Resources for string lookup
 	 *
 	 * @return Charger type string
 	 */
-	@SuppressLint("InlinedApi") // BATTERY_PLUGGED_WIRELESS added in API 17
-	private static String determineChargerType(final int plugged, final Resources resources) {
-		if (plugged == 0) {
-			return resources.getString(R.string.battery);
-		}
-
-		// Check charger types in priority order
-		if (plugged == BatteryManager.BATTERY_PLUGGED_USB) {
-			return resources.getString(R.string.charger_usb);
-		} else if (plugged == BatteryManager.BATTERY_PLUGGED_AC) {
-			return resources.getString(R.string.charger_ac);
-		} else if (plugged == BatteryManager.BATTERY_PLUGGED_WIRELESS) {
-			return resources.getString(R.string.charger_wireless);
-		} else {
-			return resources.getString(R.string.battery);
-		}
+	private static String determineChargerType(int plugged, Resources resources) {
+		return resources.getString(switch (PowerSource.fromPlugged(plugged)) {
+			case BATTERY -> R.string.battery;
+			case USB -> R.string.charger_usb;
+			case AC -> R.string.charger_ac;
+			case WIRELESS -> R.string.charger_wireless;
+			case OTHER -> R.string.charger_other;
+		});
 	}
 
 	/**

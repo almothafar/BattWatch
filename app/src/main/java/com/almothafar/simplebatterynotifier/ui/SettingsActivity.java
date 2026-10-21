@@ -10,6 +10,7 @@ import androidx.preference.PreferenceFragmentCompat;
 import com.almothafar.simplebatterynotifier.R;
 import com.almothafar.simplebatterynotifier.ui.fragment.CardPreferenceFragment;
 import com.almothafar.simplebatterynotifier.ui.fragment.GenericPreferenceFragment;
+import com.almothafar.simplebatterynotifier.ui.fragment.NotificationDetailsFragment;
 
 import java.util.Set;
 
@@ -19,20 +20,11 @@ import static java.util.Objects.nonNull;
 /**
  * Modern Settings Activity using AndroidX Preferences
  * Provides hierarchical settings navigation with preference fragments
+ * <p>
+ * Each screen titles the toolbar itself, from its own string resource, whenever it comes on top. Nothing here keeps a title as text: one kept from before an
+ * in-app language switch would come back in the old language after the recreation, and again on every Back to that screen.
  */
 public class SettingsActivity extends BaseActivity implements PreferenceFragmentCompat.OnPreferenceStartFragmentCallback {
-	private static final String TITLE_TAG = "settingsActivityTitle";
-
-	/**
-	 * Save the activity state including the current title
-	 *
-	 * @param outState Bundle to save state into
-	 */
-	@Override
-	public void onSaveInstanceState(@NonNull final Bundle outState) {
-		super.onSaveInstanceState(outState);
-		outState.putCharSequence(TITLE_TAG, getTitle());
-	}
 
 	/**
 	 * Handle support navigation up action
@@ -74,25 +66,26 @@ public class SettingsActivity extends BaseActivity implements PreferenceFragment
 	 * <p>
 	 * The {@code android:fragment} attribute still has to stay in the XML: {@code PreferenceFragmentCompat} only
 	 * routes a click here when {@code getFragment()} is non-null. Its value is no longer read.
+	 * <p>
+	 * The one row that opens something else — the notification-details picker (#357) — is told apart by its key, for the same reason.
+	 * <p>
+	 * The title is not set here: the screen sets its own when it resumes (see the class doc).
 	 *
 	 * @param caller The calling preference fragment
 	 * @param pref   The preference that was clicked
 	 * @return True if fragment navigation was handled
 	 */
 	@Override
-	public boolean onPreferenceStartFragment(@NonNull final PreferenceFragmentCompat caller, final Preference pref) {
-		// The category extra picks which preference screen this instance loads.
-		final Bundle args = pref.getExtras();
-		final Fragment fragment = new GenericPreferenceFragment();
-		fragment.setArguments(args);
+	public boolean onPreferenceStartFragment(@NonNull PreferenceFragmentCompat caller, Preference pref) {
+		final Fragment fragment = getString(R.string._pref_key_notification_details).equals(pref.getKey())
+		                          ? new NotificationDetailsFragment()
+		                          : new GenericPreferenceFragment();
+		// For a GenericPreferenceFragment, the category extra picks which preference screen it loads.
+		fragment.setArguments(pref.getExtras());
 		// setTargetFragment() removed - deprecated API, no longer needed for fragment navigation
 
 		// Replace the existing Fragment with the new Fragment
-		getSupportFragmentManager().beginTransaction()
-		                           .replace(R.id.settings_container, fragment)
-		                           .addToBackStack(null)
-		                           .commit();
-		setTitle(pref.getTitle());
+		getSupportFragmentManager().beginTransaction().replace(R.id.settings_container, fragment).addToBackStack(null).commit();
 		return true;
 	}
 
@@ -102,7 +95,7 @@ public class SettingsActivity extends BaseActivity implements PreferenceFragment
 	 * @param savedInstanceState Saved state bundle
 	 */
 	@Override
-	protected void onCreate(final Bundle savedInstanceState) {
+	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
 		setContentView(R.layout.activity_settings);
@@ -120,23 +113,11 @@ public class SettingsActivity extends BaseActivity implements PreferenceFragment
 
 		// Load root preferences if this is the first creation
 		if (isNull(savedInstanceState)) {
-			// Set the title via the app's (locale-aware) resources. Without this, the toolbar falls back
-			// to the manifest android:label, which the framework resolves in the SYSTEM locale — showing an
-			// English "Settings" under an Arabic app until the back stack next changes (#98).
-			setTitle(R.string.title_activity_settings);
 			getSupportFragmentManager()
 					.beginTransaction()
 					.replace(R.id.settings_container, new HeaderFragment())
 					.commit();
-		} else {
-			setTitle(savedInstanceState.getCharSequence(TITLE_TAG));
 		}
-
-		getSupportFragmentManager().addOnBackStackChangedListener(() -> {
-			if (getSupportFragmentManager().getBackStackEntryCount() == 0) {
-				setTitle(R.string.title_activity_settings);
-			}
-		});
 	}
 
 	/**
@@ -174,6 +155,18 @@ public class SettingsActivity extends BaseActivity implements PreferenceFragment
 					return true;
 				});
 			}
+		}
+
+		/**
+		 * Title the toolbar for the root screen whenever it comes on top: when Settings opens, and on every Back to it.
+		 * <p>
+		 * From the app's (locale-aware) resources. Left alone, the toolbar shows the manifest android:label, which the framework resolves in the SYSTEM
+		 * locale — an English "Settings" under an Arabic app (#98).
+		 */
+		@Override
+		public void onResume() {
+			super.onResume();
+			requireActivity().setTitle(R.string.title_activity_settings);
 		}
 	}
 }
