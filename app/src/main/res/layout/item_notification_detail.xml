@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- One family in the notification-details picker: the whole row is the touch target and reports itself to TalkBack as the checkbox, so the box itself
-     takes no clicks or focus of its own. -->
+     takes no clicks or focus of its own. Painted in the card's colour, with the ripple on top, so a row dragged over the others hides what it passes. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="?attr/selectableItemBackground"
+    android:background="@color/settings_group_card"
+    android:foreground="?attr/selectableItemBackground"
     android:clickable="true"
     android:focusable="true"
     android:gravity="center_vertical"
@@ -42,5 +44,18 @@
         android:gravity="end"
         android:textAppearance="?android:attr/textAppearanceListItemSecondary"
         android:textColor="?android:attr/textColorSecondary" />
+
+    <!-- The grip a row is dragged by (#358): a 48dp target, pulled 12dp into the row's end padding so the bars line up with the text edges above and below.
+         TalkBack skips it; the row offers Move up and Move down instead. -->
+    <ImageView
+        android:id="@+id/detail_drag_handle"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginStart="4dp"
+        android:layout_marginEnd="-12dp"
+        android:importantForAccessibility="no"
+        android:scaleType="center"
+        android:src="@drawable/ic_drag_handle"
+        app:tint="?android:attr/textColorSecondary" />
 
 </LinearLayout>

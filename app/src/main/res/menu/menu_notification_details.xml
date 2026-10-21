@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The notification-details picker's toolbar (#358): one word in the bar, the whole meaning for TalkBack. -->
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/action_reset_notification_details"
+        android:title="@string/notification_details_reset"
+        app:contentDescription="@string/notification_details_reset_description"
+        app:showAsAction="always" />
+</menu>

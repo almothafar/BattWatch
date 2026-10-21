@@ -231,6 +231,11 @@
     <string name="notification_details_header_empty">لم يُختر شيء — يعرض الإشعار العنوان فقط</string>
     <string name="detail_family_speed">السرعة</string>
     <string name="detail_family_time">الوقت</string>
+    <string name="notification_details_move_up">نقل لأعلى</string>
+    <string name="notification_details_move_down">نقل لأسفل</string>
+    <string name="notification_details_reset">إعادة الضبط</string>
+    <string name="notification_details_reset_description">إعادة الاختيار الافتراضي</string>
+    <string name="notification_details_preview">معاينة الإشعار</string>
 
     <!-- High temperature alert -->
     <string name="notify_high_temperature">تنبيه ارتفاع الحرارة</string>

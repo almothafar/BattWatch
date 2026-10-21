@@ -14,6 +14,7 @@ import com.almothafar.simplebatterynotifier.util.TemperatureUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 import static com.almothafar.simplebatterynotifier.util.BidiText.isolate;
 import static java.util.Objects.isNull;
@@ -105,9 +106,6 @@ public final class OngoingStatusContent {
 	 * The collapsed content line — the volatile numbers under the stable title: the user's chosen notification details (#357), in their order, joined by
 	 * "{@value #DETAIL_SEPARATOR}". The default is "9%/h · Using 250 mA · ~9h 27m remaining" while discharging and "~18 W · Charging 1500 mA · ~45m to full"
 	 * while charging (#194, #207).
-	 * <p>
-	 * A family with nothing to show yet drops out silently. When a non-empty choice shows nothing at all — a warm-up tick — the line falls back to the
-	 * Temperature family, which always has a reading, so it is never blank. An empty choice renders an empty line: the user asked for the title alone.
 	 *
 	 * @param context   The application context
 	 * @param batteryDO Current battery snapshot, or null if unavailable
@@ -118,21 +116,34 @@ public final class OngoingStatusContent {
 		if (isNull(batteryDO)) {
 			return "";
 		}
-		final List<DetailFamily> selection = AppPrefs.notificationDetails(context);
 		final BatteryRateTracker.BatteryRate rateOrEmpty = nonNull(rate) ? rate : BatteryRateTracker.BatteryRate.empty();
+		return detailLine(AppPrefs.notificationDetails(context), family -> detailSegment(context, family, batteryDO, rateOrEmpty));
+	}
+
+	/**
+	 * The collapsed line a choice makes from its families' segments — the one rule the notification and the picker's preview (#358) both render by.
+	 * <p>
+	 * A family with nothing to show yet drops out silently. When a non-empty choice shows nothing at all — a warm-up tick — the line falls back to the
+	 * Temperature family, which always has a reading, so it is never blank. An empty choice renders an empty line: the user asked for the title alone.
+	 *
+	 * @param selection the chosen families, in the order the line shows them
+	 * @param segmentOf each family's segment, or null when it has nothing to show yet
+	 * @return the line
+	 */
+	public static String detailLine(List<DetailFamily> selection, Function<DetailFamily, String> segmentOf) {
 		final List<String> parts = new ArrayList<>(selection.size());
 		for (final DetailFamily family : selection) {
-			addIfPresent(parts, detailSegment(context, family, batteryDO, rateOrEmpty));
+			addIfPresent(parts, segmentOf.apply(family));
 		}
 		if (parts.isEmpty() && !selection.isEmpty()) {
-			return detailSegment(context, DetailFamily.TEMPERATURE, batteryDO, rateOrEmpty);
+			return segmentOf.apply(DetailFamily.TEMPERATURE);
 		}
 		return String.join(DETAIL_SEPARATOR, parts);
 	}
 
 	/**
 	 * One family's segment of the collapsed line, in the form the charge direction calls for (#356). Each is worded to read on its own, because any of them can
-	 * end up alone on the line (#207). The picker's live-value column shows the same segments, through {@link NotificationService#liveDetailSegments}.
+	 * end up alone on the line (#207). The picker's live-value column shows the same segments, through {@link NotificationService#liveStatus}.
 	 *
 	 * @param context   The application context
 	 * @param family    The family to render

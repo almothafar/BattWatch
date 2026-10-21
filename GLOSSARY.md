@@ -39,7 +39,7 @@ The opt-in repeat of the full-battery alert, re-posted every N minutes for as lo
 _Avoid_: nag, snooze, recurring alert, repeat notification.
 
 **Notification details**:
-What the status notification's collapsed line shows: up to three families the user picks from Speed, Current, Time, Temperature and Power source.
+What the status notification's collapsed line shows: up to three families the user picks from Speed, Current, Time, Temperature and Power source, in the order the user puts them.
 _Avoid_: notification metrics, detail fields.
 
 **Speed**:

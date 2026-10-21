@@ -256,6 +256,14 @@
          reads the same in the picker, the table and the pull-down. -->
     <string name="detail_family_speed">Speed</string>
     <string name="detail_family_time">Time</string>
+    <!-- #358: TalkBack actions on a chosen row, the screen-reader path for reordering since drag is out of reach -->
+    <string name="notification_details_move_up">Move up</string>
+    <string name="notification_details_move_down">Move down</string>
+    <!-- #358: the picker's toolbar action; the description is what TalkBack reads for it -->
+    <string name="notification_details_reset">Reset</string>
+    <string name="notification_details_reset_description">Reset to default</string>
+    <!-- #358: what TalkBack calls the live preview at the top of the picker, after reading its two lines -->
+    <string name="notification_details_preview">Notification preview</string>
 
     <!-- High temperature alert -->
     <string name="notify_high_temperature">High Temperature Alert</string>

@@ -8,11 +8,16 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.BatteryManager;
 import android.os.Looper;
+import android.os.SystemClock;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.accessibility.AccessibilityEvent;
 import android.widget.CheckBox;
 import android.widget.TextView;
 
+import androidx.appcompat.widget.Toolbar;
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
 import androidx.fragment.app.Fragment;
 import androidx.preference.Preference;
@@ -40,14 +45,18 @@ import org.robolectric.RuntimeEnvironment;
 import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
 
+import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
+import static com.almothafar.simplebatterynotifier.service.OngoingStatusContent.DETAIL_SEPARATOR;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
@@ -63,6 +72,8 @@ public class NotificationDetailsPickerTest {
 
 	/** Tenths of a degree, as {@code BatteryManager} reports it. */
 	private static final int TEMPERATURE = 346;
+	private static final String MOVE_UP = "Move up";
+	private static final String MOVE_DOWN = "Move down";
 
 	private Context context;
 	private NotificationManager manager;
@@ -91,14 +102,249 @@ public class NotificationDetailsPickerTest {
 	}
 
 	@Test
-	public void tappingARow_savesTheChoiceAtOnce_inTheListOrder() {
+	public void theChosenRows_floatToTheTop_inTheSavedOrder_aboveTheDivider() {
+		AppPrefs.setNotificationDetails(context, List.of(DetailFamily.TEMPERATURE, DetailFamily.SPEED));
+		openPicker();
+		assertEquals("TEMPERATURE SPEED | CURRENT TIME POWER_SOURCE", screen());
+	}
+
+	@Test
+	public void tappingARow_savesTheChoiceAtOnce_andATickedFamilyJoinsTheEnd() {
 		openPicker();
 		tap(DetailFamily.SPEED);
 		assertEquals(List.of(DetailFamily.CURRENT, DetailFamily.TIME), AppPrefs.notificationDetails(context));
-		// Re-adding lands it back in the picker's order, not at the end — reordering is a later slice (#358).
+		assertEquals("CURRENT TIME | SPEED TEMPERATURE POWER_SOURCE", screen());
+
+		// At the end rather than back in registry order, which would undo whatever order the user had set (#358).
 		tap(DetailFamily.SPEED);
-		assertEquals(List.of(DetailFamily.SPEED, DetailFamily.CURRENT, DetailFamily.TIME), AppPrefs.notificationDetails(context));
+		assertEquals(List.of(DetailFamily.CURRENT, DetailFamily.TIME, DetailFamily.SPEED), AppPrefs.notificationDetails(context));
+		assertEquals("CURRENT TIME SPEED | TEMPERATURE POWER_SOURCE", screen());
 		assertTrue(checkBox(DetailFamily.SPEED).isChecked());
+	}
+
+	@Test
+	public void draggingAChosenRowByItsHandle_reordersTheChoice_andRedrawsTheNotification() {
+		AppPrefs.setNotificationDetails(context, List.of(DetailFamily.TEMPERATURE, DetailFamily.POWER_SOURCE));
+		postStatusNotification();
+		openPicker();
+
+		drag(DetailFamily.TEMPERATURE, row(DetailFamily.POWER_SOURCE));
+
+		assertEquals(List.of(DetailFamily.POWER_SOURCE, DetailFamily.TEMPERATURE), AppPrefs.notificationDetails(context));
+		assertEquals("POWER_SOURCE TEMPERATURE | SPEED CURRENT TIME", screen());
+		assertEquals("On battery" + DETAIL_SEPARATOR + TemperatureUtils.format(context, TEMPERATURE), statusText());
+	}
+
+	@Test
+	public void draggingAnUnchosenRowAboveTheDivider_ticksItWhereItIsDropped() {
+		AppPrefs.setNotificationDetails(context, List.of(DetailFamily.TEMPERATURE, DetailFamily.POWER_SOURCE));
+		openPicker();
+
+		drag(DetailFamily.SPEED, row(DetailFamily.POWER_SOURCE));
+
+		assertEquals(List.of(DetailFamily.TEMPERATURE, DetailFamily.SPEED, DetailFamily.POWER_SOURCE), AppPrefs.notificationDetails(context));
+		assertEquals("TEMPERATURE SPEED POWER_SOURCE | CURRENT TIME", screen());
+		assertTrue(checkBox(DetailFamily.SPEED).isChecked());
+		assertEquals(context.getString(R.string.notification_details_header, "3", "3"), header().getText().toString());
+	}
+
+	@Test
+	public void draggingAChosenRowBelowTheDivider_unticksIt_andItFallsIntoItsPlace() {
+		openPicker();
+
+		drag(DetailFamily.SPEED, row(DetailFamily.TEMPERATURE));
+
+		assertEquals(List.of(DetailFamily.CURRENT, DetailFamily.TIME), AppPrefs.notificationDetails(context));
+		// Dropped after Temperature, but only the chosen rows keep an order: the rest stay in the order they are listed in.
+		assertEquals("CURRENT TIME | SPEED TEMPERATURE POWER_SOURCE", screen());
+		assertFalse(checkBox(DetailFamily.SPEED).isChecked());
+	}
+
+	@Test
+	public void atTheCap_anUnchosenRow_doesNotDrag() {
+		openPicker();
+
+		drag(DetailFamily.TEMPERATURE, row(DetailFamily.TIME));
+
+		assertEquals(AppPrefs.DEFAULT_NOTIFICATION_DETAILS, AppPrefs.notificationDetails(context));
+		assertEquals("SPEED CURRENT TIME | TEMPERATURE POWER_SOURCE", screen());
+	}
+
+	@Test
+	public void aTouchOnTheHandle_thatNeverMoves_leavesTheRowAsItWas() {
+		// The handle sits inside the row, and the row ticks on a click: a touch the handle let through would tick or untick the row it was meant to move.
+		openPicker();
+		new Finger(DetailFamily.SPEED).letGo();
+		assertEquals(AppPrefs.DEFAULT_NOTIFICATION_DETAILS, AppPrefs.notificationDetails(context));
+		assertTrue(checkBox(DetailFamily.SPEED).isChecked());
+	}
+
+	@Test
+	public void aRowDroppedAmongTheUnchosen_fallsBackIntoItsPlace_andNothingIsSaved() {
+		AppPrefs.setNotificationDetails(context, List.of(DetailFamily.SPEED));
+		postStatusNotification();
+		openPicker();
+		final Notification before = posted();
+
+		drag(DetailFamily.CURRENT, row(DetailFamily.TEMPERATURE));
+
+		assertEquals("SPEED | CURRENT TIME TEMPERATURE POWER_SOURCE", screen());
+		assertSame(before, posted());
+	}
+
+	@Test
+	public void aChosenRow_offersTalkBackMoveUpAndMoveDown_onlyWhereItCanGo() {
+		// Drag is out of reach with TalkBack, so these actions are the only way a screen-reader user can reorder. The rows below the divider have no order to
+		// change; a double-tap ticks them onto the end.
+		openPicker();
+		assertEquals(List.of(MOVE_DOWN), moveActions(DetailFamily.SPEED));
+		assertEquals(List.of(MOVE_UP, MOVE_DOWN), moveActions(DetailFamily.CURRENT));
+		assertEquals(List.of(MOVE_UP), moveActions(DetailFamily.TIME));
+		assertEquals(List.of(), moveActions(DetailFamily.TEMPERATURE));
+	}
+
+	@Test
+	public void moveUp_reordersTheChoice_savesIt_andRedrawsTheNotification() {
+		AppPrefs.setNotificationDetails(context, List.of(DetailFamily.TEMPERATURE, DetailFamily.POWER_SOURCE));
+		postStatusNotification();
+		openPicker();
+		final View moved = row(DetailFamily.POWER_SOURCE);
+
+		assertTrue(talkBack(DetailFamily.POWER_SOURCE, R.id.notification_details_action_move_up));
+
+		assertEquals(List.of(DetailFamily.POWER_SOURCE, DetailFamily.TEMPERATURE), AppPrefs.notificationDetails(context));
+		assertEquals("POWER_SOURCE TEMPERATURE | SPEED CURRENT TIME", screen());
+		assertEquals("On battery" + DETAIL_SEPARATOR + TemperatureUtils.format(context, TEMPERATURE), statusText());
+		// The same view travels up, so TalkBack's focus goes with the row it just moved.
+		assertSame(moved, row(DetailFamily.POWER_SOURCE));
+	}
+
+	@Test
+	public void moveUp_arrivesAtTheOrderADragDoes() {
+		openPicker();
+		drag(DetailFamily.TIME, row(DetailFamily.CURRENT));
+		final List<DetailFamily> dragged = AppPrefs.notificationDetails(context);
+		assertEquals(List.of(DetailFamily.SPEED, DetailFamily.TIME, DetailFamily.CURRENT), dragged);
+
+		AppPrefs.setNotificationDetails(context, AppPrefs.DEFAULT_NOTIFICATION_DETAILS);
+		openPicker();
+		talkBack(DetailFamily.TIME, R.id.notification_details_action_move_up);
+
+		assertEquals(dragged, AppPrefs.notificationDetails(context));
+	}
+
+	@Test
+	public void aReorder_survivesTheScreenBeingRecreated() {
+		openPicker();
+		talkBack(DetailFamily.TIME, R.id.notification_details_action_move_up);
+
+		controller.recreate();
+		shadowOf(Looper.getMainLooper()).idle();
+
+		assertEquals("SPEED TIME CURRENT | TEMPERATURE POWER_SOURCE", screen());
+	}
+
+	@Test
+	public void moveDown_isTheMirrorOfMoveUp() {
+		openPicker();
+		assertTrue(talkBack(DetailFamily.SPEED, R.id.notification_details_action_move_down));
+		assertEquals(List.of(DetailFamily.CURRENT, DetailFamily.SPEED, DetailFamily.TIME), AppPrefs.notificationDetails(context));
+	}
+
+	@Test
+	public void thePreview_showsTheNotificationTheChoiceMakes_andFollowsAMove() {
+		AppPrefs.setNotificationDetails(context, List.of(DetailFamily.TEMPERATURE, DetailFamily.POWER_SOURCE));
+		postStatusNotification();
+		openPicker();
+		assertEquals(String.valueOf(posted().extras.getCharSequence(Notification.EXTRA_TITLE)), previewTitle().getText().toString());
+		assertEquals(TemperatureUtils.format(context, TEMPERATURE) + DETAIL_SEPARATOR + "On battery", previewLine().getText().toString());
+
+		talkBack(DetailFamily.POWER_SOURCE, R.id.notification_details_action_move_up);
+
+		assertEquals("On battery" + DETAIL_SEPARATOR + TemperatureUtils.format(context, TEMPERATURE), previewLine().getText().toString());
+		assertEquals(statusText(), previewLine().getText().toString());
+	}
+
+	@Test
+	public void thePreview_followsADrag_beforeTheDropSavesIt() {
+		AppPrefs.setNotificationDetails(context, List.of(DetailFamily.TEMPERATURE, DetailFamily.POWER_SOURCE));
+		openPicker();
+		final Finger finger = new Finger(DetailFamily.TEMPERATURE);
+
+		finger.moveOver(row(DetailFamily.POWER_SOURCE));
+
+		assertEquals("On battery" + DETAIL_SEPARATOR + TemperatureUtils.format(context, TEMPERATURE), previewLine().getText().toString());
+		assertEquals("saved before the drop", List.of(DetailFamily.TEMPERATURE, DetailFamily.POWER_SOURCE), AppPrefs.notificationDetails(context));
+
+		finger.letGo();
+
+		assertEquals(List.of(DetailFamily.POWER_SOURCE, DetailFamily.TEMPERATURE), AppPrefs.notificationDetails(context));
+	}
+
+	@Test
+	public void thePreview_followsTheBattery_whileThePickerIsOpen() {
+		openPicker();
+		publishBattery(412);
+		shadowOf(Looper.getMainLooper()).idle();
+		// No rate yet, so the default choice falls back to the temperature.
+		assertEquals(TemperatureUtils.format(context, 412), previewLine().getText().toString());
+	}
+
+	@Test
+	public void thePreview_readsToTalkBackAsOneItem_namedForWhatItIs() {
+		// Read line by line and unnamed, it would sound like a notification had just arrived.
+		openPicker();
+		final AccessibilityNodeInfoCompat node = node(controller.get().findViewById(R.id.notification_details_preview));
+		assertTrue(node.isScreenReaderFocusable());
+		assertEquals(context.getString(R.string.notification_details_preview), String.valueOf(node.getRoleDescription()));
+	}
+
+	@Test
+	public void anEmptyChoice_previewsTheTitleAlone() {
+		openPicker();
+		tap(DetailFamily.SPEED);
+		tap(DetailFamily.CURRENT);
+		tap(DetailFamily.TIME);
+		assertEquals(View.VISIBLE, previewTitle().getVisibility());
+		assertEquals(View.GONE, previewLine().getVisibility());
+	}
+
+	@Test
+	public void reset_restoresTheDefault_andRedrawsTheNotification() {
+		AppPrefs.setNotificationDetails(context, List.of(DetailFamily.POWER_SOURCE, DetailFamily.TEMPERATURE));
+		postStatusNotification();
+		openPicker();
+
+		assertTrue(toolbarMenu().performIdentifierAction(R.id.action_reset_notification_details, 0));
+		shadowOf(Looper.getMainLooper()).idle();
+
+		assertEquals(List.of(DetailFamily.SPEED, DetailFamily.CURRENT, DetailFamily.TIME), AppPrefs.notificationDetails(context));
+		assertEquals("SPEED CURRENT TIME | TEMPERATURE POWER_SOURCE", screen());
+		// No rate yet, so the default choice falls back to the temperature.
+		assertEquals(TemperatureUtils.format(context, TEMPERATURE), statusText());
+	}
+
+	@Test
+	public void reset_isGreyedOut_whileTheChoiceIsTheDefault() {
+		openPicker();
+		assertFalse(resetItem().isEnabled());
+		assertFalse("a greyed-out Reset still acted", toolbarMenu().performIdentifierAction(R.id.action_reset_notification_details, 0));
+
+		// The menu is rebuilt when it changes, so each look finds the item afresh.
+		tap(DetailFamily.SPEED);
+		assertTrue(resetItem().isEnabled());
+	}
+
+	@Test
+	public void reset_leavesTheToolbar_withThePicker() {
+		openGeneralFromTheRoot();
+		openThePickerFromGeneral();
+		assertNotNull(toolbarMenu().findItem(R.id.action_reset_notification_details));
+
+		controller.get().getOnBackPressedDispatcher().onBackPressed();
+		shadowOf(Looper.getMainLooper()).idle();
+
+		assertNull(toolbarMenu().findItem(R.id.action_reset_notification_details));
 	}
 
 	@Test
@@ -106,11 +352,13 @@ public class NotificationDetailsPickerTest {
 		openPicker();
 		assertFalse(row(DetailFamily.TEMPERATURE).isEnabled());
 		assertFalse(row(DetailFamily.POWER_SOURCE).isEnabled());
+		assertFalse("the handle stays lit on a row that cannot move", handle(DetailFamily.TEMPERATURE).isEnabled());
 		assertTrue(row(DetailFamily.CURRENT).isEnabled());
 
 		tap(DetailFamily.CURRENT);
 		assertTrue(row(DetailFamily.TEMPERATURE).isEnabled());
 		assertTrue(row(DetailFamily.POWER_SOURCE).isEnabled());
+		assertTrue(handle(DetailFamily.TEMPERATURE).isEnabled());
 	}
 
 	@Test
@@ -182,7 +430,7 @@ public class NotificationDetailsPickerTest {
 		});
 		publishBattery(412);
 		shadowOf(Looper.getMainLooper()).idle();
-		assertEquals(List.of(DetailFamily.TEMPERATURE.ordinal()), redrawn);
+		assertEquals(List.of(list().getChildAdapterPosition(row(DetailFamily.TEMPERATURE))), redrawn);
 	}
 
 	@Test
@@ -238,6 +486,7 @@ public class NotificationDetailsPickerTest {
 	public void aTap_redrawsTheStatusNotification_whileThePickerIsStillOpen() {
 		// Pulling the shade down over the picker doesn't pause it, so a redraw saved for the way out would show the old line meanwhile.
 		postStatusNotification();
+		assertEquals(TemperatureUtils.format(context, TEMPERATURE), statusText());
 		openPicker();
 		tap(DetailFamily.SPEED);
 		tap(DetailFamily.CURRENT);
@@ -368,7 +617,7 @@ public class NotificationDetailsPickerTest {
 	private void postStatusNotification() {
 		final BatteryDO batteryDO = SystemService.getBatteryInfo(context);
 		NotificationService.updateOngoingNotification(context, batteryDO, BatteryRateTracker.getRate(context, batteryDO));
-		assertEquals(TemperatureUtils.format(context, TEMPERATURE), statusText());
+		posted();
 	}
 
 	private Notification posted() {
@@ -406,18 +655,142 @@ public class NotificationDetailsPickerTest {
 		return entry;
 	}
 
+	/** The toolbar's menu, as the options menu last laid it out. */
+	private Menu toolbarMenu() {
+		shadowOf(Looper.getMainLooper()).idle();
+		return ((Toolbar) controller.get().findViewById(R.id.toolbar)).getMenu();
+	}
+
+	private MenuItem resetItem() {
+		final MenuItem reset = toolbarMenu().findItem(R.id.action_reset_notification_details);
+		assertNotNull("the toolbar has no Reset", reset);
+		return reset;
+	}
+
 	private RecyclerView list() {
 		return controller.get().findViewById(R.id.notification_details_list);
 	}
 
+	/** A family's row, found the way a user finds it: by the name it shows. */
 	private View row(DetailFamily family) {
-		final RecyclerView.ViewHolder holder = list().findViewHolderForAdapterPosition(family.ordinal());
-		assertNotNull("no row is laid out for " + family, holder);
-		return holder.itemView;
+		final String name = context.getString(NotificationDetailsFragment.labelRes(family));
+		for (final View row : rowsFromTheTop()) {
+			final TextView label = row.findViewById(R.id.detail_label);
+			if (label != null && name.contentEquals(label.getText())) {
+				return row;
+			}
+		}
+		throw new AssertionError("no row is laid out for " + family);
+	}
+
+	/** The list as it reads from the top: each row's family, and "|" for the divider between the chosen rows and the rest. */
+	private String screen() {
+		final List<String> shown = new ArrayList<>();
+		for (final View row : rowsFromTheTop()) {
+			shown.add(row.getId() == R.id.notification_details_divider ? "|" : familyOf(row).name());
+		}
+		return String.join(" ", shown);
+	}
+
+	private DetailFamily familyOf(View row) {
+		final CharSequence name = ((TextView) row.findViewById(R.id.detail_label)).getText();
+		for (final DetailFamily family : DetailFamily.values()) {
+			if (context.getString(NotificationDetailsFragment.labelRes(family)).contentEquals(name)) {
+				return family;
+			}
+		}
+		throw new AssertionError("a row shows an unknown name: " + name);
+	}
+
+	/** The list's children in on-screen order, by where layout put them rather than where a move animation has them right now. */
+	private List<View> rowsFromTheTop() {
+		final RecyclerView list = list();
+		final List<View> rows = new ArrayList<>();
+		for (int index = 0; index < list.getChildCount(); index++) {
+			rows.add(list.getChildAt(index));
+		}
+		rows.sort(Comparator.comparingInt(View::getTop));
+		return rows;
 	}
 
 	private static AccessibilityNodeInfoCompat node(View row) {
 		return AccessibilityNodeInfoCompat.wrap(row.createAccessibilityNodeInfo());
+	}
+
+	/** The move actions TalkBack offers on a family's row, each as the label it reads out, in the order the row lists them. */
+	private List<String> moveActions(DetailFamily family) {
+		final List<String> labels = new ArrayList<>();
+		for (final AccessibilityNodeInfoCompat.AccessibilityActionCompat action : node(row(family)).getActionList()) {
+			if (action.getId() == R.id.notification_details_action_move_up || action.getId() == R.id.notification_details_action_move_down) {
+				labels.add(String.valueOf(action.getLabel()));
+			}
+		}
+		return labels;
+	}
+
+	/** Drag a family's row by its handle into another row's place and let go there. */
+	private void drag(DetailFamily family, View target) {
+		final Finger finger = new Finger(family);
+		finger.moveOver(target);
+		finger.letGo();
+	}
+
+	/**
+	 * A finger on a row's handle, driving ItemTouchHelper through the list's real touch handling: it presses on construction, makes one stroke in small steps
+	 * with a frame between each so the list lays out as it goes, and lets go where the stroke ended.
+	 * <p>
+	 * The stroke must not take the row past the first or last row. That means holding it beyond the list's edge, where ItemTouchHelper scrolls the list and
+	 * re-posts itself for the next frame, and under Robolectric that loop never ends: the run dies of an OutOfMemoryError.
+	 */
+	private final class Finger {
+
+		private static final int STEPS = 12;
+
+		private final long downTime = SystemClock.uptimeMillis();
+		private final View row;
+		private final float x;
+		private final float startY;
+		private float y;
+
+		Finger(DetailFamily family) {
+			row = row(family);
+			final View handle = handle(family);
+			x = row.getLeft() + handle.getLeft() + handle.getWidth() / 2f;
+			startY = row.getTop() + handle.getTop() + handle.getHeight() / 2f;
+			y = startY;
+			touch(MotionEvent.ACTION_DOWN);
+		}
+
+		/** Move until the row is just past the target's far edge. Measured from the layout before the stroke, so it is the finger's one stroke. */
+		void moveOver(View target) {
+			final float distance = target.getTop() < row.getTop() ? target.getTop() - row.getTop() - 2 : target.getBottom() - row.getBottom() + 2;
+			assertTrue("a drag past the list's edge autoscrolls without end under Robolectric",
+					row.getTop() + distance >= 0 && row.getBottom() + distance <= list().getHeight());
+			for (int step = 1; step <= STEPS; step++) {
+				y = startY + distance * step / STEPS;
+				touch(MotionEvent.ACTION_MOVE);
+			}
+		}
+
+		void letGo() {
+			touch(MotionEvent.ACTION_UP);
+			// Long enough for the dropped row to settle back into place, which is when the drop is saved.
+			shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(1));
+		}
+
+		private void touch(int action) {
+			final MotionEvent event = MotionEvent.obtain(downTime, SystemClock.uptimeMillis(), action, x, y, 0);
+			list().dispatchTouchEvent(event);
+			event.recycle();
+			shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(20));
+		}
+	}
+
+	/** Perform an accessibility action on a family's row, as TalkBack does from its actions menu. */
+	private boolean talkBack(DetailFamily family, int action) {
+		final boolean handled = row(family).performAccessibilityAction(action, null);
+		shadowOf(Looper.getMainLooper()).idle();
+		return handled;
 	}
 
 	/** Where a view's content begins across the window: its left edge plus its start padding, on a left-to-right screen. */
@@ -440,6 +813,10 @@ public class NotificationDetailsPickerTest {
 		return row(family).findViewById(R.id.detail_checkbox);
 	}
 
+	private View handle(DetailFamily family) {
+		return row(family).findViewById(R.id.detail_drag_handle);
+	}
+
 	private String label(DetailFamily family) {
 		return ((TextView) row(family).findViewById(R.id.detail_label)).getText().toString();
 	}
@@ -450,5 +827,13 @@ public class NotificationDetailsPickerTest {
 
 	private TextView header() {
 		return controller.get().findViewById(R.id.notification_details_header);
+	}
+
+	private TextView previewTitle() {
+		return controller.get().findViewById(R.id.notification_details_preview_title);
+	}
+
+	private TextView previewLine() {
+		return controller.get().findViewById(R.id.notification_details_preview_line);
 	}
 }

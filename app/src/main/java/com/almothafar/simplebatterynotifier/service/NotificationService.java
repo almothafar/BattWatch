@@ -414,26 +414,36 @@ public final class NotificationService {
 	}
 
 	/**
-	 * Each family's segment as the collapsed line would render it from a battery reading — the notification-details picker's live-value column (#357).
+	 * The status notification's title, and each family's segment as the collapsed line would render it, from a battery reading — the notification-details
+	 * picker's live-value column (#357) and its preview (#358), which orders the segments into a line with {@link OngoingStatusContent#detailLine}.
 	 *
-	 * @param context The picker's own context, so the segments are worded in the language the screen is showing
+	 * @param context The picker's own context, so the text is worded in the language the screen is showing
 	 * @param battery The {@code ACTION_BATTERY_CHANGED} broadcast just received, or the sticky copy registering for it returned; null when there is none
-	 * @return each family that has something to show, mapped to its segment; empty when there is no battery reading
+	 * @return the title and segments; null when there is no battery reading
 	 */
-	public static Map<DetailFamily, String> liveDetailSegments(Context context, Intent battery) {
-		final Map<DetailFamily, String> segments = new EnumMap<>(DetailFamily.class);
+	public static LiveStatus liveStatus(Context context, Intent battery) {
 		final BatteryDO batteryDO = SystemService.getBatteryInfo(context, battery);
 		if (isNull(batteryDO)) {
-			return segments;
+			return null;
 		}
 		final BatteryRateTracker.BatteryRate rate = BatteryRateTracker.getRate(context, batteryDO);
+		final Map<DetailFamily, String> segments = new EnumMap<>(DetailFamily.class);
 		for (final DetailFamily family : DetailFamily.values()) {
 			final String segment = OngoingStatusContent.detailSegment(context, family, batteryDO, rate);
 			if (nonNull(segment)) {
 				segments.put(family, segment);
 			}
 		}
-		return segments;
+		return new LiveStatus(OngoingStatusContent.statusTitle(context, batteryDO), segments);
+	}
+
+	/**
+	 * One battery reading as the status notification renders it, before a choice of families orders it into a line.
+	 *
+	 * @param title    the notification's title, e.g. "85% · Discharging"
+	 * @param segments each family that has something to show, mapped to its segment of the collapsed line
+	 */
+	public record LiveStatus(String title, Map<DetailFamily, String> segments) {
 	}
 
 	// ========== Private Helper Methods ==========
