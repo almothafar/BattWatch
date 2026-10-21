@@ -259,6 +259,9 @@
     <!-- #358: TalkBack actions on a chosen row, the screen-reader path for reordering since drag is out of reach -->
     <string name="notification_details_move_up">Move up</string>
     <string name="notification_details_move_down">Move down</string>
+    <!-- #358: what TalkBack reads as a chosen row's state in place of plain "checked", so a move is heard. %1$s is its place, %2$s how many are
+         chosen — both Western-digit numbers (String.valueOf), 0-9 in every locale (#96) -->
+    <string name="notification_details_place">Checked, %1$s of %2$s</string>
     <!-- #358: the picker's toolbar action; the description is what TalkBack reads for it -->
     <string name="notification_details_reset">Reset</string>
     <string name="notification_details_reset_description">Reset to default</string>

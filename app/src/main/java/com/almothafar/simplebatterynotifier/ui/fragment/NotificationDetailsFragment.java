@@ -92,6 +92,8 @@ public class NotificationDetailsFragment extends Fragment {
 	private View preview;
 	private TextView previewTitle;
 	private TextView previewLine;
+	/** Scrolls the page under a row dragged to the screen's edge; the list lays out every row, so ItemTouchHelper's own edge scrolling cannot. */
+	private DragEdgeScroller edgeScroller;
 	/** Whether a change was saved since this visit began. Each one re-posts the status notification, and leaving owes it one more. */
 	private boolean savedThisVisit;
 
@@ -128,6 +130,7 @@ public class NotificationDetailsFragment extends Fragment {
 		list.setLayoutManager(new LinearLayoutManager(context));
 		list.setAdapter(adapter);
 		dragHelper.attachToRecyclerView(list);
+		edgeScroller = new DragEdgeScroller(view.findViewById(R.id.notification_details_page), list);
 		// Tied to this screen's view, so Reset leaves the toolbar with it.
 		requireActivity().addMenuProvider(new ResetMenu(), getViewLifecycleOwner(), Lifecycle.State.RESUMED);
 		if (list.getItemAnimator() instanceof final SimpleItemAnimator animator) {
@@ -262,8 +265,13 @@ public class NotificationDetailsFragment extends Fragment {
 			unchosen.add(unchosenIndex(to), family);
 		}
 		adapter.notifyItemMoved(from, to);
-		// The preview follows the drag, so the line can be judged before letting go.
-		showPreview();
+		if (wasChosen != nowChosen) {
+			// Crossing the line ticks or unticks the row there and then, which can move the count past the cap and grey or light every unchosen row.
+			render();
+		} else {
+			// The preview follows the drag, so the line can be judged before letting go.
+			showPreview();
+		}
 	}
 
 	/**
@@ -377,6 +385,16 @@ public class NotificationDetailsFragment extends Fragment {
 			}
 		}
 		showPreview();
+	}
+
+	/** What TalkBack reads as a chosen row's state, "Checked, 2 of 3"; null for an unchosen row, which keeps TalkBack's own "not checked". */
+	private String placeOf(DetailFamily family) {
+		final int place = chosen.indexOf(family);
+		if (place < 0) {
+			return null;
+		}
+		// Formatted rather than passed as ints, as the header is: getString formats with the configuration locale, which prints ٢ on ar-EG (#96).
+		return getString(R.string.notification_details_place, isolate(String.valueOf(place + 1)), isolate(String.valueOf(chosen.size())));
 	}
 
 	/** A family's live value; null when it has nothing to show yet, or there is no reading. */
@@ -497,10 +515,13 @@ public class NotificationDetailsFragment extends Fragment {
 		private void bindRow(RowHolder holder, DetailFamily family) {
 			final boolean checked = chosen.contains(family);
 			holder.bind(getString(labelRes(family)), segmentOf(family), checked, checked || chosen.size() < DetailFamily.MAX_SELECTED);
+			// Set on the view, not just reported when TalkBack asks: a change on the focused row is announced, which is how a Move up is heard.
+			ViewCompat.setStateDescription(holder.itemView, placeOf(family));
 			holder.itemView.setOnClickListener(row -> {
 				applyTap(family);
 				// Rebinding waits for the next layout pass; the click's accessibility event goes out before it, so the row has to say its new state now.
 				holder.checkBox.setChecked(chosen.contains(family));
+				ViewCompat.setStateDescription(holder.itemView, placeOf(family));
 			});
 		}
 	}
@@ -598,7 +619,7 @@ public class NotificationDetailsFragment extends Fragment {
 		}
 
 		/**
-		 * Note the choice as a drag begins.
+		 * Note the choice as a drag begins, and have the page follow the drag to the screen's edges until it ends.
 		 *
 		 * @param viewHolder  the row picked up, or null when a drag or swipe ends
 		 * @param actionState what the helper is now doing
@@ -606,9 +627,11 @@ public class NotificationDetailsFragment extends Fragment {
 		@Override
 		public void onSelectedChanged(RecyclerView.ViewHolder viewHolder, int actionState) {
 			super.onSelectedChanged(viewHolder, actionState);
-			if (actionState == ItemTouchHelper.ACTION_STATE_DRAG) {
+			final boolean dragging = actionState == ItemTouchHelper.ACTION_STATE_DRAG;
+			if (dragging) {
 				before = List.copyOf(chosen);
 			}
+			edgeScroller.setDragging(dragging);
 		}
 
 		/**
