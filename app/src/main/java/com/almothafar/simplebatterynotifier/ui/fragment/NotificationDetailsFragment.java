@@ -251,14 +251,15 @@ public class NotificationDetailsFragment extends Fragment {
 	 */
 	private void moveRow(int from, int to) {
 		final DetailFamily family = familyAt(from);
-		final boolean wasChosen = from < chosen.size();
+		final boolean wasChosen = isChosenPlace(from);
 		// Taking a chosen row out moves the divider up a place, so landing on the divider's old place puts the row just below it.
 		final boolean nowChosen = wasChosen ? to < chosen.size() : to <= chosen.size();
 		(wasChosen ? chosen : unchosen).remove(family);
 		if (nowChosen) {
 			chosen.add(to, family);
 		} else {
-			unchosen.add(to - chosen.size() - 1, family);
+			// Counted against the divider as it stands now, after the row left its side.
+			unchosen.add(unchosenIndex(to), family);
 		}
 		adapter.notifyItemMoved(from, to);
 		// The preview follows the drag, so the line can be judged before letting go.
@@ -270,7 +271,7 @@ public class NotificationDetailsFragment extends Fragment {
 	 *
 	 * @param before the choice when the drag began
 	 */
-	private void dropped(List<DetailFamily> before) {
+	private void finishDrag(List<DetailFamily> before) {
 		final List<DetailFamily> after = List.copyOf(chosen);
 		showChoice(after);
 		if (after.equals(before)) {
@@ -340,7 +341,12 @@ public class NotificationDetailsFragment extends Fragment {
 
 	/** The family on a row, by its place in the list. */
 	private DetailFamily familyAt(int position) {
-		return position < chosen.size() ? chosen.get(position) : unchosen.get(position - chosen.size() - 1);
+		return isChosenPlace(position) ? chosen.get(position) : unchosen.get(unchosenIndex(position));
+	}
+
+	/** Where a place below the divider falls in {@link #unchosen}. */
+	private int unchosenIndex(int position) {
+		return position - chosen.size() - 1;
 	}
 
 	/** A family's place in the list, past the divider when it is not chosen. */
@@ -614,7 +620,7 @@ public class NotificationDetailsFragment extends Fragment {
 		@Override
 		public void clearView(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
 			super.clearView(recyclerView, viewHolder);
-			dropped(before);
+			finishDrag(before);
 		}
 	}
 
@@ -656,12 +662,12 @@ public class NotificationDetailsFragment extends Fragment {
 					// Asked for each time TalkBack reads the row rather than set when it is bound: a move shifts its neighbours without rebinding them.
 					final int position = getBindingAdapterPosition();
 					if (canMove(position, -1)) {
-						final String label = getString(R.string.notification_details_move_up);
-						info.addAction(new AccessibilityActionCompat(R.id.notification_details_action_move_up, label));
+						final String moveUp = getString(R.string.notification_details_move_up);
+						info.addAction(new AccessibilityActionCompat(R.id.notification_details_action_move_up, moveUp));
 					}
 					if (canMove(position, 1)) {
-						final String label = getString(R.string.notification_details_move_down);
-						info.addAction(new AccessibilityActionCompat(R.id.notification_details_action_move_down, label));
+						final String moveDown = getString(R.string.notification_details_move_down);
+						info.addAction(new AccessibilityActionCompat(R.id.notification_details_action_move_down, moveDown));
 					}
 				}
 

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The notification-details picker (#357, #358). Same card-on-neutral look as the preference screens (PreferenceCardDecoration), built from views because
-     its rows are dragged, which a preference list cannot do. Overdraw is accepted, not fixed: every preference screen paints this same
-     backdrop over the window background, from code, and this one has to match them.
+<!-- The notification-details picker (#357, #358). Same card-on-neutral look as the preference screens (PreferenceCardDecoration), built from views because its
+     rows are dragged, which a preference list cannot do. Overdraw is accepted, not fixed: every preference screen paints this same backdrop over the window
+     background, from code, and this one has to match them.
      The screen scrolls as a whole, as a preference screen does, and the list lays out every row: on a short phone at a large font size the preview and the
      header would otherwise leave the list a sliver to scroll inside. -->
 <androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"

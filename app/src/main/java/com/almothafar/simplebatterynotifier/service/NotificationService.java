@@ -28,6 +28,7 @@ import com.almothafar.simplebatterynotifier.util.AppPrefs;
 import com.almothafar.simplebatterynotifier.util.BatteryPercentFormatter;
 import com.almothafar.simplebatterynotifier.util.TemperatureUtils;
 
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
 
@@ -437,15 +438,6 @@ public final class NotificationService {
 		return new LiveStatus(OngoingStatusContent.statusTitle(context, batteryDO), segments);
 	}
 
-	/**
-	 * One battery reading as the status notification renders it, before a choice of families orders it into a line.
-	 *
-	 * @param title    the notification's title, e.g. "85% · Discharging"
-	 * @param segments each family that has something to show, mapped to its segment of the collapsed line
-	 */
-	public record LiveStatus(String title, Map<DetailFamily, String> segments) {
-	}
-
 	// ========== Private Helper Methods ==========
 
 	private static boolean lacksOngoingNotification(Context context) {
@@ -768,5 +760,18 @@ public final class NotificationService {
 		final Intent intent = new Intent(context, MainActivity.class);
 		final int flags = PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE;
 		return PendingIntent.getActivity(context, 0, intent, flags);
+	}
+
+	/**
+	 * One battery reading as the status notification renders it, before a choice of families orders it into a line.
+	 *
+	 * @param title    the notification's title, e.g. "85% · Discharging"
+	 * @param segments each family that has something to show, mapped to its segment of the collapsed line; read-only
+	 */
+	public record LiveStatus(String title, Map<DetailFamily, String> segments) {
+		/** Keeps the segments read-only, so whoever holds the reading cannot change it under anyone else. */
+		public LiveStatus {
+			segments = Collections.unmodifiableMap(segments);
+		}
 	}
 }

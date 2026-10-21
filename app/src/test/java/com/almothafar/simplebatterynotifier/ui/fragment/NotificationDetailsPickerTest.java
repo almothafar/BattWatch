@@ -245,10 +245,17 @@ public class NotificationDetailsPickerTest {
 	}
 
 	@Test
-	public void moveDown_isTheMirrorOfMoveUp() {
+	public void moveDown_arrivesAtTheOrderADragDoes() {
+		openPicker();
+		drag(DetailFamily.SPEED, row(DetailFamily.CURRENT));
+		final List<DetailFamily> dragged = AppPrefs.notificationDetails(context);
+		assertEquals(List.of(DetailFamily.CURRENT, DetailFamily.SPEED, DetailFamily.TIME), dragged);
+
+		AppPrefs.setNotificationDetails(context, AppPrefs.DEFAULT_NOTIFICATION_DETAILS);
 		openPicker();
 		assertTrue(talkBack(DetailFamily.SPEED, R.id.notification_details_action_move_down));
-		assertEquals(List.of(DetailFamily.CURRENT, DetailFamily.SPEED, DetailFamily.TIME), AppPrefs.notificationDetails(context));
+
+		assertEquals(dragged, AppPrefs.notificationDetails(context));
 	}
 
 	@Test
@@ -673,10 +680,8 @@ public class NotificationDetailsPickerTest {
 
 	/** A family's row, found the way a user finds it: by the name it shows. */
 	private View row(DetailFamily family) {
-		final String name = context.getString(NotificationDetailsFragment.labelRes(family));
 		for (final View row : rowsFromTheTop()) {
-			final TextView label = row.findViewById(R.id.detail_label);
-			if (label != null && name.contentEquals(label.getText())) {
+			if (!isDivider(row) && familyOf(row) == family) {
 				return row;
 			}
 		}
@@ -687,11 +692,16 @@ public class NotificationDetailsPickerTest {
 	private String screen() {
 		final List<String> shown = new ArrayList<>();
 		for (final View row : rowsFromTheTop()) {
-			shown.add(row.getId() == R.id.notification_details_divider ? "|" : familyOf(row).name());
+			shown.add(isDivider(row) ? "|" : familyOf(row).name());
 		}
 		return String.join(" ", shown);
 	}
 
+	private static boolean isDivider(View row) {
+		return row.getId() == R.id.notification_details_divider;
+	}
+
+	/** The family a row shows, by its name. */
 	private DetailFamily familyOf(View row) {
 		final CharSequence name = ((TextView) row.findViewById(R.id.detail_label)).getText();
 		for (final DetailFamily family : DetailFamily.values()) {
@@ -779,7 +789,13 @@ public class NotificationDetailsPickerTest {
 		}
 
 		private void touch(int action) {
-			final MotionEvent event = MotionEvent.obtain(downTime, SystemClock.uptimeMillis(), action, x, y, 0);
+			final MotionEvent event = MotionEvent.obtain(
+					downTime,
+					SystemClock.uptimeMillis(),
+					action,
+					x,
+					y,
+					0);
 			list().dispatchTouchEvent(event);
 			event.recycle();
 			shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(20));
