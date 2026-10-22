@@ -515,8 +515,7 @@ public class NotificationDetailsPickerTest {
 
 	@Test
 	public void reset_leavesTheToolbar_withThePicker() {
-		openGeneralFromTheRoot();
-		openThePickerFromGeneral();
+		openThePickerFromTheRoot();
 		assertNotNull(toolbarMenu().findItem(R.id.action_reset_notification_details));
 
 		controller.get().getOnBackPressedDispatcher().onBackPressed();
@@ -719,24 +718,16 @@ public class NotificationDetailsPickerTest {
 	}
 
 	@Test
-	public void generalScreen_summarisesTheChoice() {
-		final Preference entry = generalScreenEntry();
-		assertEquals("Speed · Current · Time", String.valueOf(entry.getSummary()));
-		AppPrefs.setNotificationDetails(context, List.of());
-		assertEquals(context.getString(R.string.notification_details_summary_none), String.valueOf(entry.getSummary()));
+	public void theRootScreen_opensThePicker_asTheStatusNotificationScreen() {
+		openThePickerFromTheRoot();
+
+		assertTrue(controller.get().getSupportFragmentManager().findFragmentById(R.id.settings_container) instanceof NotificationDetailsFragment);
+		assertEquals("Status Notification", String.valueOf(controller.get().getTitle()));
 	}
 
 	@Test
-	public void goingBack_fromThePicker_restoresTheTitleOfTheScreenBelow() {
-		// The picker is the first settings screen two levels deep, so Back lands on another sub-screen rather than the root — the one case the old
-		// "reset the title at the root" rule never reached.
-		openGeneralFromTheRoot();
-		openThePickerFromGeneral();
-		assertEquals(context.getString(R.string.notification_details_title), String.valueOf(controller.get().getTitle()));
-
-		controller.get().getOnBackPressedDispatcher().onBackPressed();
-		shadowOf(Looper.getMainLooper()).idle();
-		assertEquals(context.getString(R.string.pref_header_general), String.valueOf(controller.get().getTitle()));
+	public void goingBack_fromThePicker_restoresTheSettingsTitle() {
+		openThePickerFromTheRoot();
 
 		controller.get().getOnBackPressedDispatcher().onBackPressed();
 		shadowOf(Looper.getMainLooper()).idle();
@@ -745,30 +736,25 @@ public class NotificationDetailsPickerTest {
 
 	@Test
 	public void afterALanguageSwitch_theTitlesFollowIt_onTheWayBackToo() {
-		// Switching the app's language (on General itself) recreates Settings with General on top. A title kept as text from before the switch comes back in
-		// the old language: right after the switch, and on every Back to General from the picker.
-		final String english = context.getString(R.string.pref_header_general);
+		// Switching the app's language (on General) recreates Settings with General on top. A title kept as text from before the switch comes back in the old
+		// language: right after the switch, and on every Back to a screen below.
+		final String english = context.getString(R.string.title_activity_settings);
 		openGeneralFromTheRoot();
 		RuntimeEnvironment.setQualifiers("+ar-rEG");
 		controller.recreate();
 		shadowOf(Looper.getMainLooper()).idle();
-		final String general = controller.get().getString(R.string.pref_header_general);
-		assertNotEquals("the language did not switch", english, general);
-		assertEquals(general, String.valueOf(controller.get().getTitle()));
+		final String settings = controller.get().getString(R.string.title_activity_settings);
+		assertNotEquals("the language did not switch", english, settings);
 
-		openThePickerFromGeneral();
 		controller.get().getOnBackPressedDispatcher().onBackPressed();
 		shadowOf(Looper.getMainLooper()).idle();
-		assertEquals(general, String.valueOf(controller.get().getTitle()));
-	}
+		assertEquals(settings, String.valueOf(controller.get().getTitle()));
 
-	@Test
-	public void generalScreen_opensThePicker() {
-		generalScreenEntry().performClick();
+		openThePickerFromTheRoot();
+		assertEquals("إشعار الحالة", String.valueOf(controller.get().getTitle()));
+		controller.get().getOnBackPressedDispatcher().onBackPressed();
 		shadowOf(Looper.getMainLooper()).idle();
-
-		assertTrue(controller.get().getSupportFragmentManager().findFragmentById(R.id.settings_container) instanceof NotificationDetailsFragment);
-		assertEquals(context.getString(R.string.notification_details_title), String.valueOf(controller.get().getTitle()));
+		assertEquals(settings, String.valueOf(controller.get().getTitle()));
 	}
 
 	// --- Helpers ----------------------------------------------------------------------------------
@@ -815,21 +801,21 @@ public class NotificationDetailsPickerTest {
 
 	/** Open General the way a user does, from the root screen's row, so the back stack is the one production builds. */
 	private void openGeneralFromTheRoot() {
+		rootScreenEntry("general").performClick();
+		shadowOf(Looper.getMainLooper()).idle();
+	}
+
+	/** Open the picker the way a user does, from its row on the root screen. */
+	private void openThePickerFromTheRoot() {
+		rootScreenEntry(context.getString(R.string._pref_key_notification_details)).performClick();
+		shadowOf(Looper.getMainLooper()).idle();
+	}
+
+	private Preference rootScreenEntry(String key) {
 		final Fragment root = controller.get().getSupportFragmentManager().findFragmentById(R.id.settings_container);
 		assertTrue("the root settings screen is not showing", root instanceof SettingsActivity.HeaderFragment);
-		((PreferenceFragmentCompat) root).findPreference("general").performClick();
-		shadowOf(Looper.getMainLooper()).idle();
-	}
-
-	private void openThePickerFromGeneral() {
-		SettingsScreen.current(controller).findPreference(context.getString(R.string._pref_key_notification_details)).performClick();
-		shadowOf(Looper.getMainLooper()).idle();
-	}
-
-	private Preference generalScreenEntry() {
-		SettingsScreen.show(controller, R.string.pref_category_general);
-		final Preference entry = SettingsScreen.current(controller).findPreference(context.getString(R.string._pref_key_notification_details));
-		assertNotNull("the General screen has no Notification details entry", entry);
+		final Preference entry = ((PreferenceFragmentCompat) root).findPreference(key);
+		assertNotNull("the root settings screen has no " + key + " entry", entry);
 		return entry;
 	}
 

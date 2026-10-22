@@ -129,7 +129,7 @@ public class NotificationDetailsFragment extends Fragment {
 	public void onResume() {
 		super.onResume();
 		final Context context = requireContext();
-		requireActivity().setTitle(R.string.notification_details_title);
+		requireActivity().setTitle(R.string.pref_header_status_notification);
 		savedThisVisit = false;
 		// A protected system broadcast, so it takes no export flag — the monitoring service registers for it the same way. Registering returns the current
 		// sticky reading, which shows the values without asking the system for it a second time.
@@ -149,20 +149,6 @@ public class NotificationDetailsFragment extends Fragment {
 			// middle of the run.
 			refreshNotification(context);
 		}
-	}
-
-	/**
-	 * The General screen's summary for a choice: the family names in order, e.g. "Speed · Current · Time".
-	 *
-	 * @param context  context to resolve the names against
-	 * @param families the chosen families, in display order
-	 * @return the summary line
-	 */
-	static String summaryOf(Context context, List<DetailFamily> families) {
-		if (families.isEmpty()) {
-			return context.getString(R.string.notification_details_summary_none);
-		}
-		return families.stream().map(family -> context.getString(labelRes(family))).collect(Collectors.joining(OngoingStatusContent.DETAIL_SEPARATOR));
 	}
 
 	/**
@@ -187,8 +173,8 @@ public class NotificationDetailsFragment extends Fragment {
 	}
 
 	/**
-	 * The name a family goes by, in the picker and in the General screen's summary. Where the details table already names the same reading, this is its name,
-	 * so a family reads the same in the picker, the table and the pull-down.
+	 * The name a family goes by in the picker. Where the details table already names the same reading, this is its name, so a family reads the same in the
+	 * picker, the table and the pull-down.
 	 *
 	 * @param family a family
 	 * @return its name's string resource

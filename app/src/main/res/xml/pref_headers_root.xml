@@ -13,6 +13,17 @@
             android:value="@string/pref_category_general" />
     </Preference>
 
+    <!-- Opens the notification-details picker (#357), the status notification's own screen (#384). Not an alert, so it sits apart from Alerts and
+         Notification Behaviour (#112). SettingsActivity routes it by key; android:fragment is only there because PreferenceFragmentCompat ignores a click on a
+         row without one. -->
+    <Preference
+        android:fragment="com.almothafar.simplebatterynotifier.ui.fragment.NotificationDetailsFragment"
+        android:key="@string/_pref_key_notification_details"
+        android:persistent="false"
+        android:summary="@string/pref_header_summary_status_notification"
+        android:title="@string/pref_header_status_notification"
+        app:iconSpaceReserved="false" />
+
     <Preference
         android:fragment="com.almothafar.simplebatterynotifier.ui.fragment.GenericPreferenceFragment"
         android:key="alerts"

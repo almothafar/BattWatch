@@ -36,20 +36,4 @@
 
     </PreferenceCategory>
 
-    <!-- The ongoing status notification's content — not an alert, so it lives here (#112) -->
-    <PreferenceCategory
-        android:title="@string/pref_cat_title_status_notification"
-        app:iconSpaceReserved="false">
-
-        <!-- Opens the picker (#357). SettingsActivity routes it by key; android:fragment is only there because PreferenceFragmentCompat ignores a click on a
-             row without one. The summary is set in code, from the saved choice. -->
-        <Preference
-            android:fragment="com.almothafar.simplebatterynotifier.ui.fragment.NotificationDetailsFragment"
-            android:key="@string/_pref_key_notification_details"
-            android:persistent="false"
-            android:title="@string/notification_details_title"
-            app:iconSpaceReserved="false" />
-
-    </PreferenceCategory>
-
 </PreferenceScreen>
