@@ -24,6 +24,7 @@ import com.almothafar.simplebatterynotifier.model.ChargeSpeed;
 import com.almothafar.simplebatterynotifier.model.ChargeSpeedTier;
 import com.almothafar.simplebatterynotifier.model.DetailFamily;
 import com.almothafar.simplebatterynotifier.ui.MainActivity;
+import com.almothafar.simplebatterynotifier.util.AppLanguage;
 import com.almothafar.simplebatterynotifier.util.AppPrefs;
 import com.almothafar.simplebatterynotifier.util.BatteryPercentFormatter;
 import com.almothafar.simplebatterynotifier.util.TemperatureUtils;
@@ -49,6 +50,10 @@ import static java.util.Objects.nonNull;
  * </ul>
  * This class owns the notification IDs, the single shared alert-builder chain, the per-charge-style
  * delivery, and the per-level {@link NotificationConfig}.
+ * <p>
+ * Everything this class posts, the notifications and the charge toast, is worded through {@link AppLanguage#applyTo}, so it follows the in-app language below
+ * Android 13 too, where nothing else applies it outside the app's screens (#381); a new method that posts has to do the same. {@link #liveStatus} and
+ * {@link #refreshAlertChannelsIfAffected} need not: only a screen calls them, and AppCompat already words a screen's context in that language.
  */
 public final class NotificationService {
 	// Battery thresholds
@@ -82,20 +87,20 @@ public final class NotificationService {
 	/**
 	 * Send a battery status notification
 	 *
-	 * @param context      The application context
-	 * @param type         Which battery-level alert to send
-	 * @param levelPercent The battery level this alert fired at. The full-battery alert's copy depends
-	 * on it (#263): a charge that completed below the user's charge target must not claim the target was reached. The critical/warning alerts word themselves
-	 * from their configured thresholds and ignore it.
-	 * @param reminder     Whether this post repeats an alert the user has already been sent — today only the unplug reminder (#264). It re-posts the same
+	 * @param callerContext The caller's context; the alert is worded in the app's language whatever language it speaks (see {@link AppLanguage})
+	 * @param type          Which battery-level alert to send
+	 * @param levelPercent  The battery level this alert fired at. The full-battery alert's copy depends on it (#263): a charge that completed below the user's
+	 * charge target must not claim the target was reached. The critical/warning alerts word themselves from their configured thresholds and ignore it.
+	 * @param reminder      Whether this post repeats an alert the user has already been sent — today only the unplug reminder (#264). It re-posts the same
 	 * notification ID, and a re-post is silent unless it is allowed to alert again, so this is what decides whether the user is actually reminded or the shade
 	 * quietly updates behind their back.
 	 */
-	public static void sendNotification(Context context, AlertType type, int levelPercent, boolean reminder) {
+	public static void sendNotification(Context callerContext, AlertType type, int levelPercent, boolean reminder) {
 		if (isNull(type)) {
 			Log.w(TAG, "No alert type given, notification not sent");
 			return;
 		}
+		final Context context = AppLanguage.applyTo(callerContext);
 		if (lacksNotificationPermission(context)) {
 			Log.w(TAG, "Missing POST_NOTIFICATIONS permission, notification not sent");
 			return;
@@ -138,11 +143,12 @@ public final class NotificationService {
 	 *   <li>{@link #CHARGE_STYLE_NONE} — nothing at all.</li>
 	 * </ul>
 	 *
-	 * @param context  The application context
-	 * @param speed    The estimated charging speed (may be {@link ChargeSpeed#unknown()})
-	 * @param wireless true when charging over a wireless charger, false when wired
+	 * @param callerContext The caller's context; the message is worded in the app's language whatever language it speaks (see {@link AppLanguage})
+	 * @param speed         The estimated charging speed (may be {@link ChargeSpeed#unknown()})
+	 * @param wireless      true when charging over a wireless charger, false when wired
 	 */
-	public static void notifyChargeConnected(Context context, ChargeSpeed speed, boolean wireless) {
+	public static void notifyChargeConnected(Context callerContext, ChargeSpeed speed, boolean wireless) {
+		final Context context = AppLanguage.applyTo(callerContext);
 		final String content = chargeConnectedMessage(context, speed, wireless);
 		deliverPerChargeStyle(context, content, () -> postChargeNotification(context, content));
 	}
@@ -154,10 +160,11 @@ public final class NotificationService {
 	 * Honors the same quiet-hours and silent-mode preferences as the other alerts, reusing the
 	 * critical alert sound.
 	 *
-	 * @param context    The application context
-	 * @param rawTenthsC Battery temperature in tenths of a degree Celsius (as reported by BatteryManager)
+	 * @param callerContext The caller's context; the alert is worded in the app's language whatever language it speaks (see {@link AppLanguage})
+	 * @param rawTenthsC    Battery temperature in tenths of a degree Celsius (as reported by BatteryManager)
 	 */
-	public static void sendTemperatureNotification(Context context, int rawTenthsC) {
+	public static void sendTemperatureNotification(Context callerContext, int rawTenthsC) {
+		final Context context = AppLanguage.applyTo(callerContext);
 		// Isolated (#275): "32.0 °C" is a number and a Latin unit joined by a degree sign the bidi algorithm treats as neutral, so unisolated it reaches an
 		// Arabic reader as "C° 32.0" — the unit detached from its number and reversed. The unit belongs inside the isolated run, so the whole formatted
 		// temperature is what gets wrapped.
@@ -182,12 +189,13 @@ public final class NotificationService {
 	 * limit, so it explains why it fired and that the user controls it. It deliberately cannot name the
 	 * culprit app (that needs a privileged permission — see the issue).
 	 *
-	 * @param context        The application context
+	 * @param callerContext  The caller's context; the alert is worded in the app's language whatever language it speaks (see {@link AppLanguage})
 	 * @param ratePph        The measured drain rate in %/h
 	 * @param limitPph       The user's high-drain limit in %/h
 	 * @param elapsedMinutes How long the rate has been sustained at/above the limit, in minutes
 	 */
-	public static void sendFastDrainNotification(Context context, int ratePph, int limitPph, int elapsedMinutes) {
+	public static void sendFastDrainNotification(Context callerContext, int ratePph, int limitPph, int elapsedMinutes) {
+		final Context context = AppLanguage.applyTo(callerContext);
 		// Western digits in every locale (#96), and each figure arrives carrying its own unit rather than meeting it in the resource (#275). The message used
 		// to read "~%1$s%% per hour … (your limit: %3$s%%/h)": those signs sat outside the isolated run, so an Arabic reader got "%27" and "h/%20" — the unit
 		// resolved to the surrounding right-to-left direction and moved to the far side of the number. Isolating "27%" and "20%/h" whole is what fixes it, so
@@ -222,10 +230,11 @@ public final class NotificationService {
 	 * states the measured wattage so it explains itself; it deliberately can't tell cable from port from
 	 * brick (indistinguishable via public APIs), so it advises checking all three.
 	 *
-	 * @param context The application context
-	 * @param watts   The estimated charging power in watts
+	 * @param callerContext The caller's context; the warning is worded in the app's language whatever language it speaks (see {@link AppLanguage})
+	 * @param watts         The estimated charging power in watts
 	 */
-	public static void sendSlowChargeWarning(Context context, int watts) {
+	public static void sendSlowChargeWarning(Context callerContext, int watts) {
+		final Context context = AppLanguage.applyTo(callerContext);
 		// Western digits in every locale (#96) via String.valueOf, isolated for RTL copy (#275). The unit here is the Arabic word واط, not a Latin one, so the
 		// number alone is the left-to-right run and the '~' the resource carries stays outside it.
 		final String wattage = isolate(String.valueOf(watts));
@@ -347,12 +356,13 @@ public final class NotificationService {
 	 * window (see {@link BatteryRateTracker#record}) doesn't trigger a second read-and-parse of the
 	 * persisted samples (issue #108).
 	 *
-	 * @param context   The application context
-	 * @param batteryDO Current battery snapshot, or null if unavailable
-	 * @param rate      The precomputed charge/drain rate
+	 * @param callerContext The caller's context; the notification is worded in the app's language whatever language it speaks (see {@link AppLanguage})
+	 * @param batteryDO     Current battery snapshot, or null if unavailable
+	 * @param rate          The precomputed charge/drain rate
 	 * @return The built ongoing notification
 	 */
-	public static Notification buildOngoingNotification(Context context, BatteryDO batteryDO, BatteryRateTracker.BatteryRate rate) {
+	public static Notification buildOngoingNotification(Context callerContext, BatteryDO batteryDO, BatteryRateTracker.BatteryRate rate) {
+		final Context context = AppLanguage.applyTo(callerContext);
 		NotificationChannels.ensureChannels(context);
 
 		final String collapsed = OngoingStatusContent.statusDetail(context, batteryDO, rate);
@@ -398,8 +408,8 @@ public final class NotificationService {
 	 * Only replaces a notification that is already up. When it isn't — the system stopped monitoring (#302), or notifications are off — posting from a settings
 	 * screen would raise a status notification that no service stands behind.
 	 *
-	 * @param context The application context. The monitoring service builds this notification from its Service context, which shares the application's
-	 *                resources, so a refresh words it as the next battery broadcast will — where an Activity might be showing another language
+	 * @param context The caller's context; the notification is worded in the app's language whatever language it speaks, as the next battery broadcast will
+	 *                word it (#381)
 	 */
 	public static void refreshOngoingNotification(Context context) {
 		if (lacksOngoingNotification(context)) {
