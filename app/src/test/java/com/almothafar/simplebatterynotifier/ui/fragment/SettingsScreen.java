@@ -17,8 +17,8 @@ import static org.junit.Assert.assertTrue;
  * Putting a settings screen on a {@link SettingsActivity} and getting it back, for the tests that exercise the preference screens themselves.
  * <p>
  * Extracted in #307, where a second test needed the same two steps the first already had. Production never builds these arguments in Java — the category
- * comes from an {@code <extra>} on each row of {@code pref_headers_root.xml} — so a test that wants a specific screen has to assemble what the framework
- * would have passed, and doing that in one place keeps the two tests agreeing on what "showing the Alerts screen" means.
+ * comes from the {@code <extra>} on the row of {@code pref_headers_root.xml} that opens the screen — so a test that wants a specific screen has to assemble
+ * what the framework would have passed, and doing that in one place keeps the two tests agreeing on what "showing the Alerts screen" means.
  */
 final class SettingsScreen {
 

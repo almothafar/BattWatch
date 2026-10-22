@@ -77,7 +77,7 @@ public class SettingsActivity extends BaseActivity implements PreferenceFragment
 	 */
 	@Override
 	public boolean onPreferenceStartFragment(@NonNull PreferenceFragmentCompat caller, Preference pref) {
-		final Fragment fragment = getString(R.string._pref_key_notification_details).equals(pref.getKey())
+		final Fragment fragment = getString(R.string._pref_key_status_notification).equals(pref.getKey())
 		                          ? new NotificationDetailsFragment()
 		                          : new GenericPreferenceFragment();
 		// For a GenericPreferenceFragment, the category extra picks which preference screen it loads.

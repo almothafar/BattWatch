@@ -461,6 +461,8 @@
     <string name="pref_category_behaviour" translatable="false">pref_category_behaviour</string>
     <!-- Root-screen version footer (#113); not a stored preference -->
     <string name="_pref_key_about" translatable="false">key_about</string>
+    <!-- Root-screen Status Notification entry (#384), which opens the notification-details picker; not a stored preference -->
+    <string name="_pref_key_status_notification" translatable="false">key_status_notification</string>
 
     <string name="_pref_key_warn_battery_level" translatable="false">key_warn_battery_level</string>
     <string name="_pref_key_critical_battery_level" translatable="false">key_critical_battery_level</string>

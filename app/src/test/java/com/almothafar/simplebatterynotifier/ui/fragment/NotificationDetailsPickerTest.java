@@ -805,7 +805,7 @@ public class NotificationDetailsPickerTest {
 
 	/** Open the picker the way a user does, from its row on the root screen. */
 	private void openThePickerFromTheRoot() {
-		rootScreenEntry(context.getString(R.string._pref_key_notification_details)).performClick();
+		rootScreenEntry(context.getString(R.string._pref_key_status_notification)).performClick();
 		shadowOf(Looper.getMainLooper()).idle();
 	}
 

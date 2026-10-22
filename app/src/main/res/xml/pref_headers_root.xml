@@ -18,7 +18,7 @@
          row without one. -->
     <Preference
         android:fragment="com.almothafar.simplebatterynotifier.ui.fragment.NotificationDetailsFragment"
-        android:key="@string/_pref_key_notification_details"
+        android:key="@string/_pref_key_status_notification"
         android:persistent="false"
         android:summary="@string/pref_header_summary_status_notification"
         android:title="@string/pref_header_status_notification"
