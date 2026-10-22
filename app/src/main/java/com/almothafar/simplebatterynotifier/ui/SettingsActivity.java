@@ -57,11 +57,10 @@ public class SettingsActivity extends BaseActivity implements PreferenceFragment
 	/**
 	 * Handle preference fragment navigation
 	 * <p>
-	 * Constructs {@link GenericPreferenceFragment} directly rather than resolving {@code pref.getFragment()}
-	 * through {@link androidx.fragment.app.FragmentFactory} (#294). All but one header in {@code pref_headers_root.xml}
-	 * names that one class — which screen you get is decided by the {@code category} extra, not by the class — so
-	 * the lookup bought nothing, and it cost the class its only reference: R8 cannot see a name that exists solely
-	 * as XML attribute text, so it shrank the fragment out of every release build and each sub-screen died on
+	 * Constructs {@link GenericPreferenceFragment} directly rather than resolving {@code pref.getFragment()} through
+	 * {@link androidx.fragment.app.FragmentFactory} (#294). All but one header in {@code pref_headers_root.xml} names that one class — which screen you get
+	 * is decided by the {@code category} extra, not by the class — so the lookup bought nothing, and it cost the class its only reference: R8 cannot see a
+	 * name that exists solely as XML attribute text, so it shrank the fragment out of every release build and each sub-screen died on
 	 * {@code Fragment.InstantiationException}. A direct {@code new} is a reference R8 can see.
 	 * <p>
 	 * The {@code android:fragment} attribute still has to stay in the XML: {@code PreferenceFragmentCompat} only

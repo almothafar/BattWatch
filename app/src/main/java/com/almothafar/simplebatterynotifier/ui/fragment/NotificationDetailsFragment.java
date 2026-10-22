@@ -48,7 +48,7 @@ import static java.util.Objects.isNull;
 /**
  * The notification-details picker (#357, #358): which families the status notification's collapsed line shows, up to {@link DetailFamily#MAX_SELECTED}, none
  * allowed, and in what order. Each row carries its family's live value, and a preview on top shows the notification the choice makes, both kept current from
- * the battery broadcasts while the screen is in front.
+ * the battery broadcasts while the screen is in front. Settings → Status Notification opens it directly, so it is the status notification's screen (#384).
  * <p>
  * The chosen rows sit above a divider in their order, the rest below it in registry order. A row's handle drags it, across the divider too, which ticks or
  * unticks it; TalkBack users reorder with Move up and Move down instead, and a family ticked by a tap joins the end. Reset in the toolbar puts the default

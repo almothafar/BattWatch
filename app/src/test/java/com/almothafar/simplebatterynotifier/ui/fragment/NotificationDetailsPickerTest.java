@@ -518,8 +518,7 @@ public class NotificationDetailsPickerTest {
 		openThePickerFromTheRoot();
 		assertNotNull(toolbarMenu().findItem(R.id.action_reset_notification_details));
 
-		controller.get().getOnBackPressedDispatcher().onBackPressed();
-		shadowOf(Looper.getMainLooper()).idle();
+		pressBack();
 
 		assertNull(toolbarMenu().findItem(R.id.action_reset_notification_details));
 	}
@@ -729,8 +728,7 @@ public class NotificationDetailsPickerTest {
 	public void goingBack_fromThePicker_restoresTheSettingsTitle() {
 		openThePickerFromTheRoot();
 
-		controller.get().getOnBackPressedDispatcher().onBackPressed();
-		shadowOf(Looper.getMainLooper()).idle();
+		pressBack();
 		assertEquals(context.getString(R.string.title_activity_settings), String.valueOf(controller.get().getTitle()));
 	}
 
@@ -738,23 +736,23 @@ public class NotificationDetailsPickerTest {
 	public void afterALanguageSwitch_theTitlesFollowIt_onTheWayBackToo() {
 		// Switching the app's language (on General) recreates Settings with General on top. A title kept as text from before the switch comes back in the old
 		// language: right after the switch, and on every Back to a screen below.
-		final String english = context.getString(R.string.title_activity_settings);
+		final String english = context.getString(R.string.pref_header_general);
 		openGeneralFromTheRoot();
 		RuntimeEnvironment.setQualifiers("+ar-rEG");
 		controller.recreate();
 		shadowOf(Looper.getMainLooper()).idle();
-		final String settings = controller.get().getString(R.string.title_activity_settings);
-		assertNotEquals("the language did not switch", english, settings);
+		final String arabicGeneral = controller.get().getString(R.string.pref_header_general);
+		assertNotEquals("the language did not switch", english, arabicGeneral);
+		assertEquals(arabicGeneral, String.valueOf(controller.get().getTitle()));
 
-		controller.get().getOnBackPressedDispatcher().onBackPressed();
-		shadowOf(Looper.getMainLooper()).idle();
-		assertEquals(settings, String.valueOf(controller.get().getTitle()));
+		final String arabicSettings = controller.get().getString(R.string.title_activity_settings);
+		pressBack();
+		assertEquals(arabicSettings, String.valueOf(controller.get().getTitle()));
 
 		openThePickerFromTheRoot();
 		assertEquals("إشعار الحالة", String.valueOf(controller.get().getTitle()));
-		controller.get().getOnBackPressedDispatcher().onBackPressed();
-		shadowOf(Looper.getMainLooper()).idle();
-		assertEquals(settings, String.valueOf(controller.get().getTitle()));
+		pressBack();
+		assertEquals(arabicSettings, String.valueOf(controller.get().getTitle()));
 	}
 
 	// --- Helpers ----------------------------------------------------------------------------------
@@ -808,6 +806,11 @@ public class NotificationDetailsPickerTest {
 	/** Open the picker the way a user does, from its row on the root screen. */
 	private void openThePickerFromTheRoot() {
 		rootScreenEntry(context.getString(R.string._pref_key_notification_details)).performClick();
+		shadowOf(Looper.getMainLooper()).idle();
+	}
+
+	private void pressBack() {
+		controller.get().getOnBackPressedDispatcher().onBackPressed();
 		shadowOf(Looper.getMainLooper()).idle();
 	}
 
