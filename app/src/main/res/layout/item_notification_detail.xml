@@ -17,10 +17,14 @@
     android:paddingStart="?android:attr/listPreferredItemPaddingStart"
     android:paddingEnd="?android:attr/listPreferredItemPaddingEnd">
 
+    <!-- No 48dp minimum: the box takes no touches of its own, and the 16dp the minimum added came out of the name and value columns, which broke
+         "Temperature" in the middle of the word on a 360dp-wide phone (NotificationDetailsRowWidthTest). -->
     <com.google.android.material.checkbox.MaterialCheckBox
         android:id="@+id/detail_checkbox"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:minWidth="0dp"
+        android:minHeight="0dp"
         android:clickable="false"
         android:focusable="false"
         android:importantForAccessibility="no" />
