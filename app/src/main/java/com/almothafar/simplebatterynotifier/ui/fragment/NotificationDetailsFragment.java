@@ -147,7 +147,7 @@ public class NotificationDetailsFragment extends Fragment {
 		if (savedThisVisit) {
 			// The system drops a notification update that follows the last one too closely, so a fast run of changes can leave the shade on a choice from the
 			// middle of the run.
-			refreshNotification(context);
+			NotificationService.refreshOngoingNotification(context);
 		}
 	}
 
@@ -270,18 +270,13 @@ public class NotificationDetailsFragment extends Fragment {
 		// Reset greys out once the choice is the default again, and comes back as soon as it is not.
 		requireActivity().invalidateMenu();
 		// Now rather than on the way out: pulling the shade down over this screen doesn't pause it.
-		refreshNotification(context);
+		NotificationService.refreshOngoingNotification(context);
 		savedThisVisit = true;
 	}
 
 	/** Move the rows into the order a new choice gives them, each as a move, so it keeps its view: TalkBack's focus stays on a row as it travels. */
 	private void showChoice(List<DetailFamily> choice) {
 		rows.change(choice, adapter::notifyItemMoved);
-	}
-
-	/** Re-post the status notification from the saved choice, worded in the app's language as every post is (#381). */
-	private static void refreshNotification(Context context) {
-		NotificationService.refreshOngoingNotification(context);
 	}
 
 	/**

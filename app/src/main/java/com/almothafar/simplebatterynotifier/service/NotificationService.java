@@ -50,6 +50,9 @@ import static java.util.Objects.nonNull;
  * </ul>
  * This class owns the notification IDs, the single shared alert-builder chain, the per-charge-style
  * delivery, and the per-level {@link NotificationConfig}.
+ * <p>
+ * Every public method that words something for the user starts from {@link AppLanguage#applyTo}, so the text follows the in-app language below Android 13
+ * as well, where nothing else applies it outside the app's screens (#381). A new one has to do the same.
  */
 public final class NotificationService {
 	// Battery thresholds
@@ -85,19 +88,18 @@ public final class NotificationService {
 	 *
 	 * @param callerContext The caller's context; the alert is worded in the app's language whatever language it speaks (see {@link AppLanguage})
 	 * @param type          Which battery-level alert to send
-	 * @param levelPercent  The battery level this alert fired at. The full-battery alert's copy depends
-	 * on it (#263): a charge that completed below the user's charge target must not claim the target was reached. The critical/warning alerts word themselves
-	 * from their configured thresholds and ignore it.
+	 * @param levelPercent  The battery level this alert fired at. The full-battery alert's copy depends on it (#263): a charge that completed below the
+	 * user's charge target must not claim the target was reached. The critical/warning alerts word themselves from their configured thresholds and ignore it.
 	 * @param reminder      Whether this post repeats an alert the user has already been sent — today only the unplug reminder (#264). It re-posts the same
 	 * notification ID, and a re-post is silent unless it is allowed to alert again, so this is what decides whether the user is actually reminded or the shade
 	 * quietly updates behind their back.
 	 */
 	public static void sendNotification(Context callerContext, AlertType type, int levelPercent, boolean reminder) {
-		final Context context = AppLanguage.applyTo(callerContext);
 		if (isNull(type)) {
 			Log.w(TAG, "No alert type given, notification not sent");
 			return;
 		}
+		final Context context = AppLanguage.applyTo(callerContext);
 		if (lacksNotificationPermission(context)) {
 			Log.w(TAG, "Missing POST_NOTIFICATIONS permission, notification not sent");
 			return;
