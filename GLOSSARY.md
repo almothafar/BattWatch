@@ -16,6 +16,10 @@ How fast the battery level is rising while charging, in %/h. The charging counte
 rate.
 _Avoid_: charging speed.
 
+**Screen-on drain** / **Screen-off drain**:
+The drain since the battery was last unplugged, split by whether the screen was on or off at the time, each shown as an average current and a %/h to one decimal. Unlike the drain rate, which covers the last ten minutes, it accumulates over the whole time off the charger, so it tells usage apart from idle drain. A lit lockscreen counts as on and an always-on display as off; plugging in starts both over.
+_Avoid_: active/idle drain, foreground/background drain.
+
 **Instantaneous current**:
 The live current flowing in or out of the battery right now, in milliamps (mA), read from
 `BatteryManager.BATTERY_PROPERTY_CURRENT_NOW`. Shown as raw detail; not normalized, so it is not

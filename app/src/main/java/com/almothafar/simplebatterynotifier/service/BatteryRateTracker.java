@@ -116,7 +116,9 @@ public final class BatteryRateTracker {
 			     .apply();
 		}
 
-		return computeRate(updated, batteryDO.getCapacity(), charging, now, batteryDO.getCurrentMicroAmps());
+		// The same reading also feeds the since-unplug screen-on / screen-off split (#193), a longer horizon kept beside the window rather than in it.
+		final ScreenDrainTracker.ScreenSplit screen = ScreenDrainTracker.record(prefs, now, batteryDO, SystemService.isScreenOn(context));
+		return computeRate(updated, batteryDO.getCapacity(), charging, now, batteryDO.getCurrentMicroAmps()).withScreen(screen);
 	}
 
 	/**
@@ -137,7 +139,8 @@ public final class BatteryRateTracker {
 		// Rate window lives in the backup-excluded transient file (#167), not the default prefs.
 		final SharedPreferences prefs = TransientState.prefs(context);
 
-		return computeRate(loadWindow(prefs, charging, now), batteryDO.getCapacity(), charging, now, batteryDO.getCurrentMicroAmps());
+		return computeRate(loadWindow(prefs, charging, now), batteryDO.getCapacity(), charging, now, batteryDO.getCurrentMicroAmps())
+				.withScreen(ScreenDrainTracker.read(prefs, now, batteryDO));
 	}
 
 	/**
@@ -284,7 +287,15 @@ public final class BatteryRateTracker {
 		final int pph = ratePercentPerHour(window, capacityMah);
 		final boolean hasRate = pph >= 1 && pph <= MAX_PLAUSIBLE_RATE_PPH;
 
-		return new BatteryRate(hasRate, hasRate ? pph : 0, charging, hasCurrent, signedMilliAmps, hasAvgCurrent, signedAvgMilliAmps);
+		return new BatteryRate(
+				hasRate,
+				hasRate ? pph : 0,
+				charging,
+				hasCurrent,
+				signedMilliAmps,
+				hasAvgCurrent,
+				signedAvgMilliAmps,
+				ScreenDrainTracker.ScreenSplit.NONE);
 	}
 
 	/**
@@ -565,7 +576,7 @@ public final class BatteryRateTracker {
 	/**
 	 * Result of a rate computation: the smoothed %/h and the signed instantaneous current, each with a
 	 * flag saying whether it is trustworthy enough to display, plus the windowed average current shown
-	 * next to the instant (#173).
+	 * next to the instant (#173), and the since-unplug screen-on / screen-off split (#193).
 	 *
 	 * @param hasRate             whether a trustworthy %/h is available
 	 * @param percentPerHour      rate magnitude in %/h (valid only when {@code hasRate})
@@ -574,13 +585,23 @@ public final class BatteryRateTracker {
 	 * @param currentMilliAmps    signed current in mA (valid only when {@code hasCurrent})
 	 * @param hasAvgCurrent       whether the windowed average current is available for display
 	 * @param avgCurrentMilliAmps signed windowed-average current in mA (valid only when {@code hasAvgCurrent})
+	 * @param screen              the screen-on / screen-off drain since the last unplug; {@link ScreenDrainTracker.ScreenSplit#NONE} while plugged in
 	 */
-	public record BatteryRate(boolean hasRate, int percentPerHour, boolean charging,
-	                          boolean hasCurrent, int currentMilliAmps,
-	                          boolean hasAvgCurrent, int avgCurrentMilliAmps) {
+	public record BatteryRate(boolean hasRate,
+	                          int percentPerHour,
+	                          boolean charging,
+	                          boolean hasCurrent,
+	                          int currentMilliAmps,
+	                          boolean hasAvgCurrent,
+	                          int avgCurrentMilliAmps,
+	                          ScreenDrainTracker.ScreenSplit screen) {
 
 		static BatteryRate empty() {
-			return new BatteryRate(false, 0, false, false, 0, false, 0);
+			return new BatteryRate(false, 0, false, false, 0, false, 0, ScreenDrainTracker.ScreenSplit.NONE);
+		}
+
+		BatteryRate withScreen(ScreenDrainTracker.ScreenSplit split) {
+			return new BatteryRate(hasRate, percentPerHour, charging, hasCurrent, currentMilliAmps, hasAvgCurrent, avgCurrentMilliAmps, split);
 		}
 	}
 }

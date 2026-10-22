@@ -27,6 +27,7 @@ import com.almothafar.simplebatterynotifier.R;
 import com.almothafar.simplebatterynotifier.model.BatteryDO;
 import com.almothafar.simplebatterynotifier.service.BatteryHealthTracker;
 import com.almothafar.simplebatterynotifier.service.BatteryRateTracker;
+import com.almothafar.simplebatterynotifier.service.ScreenDrainTracker;
 import com.almothafar.simplebatterynotifier.service.SystemService;
 import com.almothafar.simplebatterynotifier.util.AppPrefs;
 import com.almothafar.simplebatterynotifier.util.GeneralHelper;
@@ -531,8 +532,8 @@ public class BatteryDetailsFragment extends Fragment {
 	}
 
 	/**
-	 * Adds the three "live" rows at the top of the table — rate, time estimate and signed current (#108,
-	 * #124, #188). Unlike the rest, these three are <b>always present</b>: rather than hiding when a value
+	 * Adds the "live" rows at the top of the table — rate, time estimate and signed current (#108, #124, #188), then Screen on and Screen off while
+	 * discharging (#193). Unlike the rest, these are <b>always present</b>: rather than hiding when a value
 	 * isn't ready (which made rows appear/disappear and shift the table), a value that is still warming up
 	 * shows a small "calculating" hint with a tappable info icon explaining why (#216). The labels follow
 	 * the charge direction — "Charge rate"/"Drain rate" and "Time to full"/"Time remaining" — while
@@ -571,6 +572,31 @@ public class BatteryDetailsFragment extends Fragment {
 		} else {
 			putHintRow(currentLabel, R.string.battery_value_calculating,
 					R.string.battery_current_pending_dialog_title, R.string.battery_current_pending_dialog_message);
+		}
+
+		// #193: the drain since the last unplug, split by screen state. Discharging only; each state warms up on its own, so one row can show its drain
+		// while the other still calculates.
+		if (!charging) {
+			addScreenDrainRow(view, R.string.screen_on_drain, rate.screen().on());
+			addScreenDrainRow(view, R.string.screen_off_drain, rate.screen().off());
+		}
+	}
+
+	/**
+	 * Adds one screen state's row (#193): its average current and %/h, or the "calculating" hint until that state has run long enough since the last unplug.
+	 *
+	 * @param view     The fragment view
+	 * @param labelRes The row label, Screen on or Screen off
+	 * @param drain    That state's drain from this refresh's rate
+	 */
+	private void addScreenDrainRow(View view, int labelRes, ScreenDrainTracker.ScreenDrain drain) {
+		final String label = getString(labelRes);
+		final String value = ScreenDrainTracker.formatValue(view.getContext(), drain);
+		if (nonNull(value)) {
+			valuesMap.put(label, value);
+		} else {
+			putHintRow(label, R.string.battery_value_calculating,
+					R.string.battery_screen_drain_pending_dialog_title, R.string.battery_screen_drain_pending_dialog_message);
 		}
 	}
 

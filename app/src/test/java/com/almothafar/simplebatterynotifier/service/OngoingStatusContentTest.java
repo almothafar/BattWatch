@@ -67,12 +67,12 @@ public class OngoingStatusContentTest {
 
 	/** Rate with a %/h only (no current/average yet) — the warm-up shape. */
 	private static BatteryRateTracker.BatteryRate rate(boolean charging, int pph) {
-		return new BatteryRateTracker.BatteryRate(true, pph, charging, false, 0, false, 0);
+		return new BatteryRateTracker.BatteryRate(true, pph, charging, false, 0, false, 0, ScreenDrainTracker.ScreenSplit.NONE);
 	}
 
 	/** Rate with a %/h plus instantaneous and windowed-average current. */
 	private static BatteryRateTracker.BatteryRate rateFull(boolean charging, int pph, int mA, int avgMa) {
-		return new BatteryRateTracker.BatteryRate(true, pph, charging, true, mA, true, avgMa);
+		return new BatteryRateTracker.BatteryRate(true, pph, charging, true, mA, true, avgMa, ScreenDrainTracker.ScreenSplit.NONE);
 	}
 
 	private String cur(int mA) {
@@ -130,7 +130,7 @@ public class OngoingStatusContentTest {
 		// #207: warm-up with an instantaneous current but no rate/time — the segment that used to read as a
 		// bare, meaningless "−199 mA". It must now stand alone as the worded "Using 199 mA".
 		final BatteryRateTracker.BatteryRate loneCurrent =
-				new BatteryRateTracker.BatteryRate(false, 0, false, true, -199, false, 0);
+				new BatteryRateTracker.BatteryRate(false, 0, false, true, -199, false, 0, ScreenDrainTracker.ScreenSplit.NONE);
 		assertEquals(curCollapsed(false, -199),
 				OngoingStatusContent.statusDetail(context, discharging85(), loneCurrent));
 	}
@@ -274,6 +274,39 @@ public class OngoingStatusContentTest {
 				line(R.string.time_remaining, "~9h 27m"),
 				line(R.string.temperature, temp()));
 		assertEquals(expected, OngoingStatusContent.statusDetailExpanded(context, discharging85(), rate(false, 9)));
+	}
+
+	/** The full discharging rate, carrying a screen-on / screen-off split (#193). */
+	private static BatteryRateTracker.BatteryRate rateWithScreen(ScreenDrainTracker.ScreenDrain on, ScreenDrainTracker.ScreenDrain off) {
+		return new BatteryRateTracker.BatteryRate(true, 9, false, true, -250, true, -338, new ScreenDrainTracker.ScreenSplit(on, off));
+	}
+
+	@Test
+	public void expanded_addsScreenOnAndOffLines_underAverage() {
+		final ScreenDrainTracker.ScreenDrain on = new ScreenDrainTracker.ScreenDrain(true, -392, true, 104);
+		final ScreenDrainTracker.ScreenDrain off = new ScreenDrainTracker.ScreenDrain(true, -56, true, 15);
+		final String expected = String.join("\n",
+				line(R.string.notification_label_now, cur(-250)),
+				line(R.string.notification_label_average, cur(-338) + SEP + "9%/h"),
+				line(R.string.screen_on_drain, cur(-392) + SEP + "10.4%/h"),
+				line(R.string.screen_off_drain, cur(-56) + SEP + "1.5%/h"),
+				line(R.string.time_remaining, "~9h 27m"),
+				line(R.string.temperature, temp()));
+		assertEquals(expected, OngoingStatusContent.statusDetailExpanded(context, discharging85(), rateWithScreen(on, off)));
+	}
+
+	@Test
+	public void expanded_leavesOutAScreenStateStillWarmingUp_andShowsWhicheverFigureIsReady() {
+		// Screen-on has its current but no level drop yet; screen-off has nothing yet. The two degrade on their own.
+		final ScreenDrainTracker.ScreenDrain on = new ScreenDrainTracker.ScreenDrain(true, -392, false, 0);
+		final String expanded = OngoingStatusContent.statusDetailExpanded(context, discharging85(), rateWithScreen(on, ScreenDrainTracker.ScreenDrain.NONE));
+		assertTrue(expanded, expanded.contains(line(R.string.screen_on_drain, cur(-392)) + "\n"));
+		assertFalse(expanded, expanded.contains(context.getString(R.string.screen_off_drain)));
+
+		final ScreenDrainTracker.ScreenDrain rateOnly = new ScreenDrainTracker.ScreenDrain(false, 0, true, 5);
+		final String rateOnlyExpanded = OngoingStatusContent.statusDetailExpanded(context, discharging85(),
+				rateWithScreen(ScreenDrainTracker.ScreenDrain.NONE, rateOnly));
+		assertTrue(rateOnlyExpanded, rateOnlyExpanded.contains(line(R.string.screen_off_drain, "0.5%/h") + "\n"));
 	}
 
 	@Test

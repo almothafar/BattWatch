@@ -185,7 +185,8 @@ public final class OngoingStatusContent {
 	 * Temperature while charging. "Now" is the instantaneous current (plus the charge wattage while
 	 * charging); "Average" is the windowed average, carrying the smoothed %/h while discharging — the app
 	 * computes a single smoothed rate, which is itself an average, so there is no separate instantaneous
-	 * %/h. Every line is dropped when its data is absent; the temperature always shows. Returns a single
+	 * %/h. While discharging, Screen&nbsp;on and Screen&nbsp;off follow Average: the drain since the last unplug split by screen state (#193), each line
+	 * appearing once its own state has warmed up. Every line is dropped when its data is absent; the temperature always shows. Returns a single
 	 * line when nothing but temperature is available, which {@link #pullDownAddsToLine} offers only where the line leaves it out.
 	 * <p>
 	 * Deliberately blind to the notification details the collapsed line follows: this is the everything view, which is what makes the collapsed line's silent
@@ -198,10 +199,12 @@ public final class OngoingStatusContent {
 	 * @return newline-joined expanded text (may be a single line or empty)
 	 */
 	static String statusDetailExpanded(Context context, BatteryDO batteryDO, BatteryRateTracker.BatteryRate rate) {
-		final List<String> lines = new ArrayList<>(4);
+		final List<String> lines = new ArrayList<>(6);
 		if (nonNull(batteryDO) && nonNull(rate)) {
 			addLine(context, lines, R.string.notification_label_now, nowSegment(context, batteryDO, rate));
 			addAverageLine(context, lines, rate);
+			addLine(context, lines, R.string.screen_on_drain, ScreenDrainTracker.formatValue(context, rate.screen().on()));
+			addLine(context, lines, R.string.screen_off_drain, ScreenDrainTracker.formatValue(context, rate.screen().off()));
 			addTimeLine(context, lines, batteryDO, rate);
 		}
 		if (nonNull(batteryDO)) {

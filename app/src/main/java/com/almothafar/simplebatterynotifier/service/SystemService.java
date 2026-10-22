@@ -609,6 +609,20 @@ public final class SystemService {
 	}
 
 	/**
+	 * Whether the screen is on, locked or not — the state the screen-on / screen-off drain split is keyed on (#193). Unlike {@link #isActivelyUsed}, a lit
+	 * lockscreen counts as on: it is still the display drawing power. An always-on display counts as off, as it does for {@code ACTION_SCREEN_OFF}. A missing
+	 * PowerManager reads as off.
+	 *
+	 * @param context The application context
+	 *
+	 * @return true when the device is interactive
+	 */
+	public static boolean isScreenOn(Context context) {
+		final PowerManager powerManager = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+		return nonNull(powerManager) && powerManager.isInteractive();
+	}
+
+	/**
 	 * Whether the user has exempted the app from battery optimization.
 	 * <p>
 	 * Read by the "monitoring stopped" hint (#302) so it never repeats advice the user has already followed: with the exemption in place the kill came from

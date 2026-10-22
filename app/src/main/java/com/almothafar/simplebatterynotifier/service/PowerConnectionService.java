@@ -3,6 +3,7 @@ package com.almothafar.simplebatterynotifier.service;
 import android.app.ForegroundServiceStartNotAllowedException;
 import android.app.Notification;
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.ServiceInfo;
@@ -14,21 +15,23 @@ import androidx.core.app.ServiceCompat;
 import com.almothafar.simplebatterynotifier.model.BatteryDO;
 import com.almothafar.simplebatterynotifier.receiver.BatteryLevelReceiver;
 import com.almothafar.simplebatterynotifier.receiver.PowerConnectionReceiver;
+import com.almothafar.simplebatterynotifier.receiver.ScreenStateReceiver;
 import com.almothafar.simplebatterynotifier.util.AppPrefs;
 
 import java.util.Locale;
 
-import static java.util.Objects.nonNull;
+import static java.util.Objects.isNull;
 
 /**
  * Service to register battery monitoring receivers.
- * Registers PowerConnectionReceiver and BatteryLevelReceiver on service creation.
+ * Registers PowerConnectionReceiver, BatteryLevelReceiver and ScreenStateReceiver on service creation.
  */
 public class PowerConnectionService extends Service {
 	private static final String TAG = "PowerConnectionService";
 
 	private PowerConnectionReceiver powerConnectionReceiver;
 	private BatteryLevelReceiver batteryLevelReceiver;
+	private ScreenStateReceiver screenStateReceiver;
 
 	@Override
 	public IBinder onBind(final Intent intent) {
@@ -103,8 +106,11 @@ public class PowerConnectionService extends Service {
 	}
 
 	/**
-	 * Register battery monitoring receivers.
+	 * Register the battery and screen monitoring receivers.
 	 * Initializes the current plugged state to avoid unnecessary triggers on the first battery change event.
+	 * <p>
+	 * The screen receiver feeds the screen-on / screen-off drain split (#193). Until it is registered, screen toggles go unseen, so the split first drops the
+	 * stretch it was in the middle of when monitoring last stopped rather than credit it to one state.
 	 */
 	private void registerPowerConnectionReceiver() {
 		final Intent batteryStatus = getApplicationContext().registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
@@ -118,28 +124,35 @@ public class PowerConnectionService extends Service {
 		final IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
 		registerReceiver(powerConnectionReceiver, filter);
 		registerReceiver(batteryLevelReceiver, filter);
+
+		ScreenDrainTracker.onMonitoringStarted(this, SystemService.getBatteryInfo(this, batteryStatus));
+		screenStateReceiver = new ScreenStateReceiver();
+		final IntentFilter screenFilter = new IntentFilter(Intent.ACTION_SCREEN_ON);
+		screenFilter.addAction(Intent.ACTION_SCREEN_OFF);
+		registerReceiver(screenStateReceiver, screenFilter);
 	}
 
 	/**
-	 * Unregister battery monitoring receivers to prevent memory leaks
+	 * Unregister the monitoring receivers to prevent memory leaks
 	 */
 	private void unregisterReceivers() {
-		if (nonNull(powerConnectionReceiver)) {
-			try {
-				unregisterReceiver(powerConnectionReceiver);
-			} catch (IllegalArgumentException e) {
-				// Receiver was already unregistered, ignore
-			}
-			powerConnectionReceiver = null;
-		}
+		unregister(powerConnectionReceiver);
+		powerConnectionReceiver = null;
+		unregister(batteryLevelReceiver);
+		batteryLevelReceiver = null;
+		unregister(screenStateReceiver);
+		screenStateReceiver = null;
+	}
 
-		if (nonNull(batteryLevelReceiver)) {
-			try {
-				unregisterReceiver(batteryLevelReceiver);
-			} catch (IllegalArgumentException e) {
-				// Receiver was already unregistered, ignore
-			}
-			batteryLevelReceiver = null;
+	private void unregister(BroadcastReceiver receiver) {
+		if (isNull(receiver)) {
+			return;
+		}
+		try {
+			unregisterReceiver(receiver);
+		} catch (IllegalArgumentException e) {
+			// Nothing to undo: the receiver is already gone, which is the state this was asked to reach.
+			Log.w(TAG, "Receiver was already unregistered: " + receiver.getClass().getSimpleName(), e);
 		}
 	}
 }
