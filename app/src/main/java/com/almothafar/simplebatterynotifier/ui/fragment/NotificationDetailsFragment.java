@@ -279,13 +279,9 @@ public class NotificationDetailsFragment extends Fragment {
 		rows.change(choice, adapter::notifyItemMoved);
 	}
 
-	/**
-	 * Re-post the status notification from the saved choice. The application context, not this screen's: the monitoring service builds the notification from
-	 * its Service context, which shares the application's resources — so the refresh words it as the next battery broadcast will, whatever language this
-	 * screen is showing.
-	 */
+	/** Re-post the status notification from the saved choice, worded in the app's language as every post is (#381). */
 	private static void refreshNotification(Context context) {
-		NotificationService.refreshOngoingNotification(context.getApplicationContext());
+		NotificationService.refreshOngoingNotification(context);
 	}
 
 	/**
