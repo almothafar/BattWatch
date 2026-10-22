@@ -75,11 +75,14 @@
     <!-- A charger Android reports but the app has no name for: a dock (API 33+), or a type added later -->
     <string name="charger_other">Plugged In</string>
 
-    <!-- Settings root screen: the three headers (#112). Each summary describes what's inside. -->
+    <!-- Settings root screen: the four headers (#112, #384). Each summary describes what's inside. -->
     <string name="pref_header_general">General</string>
+    <!-- Also the title of the screen it opens, the notification-details picker -->
+    <string name="pref_header_status_notification">Status Notification</string>
     <string name="pref_header_alerts">Alerts</string>
     <string name="pref_header_behaviour">Notification Behaviour</string>
-    <string name="pref_header_summary_general">App language, temperature unit, and the status notification</string>
+    <string name="pref_header_summary_general">App language, theme, and temperature unit</string>
+    <string name="pref_header_summary_status_notification">What the always-on notification shows — its details and their order</string>
     <string name="pref_header_summary_alerts">What to be notified about — battery levels, full charge, temperature, fast drain, charging</string>
     <string name="pref_header_summary_behaviour">How alerts sound and appear, and when they are allowed — alert sounds, silent mode, vibration, quiet hours</string>
 
@@ -245,10 +248,7 @@
     <string name="notification_detail_line">%1$s: %2$s</string>
     <string name="notification_label_now">Live</string>
     <string name="notification_label_average">Average</string>
-    <!-- #357: General → Status Notification → Notification details, the picker for what the collapsed line shows -->
-    <string name="notification_details_title">Notification details</string>
-    <!-- Summary when the user chose nothing; otherwise the summary is the chosen family names joined by " · " -->
-    <string name="notification_details_summary_none">Nothing selected</string>
+    <!-- #357: the notification-details picker, for what the collapsed line shows. Settings → Status Notification opens it (#384). -->
     <!-- %1$s is the cap, %2$s how many are chosen — both Western-digit numbers (String.valueOf), 0-9 in every locale (#96) -->
     <string name="notification_details_header">Choose up to %1$s · %2$s selected</string>
     <string name="notification_details_header_empty">Nothing selected — the notification shows only the title</string>
@@ -442,7 +442,6 @@
     <!-- Settings category titles -->
     <!-- General screen; the Behaviour screen has its own "Appearance" group for how notifications look -->
     <string name="pref_cat_title_display_language">Display &amp; language</string>
-    <string name="pref_cat_title_status_notification">Status Notification</string>
     <string name="pref_cat_title_thresholds">Battery Levels</string>
     <string name="pref_cat_title_full_battery">Full Battery</string>
     <string name="pref_cat_title_warning">Warning Alert</string>
@@ -462,6 +461,8 @@
     <string name="pref_category_behaviour" translatable="false">pref_category_behaviour</string>
     <!-- Root-screen version footer (#113); not a stored preference -->
     <string name="_pref_key_about" translatable="false">key_about</string>
+    <!-- Root-screen Status Notification entry (#384), which opens the notification-details picker; not a stored preference -->
+    <string name="_pref_key_status_notification" translatable="false">key_status_notification</string>
 
     <string name="_pref_key_warn_battery_level" translatable="false">key_warn_battery_level</string>
     <string name="_pref_key_critical_battery_level" translatable="false">key_critical_battery_level</string>

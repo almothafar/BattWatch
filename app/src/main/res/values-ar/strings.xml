@@ -78,11 +78,13 @@
     <string name="charger_wireless">شاحن لاسلكي</string>
     <string name="charger_other">موصول بالطاقة</string>
 
-    <!-- Settings root screen: the three headers (#112) -->
+    <!-- Settings root screen: the four headers (#112, #384) -->
     <string name="pref_header_general">عام</string>
+    <string name="pref_header_status_notification">إشعار الحالة</string>
     <string name="pref_header_alerts">التنبيهات</string>
     <string name="pref_header_behaviour">سلوك التنبيهات</string>
-    <string name="pref_header_summary_general">لغة التطبيق، ووحدة الحرارة، وإشعار الحالة</string>
+    <string name="pref_header_summary_general">لغة التطبيق، والمظهر، ووحدة الحرارة</string>
+    <string name="pref_header_summary_status_notification">ما يعرضه الإشعار الدائم — تفاصيله وترتيبها</string>
     <string name="pref_header_summary_alerts">ما الذي يُنبَّه له — مستويات البطارية، اكتمال الشحن، الحرارة، الاستهلاك السريع، الشحن</string>
     <string name="pref_header_summary_behaviour">كيف تُصدر التنبيهات صوتاً وكيف تظهر ومتى يُسمح بها — أصوات التنبيهات، وضع الصامت، الاهتزاز، ساعات الهدوء</string>
 
@@ -225,8 +227,6 @@
     <string name="notification_detail_line">%1$s: %2$s</string>
     <string name="notification_label_now">مباشر</string>
     <string name="notification_label_average">المتوسط</string>
-    <string name="notification_details_title">تفاصيل الإشعار</string>
-    <string name="notification_details_summary_none">لم يُختر شيء</string>
     <string name="notification_details_header">اختر حتى %1$s · تم اختيار %2$s</string>
     <string name="notification_details_header_empty">لم يُختر شيء — يعرض الإشعار العنوان فقط</string>
     <string name="detail_family_speed">السرعة</string>
@@ -387,7 +387,6 @@
 
     <!-- Settings category titles -->
     <string name="pref_cat_title_display_language">العرض واللغة</string>
-    <string name="pref_cat_title_status_notification">إشعار الحالة</string>
     <string name="pref_cat_title_thresholds">مستويات البطارية</string>
     <string name="pref_cat_title_full_battery">البطارية الممتلئة</string>
     <string name="pref_cat_title_warning">تنبيه التحذير</string>

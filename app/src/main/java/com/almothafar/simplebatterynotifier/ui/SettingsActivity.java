@@ -57,17 +57,17 @@ public class SettingsActivity extends BaseActivity implements PreferenceFragment
 	/**
 	 * Handle preference fragment navigation
 	 * <p>
-	 * Constructs {@link GenericPreferenceFragment} directly rather than resolving {@code pref.getFragment()}
-	 * through {@link androidx.fragment.app.FragmentFactory} (#294). Every header in {@code pref_headers_root.xml}
-	 * names that one class — which screen you get is decided by the {@code category} extra, not by the class — so
-	 * the lookup bought nothing, and it cost the class its only reference: R8 cannot see a name that exists solely
-	 * as XML attribute text, so it shrank the fragment out of every release build and each sub-screen died on
+	 * Constructs {@link GenericPreferenceFragment} directly rather than resolving {@code pref.getFragment()} through
+	 * {@link androidx.fragment.app.FragmentFactory} (#294). All but one header in {@code pref_headers_root.xml} names that one class — which screen you get
+	 * is decided by the {@code category} extra, not by the class — so the lookup bought nothing, and it cost the class its only reference: R8 cannot see a
+	 * name that exists solely as XML attribute text, so it shrank the fragment out of every release build and each sub-screen died on
 	 * {@code Fragment.InstantiationException}. A direct {@code new} is a reference R8 can see.
 	 * <p>
 	 * The {@code android:fragment} attribute still has to stay in the XML: {@code PreferenceFragmentCompat} only
 	 * routes a click here when {@code getFragment()} is non-null. Its value is no longer read.
 	 * <p>
-	 * The one row that opens something else — the notification-details picker (#357) — is told apart by its key, for the same reason.
+	 * The one that opens something else — Status Notification, which opens the notification-details picker (#357, #384) — is told apart by its key, for the
+	 * same reason.
 	 * <p>
 	 * The title is not set here: the screen sets its own when it resumes (see the class doc).
 	 *
@@ -77,7 +77,7 @@ public class SettingsActivity extends BaseActivity implements PreferenceFragment
 	 */
 	@Override
 	public boolean onPreferenceStartFragment(@NonNull PreferenceFragmentCompat caller, Preference pref) {
-		final Fragment fragment = getString(R.string._pref_key_notification_details).equals(pref.getKey())
+		final Fragment fragment = getString(R.string._pref_key_status_notification).equals(pref.getKey())
 		                          ? new NotificationDetailsFragment()
 		                          : new GenericPreferenceFragment();
 		// For a GenericPreferenceFragment, the category extra picks which preference screen it loads.
