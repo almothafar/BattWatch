@@ -226,9 +226,18 @@ public class OngoingStatusContentTest {
 	}
 
 	@Test
-	public void aChoiceWithNothingToShowYet_fallsBackToTheTemperature() {
-		// Kept from before #357, so the line is never blank on a warm-up tick; slice 3 (#359) replaces it with "Calculating…".
+	public void aChoiceWithNothingToShowYet_readsCalculating_notTheTemperature() {
+		// The temperature is a family the user can choose now, so showing it unbidden would override a choice that left it out (#359).
 		select(DetailFamily.CURRENT, DetailFamily.TIME);
+		assertEquals("Calculating…", OngoingStatusContent.statusDetail(context, discharging85(), BatteryRateTracker.BatteryRate.empty()));
+	}
+
+	@Test
+	public void aChosenTemperature_stillShowsOnAWarmUpTick() {
+		// Chosen, not a fallback: it has a reading from the first tick, so the line is never "Calculating…" while it is in the choice.
+		select(DetailFamily.TEMPERATURE);
+		assertEquals(temp(), OngoingStatusContent.statusDetail(context, discharging85(), BatteryRateTracker.BatteryRate.empty()));
+		select(DetailFamily.SPEED, DetailFamily.TEMPERATURE);
 		assertEquals(temp(), OngoingStatusContent.statusDetail(context, discharging85(), BatteryRateTracker.BatteryRate.empty()));
 	}
 
@@ -344,16 +353,17 @@ public class OngoingStatusContentTest {
 		final Notification built = NotificationService.buildOngoingNotification(context, discharging85(), BatteryRateTracker.BatteryRate.empty());
 		assertEquals("On battery", String.valueOf(built.extras.getCharSequence(Notification.EXTRA_TEXT)));
 		assertEquals(line(R.string.temperature, temp()), String.valueOf(built.extras.getCharSequence(Notification.EXTRA_BIG_TEXT)));
+
+		// A line that reads "Calculating…" leaves it out as well, so the pull-down is still the everything view there (#359).
+		select(DetailFamily.SPEED, DetailFamily.CURRENT, DetailFamily.TIME);
+		final Notification calculating = NotificationService.buildOngoingNotification(context, discharging85(), BatteryRateTracker.BatteryRate.empty());
+		assertEquals("Calculating…", String.valueOf(calculating.extras.getCharSequence(Notification.EXTRA_TEXT)));
+		assertEquals(line(R.string.temperature, temp()), String.valueOf(calculating.extras.getCharSequence(Notification.EXTRA_BIG_TEXT)));
 	}
 
 	@Test
 	public void aWarmUpPullDown_staysShut_whenTheLineAlreadyShowsTheTemperature() {
-		// A chevron would open onto the reading the line already shows (#194): the line's own fallback to it, and a choice that includes it.
-		select(DetailFamily.SPEED, DetailFamily.CURRENT, DetailFamily.TIME);
-		final Notification fellBack = NotificationService.buildOngoingNotification(context, discharging85(), BatteryRateTracker.BatteryRate.empty());
-		assertEquals(temp(), String.valueOf(fellBack.extras.getCharSequence(Notification.EXTRA_TEXT)));
-		assertNull(fellBack.extras.getCharSequence(Notification.EXTRA_BIG_TEXT));
-
+		// A chevron would open onto the reading the line already shows (#194).
 		select(DetailFamily.TEMPERATURE, DetailFamily.POWER_SOURCE);
 		final Notification chosen = NotificationService.buildOngoingNotification(context, discharging85(), BatteryRateTracker.BatteryRate.empty());
 		assertEquals(temp() + SEP + "On battery", String.valueOf(chosen.extras.getCharSequence(Notification.EXTRA_TEXT)));

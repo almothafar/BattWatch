@@ -259,6 +259,40 @@ public class BatteryRateTrackerTest {
 	}
 
 	/**
+	 * {@link BatteryRate#currentUnavailable}: whether a missing current is absent rather than late (#359), the flag that lets the notification-details picker
+	 * say "—" instead of "Calculating…".
+	 */
+	public static class CurrentAvailability {
+
+		@Test
+		public void aRateWithoutACurrent_meansTheCurrentIsNotComing() {
+			// The level-over-time rate took minutes of readings; a current needs one. Unsupported, or a Kirin mA misread under the display floor (#152).
+			final List<Sample> unsupported = Arrays.asList(new Sample(0, 50, NO_CURRENT), new Sample(360_000, 47, NO_CURRENT));
+			assertTrue(BatteryRateTracker.computeRate(unsupported, 0, false, 360_000, NO_CURRENT).currentUnavailable());
+			final List<Sample> misread = Arrays.asList(new Sample(0, 50, -800), new Sample(360_000, 47, -800));
+			assertTrue(BatteryRateTracker.computeRate(misread, 0, false, 360_000, -800).currentUnavailable());
+		}
+
+		@Test
+		public void aWindowStillFilling_isLate_notAbsent() {
+			// No rate yet either, so nothing says the current is not on its way.
+			final List<Sample> window = Arrays.asList(new Sample(0, 50, NO_CURRENT), new Sample(30_000, 50, NO_CURRENT));
+			assertFalse(BatteryRateTracker.computeRate(window, 0, false, 30_000, NO_CURRENT).currentUnavailable());
+		}
+
+		@Test
+		public void aReportedCurrent_isAvailable() {
+			final List<Sample> window = Arrays.asList(
+					new Sample(0, 50, -800_000),
+					new Sample(30_000, 50, -800_000),
+					new Sample(60_000, 50, -800_000));
+			final BatteryRate rate = BatteryRateTracker.computeRate(window, 4000, false, 60_000, -800_000);
+			assertTrue(rate.hasRate());
+			assertFalse(rate.currentUnavailable());
+		}
+	}
+
+	/**
 	 * {@link BatteryRateTracker#averagedCurrentMicroAmps}: the shared windowed average (#173) — needs
 	 * enough spaced plausible readings, skips implausible ones, and signals "not yet" otherwise.
 	 */

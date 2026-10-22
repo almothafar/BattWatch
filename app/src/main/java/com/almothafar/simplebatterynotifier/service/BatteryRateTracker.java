@@ -582,5 +582,16 @@ public final class BatteryRateTracker {
 		static BatteryRate empty() {
 			return new BatteryRate(false, 0, false, false, 0, false, 0);
 		}
+
+		/**
+		 * Whether the current is absent rather than late (#359). Both flags come from the same window ({@link #computeRate}), and the current is the quicker
+		 * of the two: it needs one reading, the rate minutes of them. So once the rate is in, a current still missing is not coming — the device does not
+		 * report one, or reports one too small to trust (#152).
+		 *
+		 * @return true when there is a rate but no current
+		 */
+		public boolean currentUnavailable() {
+			return hasRate && !hasCurrent;
+		}
 	}
 }

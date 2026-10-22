@@ -44,11 +44,13 @@ import java.util.stream.Collectors;
 
 import static com.almothafar.simplebatterynotifier.util.BidiText.isolate;
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 
 /**
  * The notification-details picker (#357, #358): which families the status notification's collapsed line shows, up to {@link DetailFamily#MAX_SELECTED}, none
  * allowed, and in what order. Each row carries its family's live value, and a preview on top shows the notification the choice makes, both kept current from
- * the battery broadcasts while the screen is in front. Settings → Status Notification opens it directly, so it is the status notification's screen (#384).
+ * the battery broadcasts while the screen is in front. A value still on its way reads "Calculating…", and one that is not coming "—": the column is where a
+ * phone that never reports a current shows it (#359). Settings → Status Notification opens it directly, so it is the status notification's screen (#384).
  * <p>
  * The chosen rows sit above a divider in their order, the rest below it in registry order. A row's handle drags it, across the divider too, which ticks or
  * unticks it; TalkBack users reorder with Move up and Move down instead, and a family ticked by a tap joins the end. Reset in the toolbar puts the default
@@ -282,7 +284,8 @@ public class NotificationDetailsFragment extends Fragment {
 		final NotificationService.LiveStatus shown = liveStatus;
 		liveStatus = next;
 		for (final DetailFamily family : DetailFamily.values()) {
-			if (!Objects.equals(segmentOf(shown, family), segmentOf(next, family))) {
+			// The values rather than the segments: a row can turn from "Calculating…" to "—" with no segment either side.
+			if (!Objects.equals(valueOf(shown, family), valueOf(next, family))) {
 				adapter.notifyItemChanged(rows.positionOf(family), LIVE_VALUE);
 			}
 		}
@@ -300,13 +303,27 @@ public class NotificationDetailsFragment extends Fragment {
 		return getString(R.string.notification_details_place, isolate(String.valueOf(place + 1)), isolate(String.valueOf(chosen.size())));
 	}
 
-	/** A family's live value; null when it has nothing to show yet, or there is no reading. */
+	/** A family's segment of the line; null when it has nothing to show yet, or there is no reading. */
 	private String segmentOf(DetailFamily family) {
 		return segmentOf(liveStatus, family);
 	}
 
 	private static String segmentOf(NotificationService.LiveStatus status, DetailFamily family) {
 		return isNull(status) ? null : status.segments().get(family);
+	}
+
+	/** What a family's row shows: its segment, else "—" when none is coming or "Calculating…" while one is on its way (#359); null when there is no reading. */
+	private String valueOf(DetailFamily family) {
+		return valueOf(liveStatus, family);
+	}
+
+	private String valueOf(NotificationService.LiveStatus status, DetailFamily family) {
+		final String segment = segmentOf(status, family);
+		if (isNull(status) || nonNull(segment)) {
+			return segment;
+		}
+		// The details table's words for the same two states (#216).
+		return getString(status.unavailable().contains(family) ? R.string.battery_value_pending : R.string.notification_status_calculating);
 	}
 
 	/** Refresh the header, the preview and every row: one tap can enable or disable all the unchecked rows at once. */
@@ -386,7 +403,7 @@ public class NotificationDetailsFragment extends Fragment {
 			if (payloads.isEmpty()) {
 				onBindViewHolder(holder, position);
 			} else if (holder instanceof final RowHolder row) {
-				row.showValue(segmentOf(rows.familyAt(position)));
+				row.showValue(valueOf(rows.familyAt(position)));
 			}
 		}
 
@@ -411,7 +428,7 @@ public class NotificationDetailsFragment extends Fragment {
 
 		private void bindRow(RowHolder holder, DetailFamily family) {
 			final List<DetailFamily> chosen = rows.chosen();
-			holder.bind(getString(labelRes(family)), segmentOf(family), chosen.contains(family) || chosen.size() < DetailFamily.MAX_SELECTED);
+			holder.bind(getString(labelRes(family)), valueOf(family), chosen.contains(family) || chosen.size() < DetailFamily.MAX_SELECTED);
 			showTick(holder, family);
 			holder.itemView.setOnClickListener(row -> {
 				applyTap(family);
@@ -625,7 +642,7 @@ public class NotificationDetailsFragment extends Fragment {
 			}
 			card.setVisibility(View.VISIBLE);
 			title.setText(liveStatus.title());
-			final String text = OngoingStatusContent.detailLine(rows.chosen(), NotificationDetailsFragment.this::segmentOf);
+			final String text = OngoingStatusContent.detailLine(requireContext(), rows.chosen(), NotificationDetailsFragment.this::segmentOf);
 			line.setText(text);
 			line.setVisibility(text.isEmpty() ? View.GONE : View.VISIBLE);
 		}
