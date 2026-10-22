@@ -1,104 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The notification-details picker (#357, #358). Same card-on-neutral look as the preference screens (PreferenceCardDecoration), built from views because its
-     rows are dragged, which a preference list cannot do. Overdraw is accepted, not fixed: every preference screen paints this same backdrop over the window
-     background, from code, and this one has to match them.
-     The screen scrolls as a whole, as a preference screen does, and the list lays out every row: on a short phone at a large font size the preview and the
-     header would otherwise leave the list a sliver to scroll inside. -->
-<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<!-- The notification-details picker (#357, #358): one list from top to bottom, the preview, the header, then a row per family on a card. The page scrolls as
+     one list, so a row dragged to the screen's edge scrolls it along: ItemTouchHelper only ever scrolls the list it drags in. Same card-on-neutral look as the
+     preference screens (PreferenceCardDecoration), painted behind the rows by RowCardDecoration. Overdraw is accepted, not fixed: every preference screen
+     paints this same backdrop over the window background, from code, and this one has to match them. -->
+<androidx.recyclerview.widget.RecyclerView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/notification_details_page"
+    android:id="@+id/notification_details_list"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/settings_group_background"
-    android:fillViewport="true"
-    tools:ignore="Overdraw">
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical">
-
-        <!-- The status notification as the choice below renders it (#358), live: the title, and the line the chosen rows make in their order. Outlined so it
-             reads as a picture of something else rather than one more card of settings. It wraps where the shade would cut the line short, because how much
-             fits there depends on the device rather than on this screen's width. -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/notification_details_preview"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="@dimen/settings_card_horizontal_margin"
-            android:layout_marginTop="@dimen/settings_card_group_gap"
-            android:layout_marginEnd="@dimen/settings_card_horizontal_margin"
-            app:cardBackgroundColor="@color/settings_group_card"
-            app:cardCornerRadius="@dimen/settings_card_corner_radius"
-            app:cardElevation="0dp"
-            app:strokeColor="?attr/colorOutlineVariant"
-            app:strokeWidth="1dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingStart="?android:attr/listPreferredItemPaddingStart"
-                android:paddingTop="12dp"
-                android:paddingEnd="?android:attr/listPreferredItemPaddingEnd"
-                android:paddingBottom="12dp">
-
-                <TextView
-                    android:id="@+id/notification_details_preview_title"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:textAppearance="?attr/textAppearanceTitleSmall"
-                    android:textColor="?attr/colorOnSurface" />
-
-                <TextView
-                    android:id="@+id/notification_details_preview_line"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:textAppearance="?attr/textAppearanceBodyMedium"
-                    android:textColor="?attr/colorOnSurfaceVariant" />
-
-            </LinearLayout>
-
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Inset as the rows below are, card margin plus list-item padding, so the text lines up with theirs on any screen: the padding is wider on tablets
-             and unfolded foldables than on phones. -->
-        <TextView
-            android:id="@+id/notification_details_header"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="@dimen/settings_card_horizontal_margin"
-            android:layout_marginEnd="@dimen/settings_card_horizontal_margin"
-            android:accessibilityLiveRegion="polite"
-            android:paddingStart="?android:attr/listPreferredItemPaddingStart"
-            android:paddingTop="@dimen/settings_card_group_gap"
-            android:paddingEnd="?android:attr/listPreferredItemPaddingEnd"
-            android:paddingBottom="8dp"
-            android:textAppearance="?attr/textAppearanceBodyMedium"
-            android:textColor="?attr/colorOnSurfaceVariant" />
-
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="@dimen/settings_card_horizontal_margin"
-            android:layout_marginEnd="@dimen/settings_card_horizontal_margin"
-            android:layout_marginBottom="@dimen/settings_card_group_gap"
-            app:cardBackgroundColor="@color/settings_group_card"
-            app:cardCornerRadius="@dimen/settings_card_corner_radius"
-            app:cardElevation="0dp"
-            app:strokeWidth="0dp">
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/notification_details_list"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:nestedScrollingEnabled="false"
-                android:overScrollMode="never" />
-
-        </com.google.android.material.card.MaterialCardView>
-
-    </LinearLayout>
-
-</androidx.core.widget.NestedScrollView>
+    android:clipToPadding="false"
+    android:paddingBottom="@dimen/settings_card_group_gap"
+    tools:ignore="Overdraw" />

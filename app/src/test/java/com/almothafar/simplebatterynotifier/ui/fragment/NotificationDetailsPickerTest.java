@@ -6,8 +6,6 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
 import android.os.BatteryManager;
 import android.os.Looper;
 import android.os.SystemClock;
@@ -20,7 +18,6 @@ import android.widget.CheckBox;
 import android.widget.TextView;
 
 import androidx.appcompat.widget.Toolbar;
-import androidx.core.widget.NestedScrollView;
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
 import androidx.fragment.app.Fragment;
 import androidx.preference.Preference;
@@ -56,6 +53,7 @@ import java.util.Locale;
 
 import static com.almothafar.simplebatterynotifier.service.OngoingStatusContent.DETAIL_SEPARATOR;
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -71,8 +69,8 @@ import static org.robolectric.Shadows.shadowOf;
  * preference change did before.
  */
 @RunWith(RobolectricTestRunner.class)
-// Tall enough for the whole page, so a drag never strays into the screen's edge zone, where the page scrolls under it. The one test about that scroll, and
-// those that need a locale or a wide screen, name their own qualifiers, which replace these.
+// Tall enough for the whole page: the list lays out only the rows in view, and a drag never nears the screen's edge, where the page scrolls under it. Tests
+// that need a locale add it with "+"; the one about that scroll, and the wide-screen one, name their own qualifiers, which replace these.
 @Config(sdk = 34, qualifiers = "h800dp")
 public class NotificationDetailsPickerTest {
 
@@ -183,6 +181,36 @@ public class NotificationDetailsPickerTest {
 	}
 
 	@Test
+	public void aDrop_isSavedAsTheFingerLifts_evenIfTheRowIsCaughtAgainWhileItSettles() {
+		// A dropped row glides into its place after the finger lifts, and a touch on it before it gets there picks it up again: the glide is cut short, and
+		// anything that waited for its end never happens.
+		openPicker();
+		final Finger first = new Finger(DetailFamily.TIME);
+		first.moveOver(row(DetailFamily.CURRENT));
+		first.lift();
+
+		new Finger(DetailFamily.TIME).letGo();
+
+		assertEquals(List.of(DetailFamily.SPEED, DetailFamily.TIME, DetailFamily.CURRENT), AppPrefs.notificationDetails(context));
+	}
+
+	@Test
+	public void aDragCutShortByTheScreenTurning_isSaved_andTheOldScreenGoesQuietly() {
+		// Settings is rebuilt when the screen turns. The system cancels the touch as the old screen goes, and the dropped row is still gliding into place after
+		// the old screen has gone.
+		openPicker();
+		final Finger finger = new Finger(DetailFamily.TIME);
+		finger.moveOver(row(DetailFamily.CURRENT));
+		finger.cancel();
+
+		controller.recreate();
+		shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(1));
+
+		assertEquals(List.of(DetailFamily.SPEED, DetailFamily.TIME, DetailFamily.CURRENT), AppPrefs.notificationDetails(context));
+		assertEquals("SPEED TIME CURRENT | TEMPERATURE POWER_SOURCE", screen());
+	}
+
+	@Test
 	public void atTheCap_anUnchosenRow_doesNotDrag() {
 		openPicker();
 
@@ -193,29 +221,74 @@ public class NotificationDetailsPickerTest {
 	}
 
 	@Test
-	@Config(qualifiers = "h400dp")
-	public void aRowHeldAtTheScreensBottom_scrollsThePage_andStaysUnderTheFinger() {
-		// A short screen, or a large font: the page is taller than the window, so a row's new place can be out of sight below. The list lays out every row,
-		// so ItemTouchHelper's own edge scrolling has nothing to scroll; the page has to.
+	public void aChosenRowDraggedBelowTheDivider_showsItUntickedBeforeTheDrop() {
 		openPicker();
-		final NestedScrollView page = controller.get().findViewById(R.id.notification_details_page);
-		assertTrue("the page fits the screen, so there is nothing to scroll", page.canScrollVertically(1));
+		final Finger finger = new Finger(DetailFamily.TIME);
+
+		finger.moveOver(row(DetailFamily.TEMPERATURE));
+
+		assertFalse(checkBox(DetailFamily.TIME).isChecked());
+		assertEquals(context.getString(R.string.notification_details_header, "3", "2"), header().getText().toString());
+		assertTrue("below the cap again, so the rows under the divider light up", row(DetailFamily.POWER_SOURCE).isEnabled());
+		assertEquals("saved before the drop", AppPrefs.DEFAULT_NOTIFICATION_DETAILS, AppPrefs.notificationDetails(context));
+		finger.letGo();
+	}
+
+	@Test
+	public void aRowDraggedAcrossTheDividerAndBack_endsAsItBegan() {
+		postStatusNotification();
+		openPicker();
+		final Notification before = posted();
+		final Finger finger = new Finger(DetailFamily.TIME);
+		finger.moveOver(row(DetailFamily.TEMPERATURE));
+
+		finger.moveOver(divider());
+		finger.letGo();
+
+		assertEquals("SPEED CURRENT TIME | TEMPERATURE POWER_SOURCE", screen());
+		assertTrue(checkBox(DetailFamily.TIME).isChecked());
+		assertFalse("at the cap again, so the rows under the divider go grey", row(DetailFamily.TEMPERATURE).isEnabled());
+		assertSame("nothing changed, so nothing is re-posted", before, posted());
+	}
+
+	@Test
+	public void aDraggedRow_isLiftedOffTheCard_untilItIsDropped() {
+		// The rows are see-through, over the card painted behind them. A dragged row carries a card of its own, so it hides the rows it passes.
+		openPicker();
 		final View dragged = row(DetailFamily.SPEED);
 		final Finger finger = new Finger(DetailFamily.SPEED);
-		// Just inside the bottom edge zone. Any deeper and, at the page's end, the row is carried past the list's last edge, where ItemTouchHelper's own
-		// scrolling never ends under Robolectric (see Finger).
-		final float fingerAt = windowY(page) + page.getHeight() - dp(44);
+		assertNotNull("a dragged row lets the rows it passes show through", dragged.getBackground());
+		assertTrue("a dragged row casts no shadow", dragged.getTranslationZ() > 0);
 
-		finger.moveTo(fingerAt);
+		finger.letGo();
 
-		// Robolectric runs these frames without its clock moving, so a finger held in the edge zone takes the page to its end at once, where a screen takes a
-		// pixel a frame. Well past one step, then: each step's move event is what books the next.
-		assertTrue("the page scrolled " + page.getScrollY() + "px", page.getScrollY() > dp(10));
-		// The list moved up under a resting finger; the row has to have moved down the list to match, or it rides off with the page.
-		drawFrame();
-		assertEquals("the row slid away from the finger", fingerAt, windowY(dragged) + finger.grip(), 1.5f);
-		// Not checked here: that no step is taken once the row is dropped. The page is already at its end by then, for the reason above, so one step too many
-		// would have nowhere to go.
+		assertNull("a dropped row keeps the card it was lifted on", dragged.getBackground());
+		assertEquals(0, dragged.getTranslationZ(), 0);
+	}
+
+	@Test
+	public void aRowDraggedUpOverTheHeader_staysTheFirstRow() {
+		// The preview and the header are items of the same list, above the rows: a row can be carried over them, but never into their places.
+		openPicker();
+
+		drag(DetailFamily.SPEED, header());
+
+		assertEquals("SPEED CURRENT TIME | TEMPERATURE POWER_SOURCE", screen());
+		assertEquals(AppPrefs.DEFAULT_NOTIFICATION_DETAILS, AppPrefs.notificationDetails(context));
+	}
+
+	@Test
+	@Config(qualifiers = "h400dp")
+	public void aRowHeldPastTheScreensBottom_scrollsThePage() {
+		// A short screen, or a large font: the page is taller than the window, so a row's new place can be out of sight below. ItemTouchHelper scrolls the
+		// list it drags in, and only that, so the page has to be that list.
+		openPicker();
+		assertTrue("the page fits the screen, so there is nothing to scroll", list().canScrollVertically(1));
+		final Finger finger = new Finger(DetailFamily.SPEED);
+
+		finger.holdPastTheBottom();
+
+		assertTrue("the page did not scroll", list().canScrollVertically(-1));
 		finger.letGo();
 	}
 
@@ -266,6 +339,17 @@ public class NotificationDetailsPickerTest {
 	}
 
 	@Test
+	public void aMove_leavesTheHeaderAsItWas_soTalkBackDoesNotReadItAgain() {
+		// The header is a live region: written again, even with the same words, it is read out again, over the "Checked, 2 of 3" the moved row says.
+		openPicker();
+		final CharSequence shown = header().getText();
+
+		talkBack(DetailFamily.TIME, R.id.notification_details_action_move_up);
+
+		assertSame(shown, header().getText());
+	}
+
+	@Test
 	public void aTap_givesTheRowItsPlace_beforeTheListRedraws() {
 		// TalkBack reads a tap from the click, which goes out before the list's next layout rebinds the row. A place that only arrived with the rebind would be
 		// announced a second time, as a change.
@@ -280,7 +364,7 @@ public class NotificationDetailsPickerTest {
 	}
 
 	@Test
-	@Config(qualifiers = "ar-rEG")
+	@Config(qualifiers = "+ar-rEG")
 	public void aChosenRowsPlace_keepsWesternDigits_inArabic() {
 		// Premise: a region-bearing Arabic locale really localises digits. Bare "ar" picks Western ones and would pass against the defect (#241).
 		assertEquals("ar-rEG should select Eastern Arabic digits", "٢", String.format(Locale.getDefault(), "%d", 2));
@@ -483,7 +567,7 @@ public class NotificationDetailsPickerTest {
 	}
 
 	@Test
-	@Config(qualifiers = "ar-rEG")
+	@Config(qualifiers = "+ar-rEG")
 	public void eachFamily_goesByTheNameTheDetailsTableUses() {
 		// One name per thing across the app: a family ticked here as "الحرارة" has to read "الحرارة" in the pull-down and the details table too.
 		openPicker();
@@ -555,7 +639,7 @@ public class NotificationDetailsPickerTest {
 	}
 
 	@Test
-	@Config(qualifiers = "ar-rEG")
+	@Config(qualifiers = "+ar-rEG")
 	public void header_keepsWesternDigits_inArabic() {
 		// Premise: a region-bearing Arabic locale really localises digits. Bare "ar" picks Western ones and would pass against the defect (#241).
 		assertEquals("ar-rEG should select Eastern Arabic digits", "٣", String.format(Locale.getDefault(), "%d", 3));
@@ -799,15 +883,23 @@ public class NotificationDetailsPickerTest {
 		throw new AssertionError("a row shows an unknown name: " + name);
 	}
 
-	/** The list's children in on-screen order, by where layout put them rather than where a move animation has them right now. */
+	/** The rows and the divider in on-screen order, by where layout put them rather than where a move animation has them right now. */
 	private List<View> rowsFromTheTop() {
 		final RecyclerView list = list();
 		final List<View> rows = new ArrayList<>();
 		for (int index = 0; index < list.getChildCount(); index++) {
-			rows.add(list.getChildAt(index));
+			final View child = list.getChildAt(index);
+			// Not the preview or the header, which are items of the same list.
+			if (isDivider(child) || nonNull(child.findViewById(R.id.detail_label))) {
+				rows.add(child);
+			}
 		}
 		rows.sort(Comparator.comparingInt(View::getTop));
 		return rows;
+	}
+
+	private View divider() {
+		return controller.get().findViewById(R.id.notification_details_divider);
 	}
 
 	private static AccessibilityNodeInfoCompat node(View row) {
@@ -839,14 +931,12 @@ public class NotificationDetailsPickerTest {
 	}
 
 	/**
-	 * A finger on a row's handle, driving ItemTouchHelper through the list's real touch handling: it presses on construction, makes one stroke in small steps
-	 * with a frame between each so the list lays out as it goes, and lets go where the stroke ended.
+	 * A finger on a row's handle, driving ItemTouchHelper through the list's real touch handling: it presses on construction, moves in strokes of small steps
+	 * with a frame between each so the list lays out as it goes, and lets go where the last stroke ended.
 	 * <p>
-	 * The stroke must not take the row past the first or last row. That means holding it beyond the list's edge, where ItemTouchHelper scrolls the list and
-	 * re-posts itself for the next frame, and under Robolectric that loop never ends: the run dies of an OutOfMemoryError.
-	 * <p>
-	 * It keeps its place on the screen, as a real finger does, and works out where that is on the list for each event: when the page scrolls, the list moves
-	 * under a finger that has not moved.
+	 * A stroke keeps the row inside the list. Held past the list's top or bottom edge, a row has ItemTouchHelper scroll the list and book itself again for the
+	 * next frame, and under Robolectric that never ends: the run dies of an OutOfMemoryError. The one test about that scroll holds the row past the edge for a
+	 * single move, and lets go before any frame runs.
 	 */
 	private final class Finger {
 
@@ -855,8 +945,6 @@ public class NotificationDetailsPickerTest {
 		private final long downTime = SystemClock.uptimeMillis();
 		private final View row;
 		private final float x;
-		/** Where the finger pressed, down the window. */
-		private final float pressedAt;
 		/** Where on its row the finger holds it, from the row's top. */
 		private final float grip;
 		/** Where the finger is now, down the window. */
@@ -866,43 +954,59 @@ public class NotificationDetailsPickerTest {
 			row = row(family);
 			final View handle = handle(family);
 			x = row.getLeft() + handle.getLeft() + handle.getWidth() / 2f;
-			pressedAt = windowY(handle) + handle.getHeight() / 2f;
-			grip = pressedAt - windowY(row);
-			at = pressedAt;
+			at = windowY(handle) + handle.getHeight() / 2f;
+			grip = at - windowY(row);
 			touch(MotionEvent.ACTION_DOWN);
 		}
 
-		/** Move until the row is just past the target's far edge. Measured from the layout before the stroke, so it is the finger's one stroke. */
+		/** Carry the row until it is just past the target's far edge, in one stroke, measured from where the target is laid out as the stroke begins. */
 		void moveOver(View target) {
-			moveBy(target.getTop() < row.getTop() ? target.getTop() - row.getTop() - 2 : target.getBottom() - row.getBottom() + 2);
+			final float top = windowY(list()) + target.getTop();
+			stroke(grip + (top < at - grip ? top - 2 : top + target.getHeight() + 2 - row.getHeight()));
 		}
 
-		/** Move the finger to a place down the window, in one stroke. */
-		void moveTo(float windowY) {
-			moveBy(windowY - pressedAt);
+		/** Carry the row down to the list's bottom edge, then hold it just past it for one move, after which no frame runs: see above. */
+		void holdPastTheBottom() {
+			stroke(grip + windowY(list()) + list().getHeight() - list().getPaddingBottom() - row.getHeight());
+			at += 2;
+			send(MotionEvent.ACTION_MOVE);
 		}
 
-		/** Move the finger this far down (up when negative) from where it pressed, in one stroke. */
-		void moveBy(float distance) {
-			assertTrue("a drag past the list's edge autoscrolls without end under Robolectric",
-					row.getTop() + distance >= 0 && row.getBottom() + distance <= list().getHeight());
+		/** Lift the finger and wait for the dropped row to glide into its place. */
+		void letGo() {
+			lift();
+			shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(1));
+		}
+
+		/** Lift the finger, and let no frame run: the dropped row has yet to glide into its place, which under Robolectric takes the one next frame. */
+		void lift() {
+			send(MotionEvent.ACTION_UP);
+		}
+
+		/** The system takes the touch away, as it does when the screen turns; no frame runs, so the dropped row has yet to glide into its place. */
+		void cancel() {
+			send(MotionEvent.ACTION_CANCEL);
+		}
+
+		/** Move the finger down the window to {@code to}, where it holds the row inside the list, in one stroke. */
+		private void stroke(float to) {
+			final float top = to - grip - windowY(list());
+			assertTrue("a row held past the list's edge scrolls it without end under Robolectric",
+					top >= list().getPaddingTop() && top + row.getHeight() <= list().getHeight() - list().getPaddingBottom());
+			final float from = at;
 			for (int step = 1; step <= STEPS; step++) {
-				at = pressedAt + distance * step / STEPS;
+				at = from + (to - from) * step / STEPS;
 				touch(MotionEvent.ACTION_MOVE);
 			}
 		}
 
-		float grip() {
-			return grip;
-		}
-
-		void letGo() {
-			touch(MotionEvent.ACTION_UP);
-			// Long enough for the dropped row to settle back into place, which is when the drop is saved.
-			shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(1));
-		}
-
+		/** Send a touch, then let a frame run so the list lays out what it changed. */
 		private void touch(int action) {
+			send(action);
+			shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(20));
+		}
+
+		private void send(int action) {
 			final MotionEvent event = MotionEvent.obtain(
 					downTime,
 					SystemClock.uptimeMillis(),
@@ -912,7 +1016,6 @@ public class NotificationDetailsPickerTest {
 					0);
 			list().dispatchTouchEvent(event);
 			event.recycle();
-			shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(20));
 		}
 	}
 
@@ -921,15 +1024,6 @@ public class NotificationDetailsPickerTest {
 		final boolean handled = row(family).performAccessibilityAction(action, null);
 		shadowOf(Looper.getMainLooper()).idle();
 		return handled;
-	}
-
-	/**
-	 * Draw the list once, as the screen would on its next frame. ItemTouchHelper places a dragged row under the finger while drawing, and Robolectric does not
-	 * draw by itself, so without this a dragged row sits where layout put it.
-	 */
-	private void drawFrame() {
-		final RecyclerView list = list();
-		list.draw(new Canvas(Bitmap.createBitmap(list.getWidth(), list.getHeight(), Bitmap.Config.ARGB_8888)));
 	}
 
 	/** Where a view's top is in the window, wherever a scroll or a drag has moved it. */

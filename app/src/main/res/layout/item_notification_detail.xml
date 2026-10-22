@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- One family in the notification-details picker: the whole row is the touch target and reports itself to TalkBack as the checkbox, so the box itself
-     takes no clicks or focus of its own. Painted in the card's colour, with the ripple on top, so a row dragged over the others hides what it passes. -->
+     takes no clicks or focus of its own. Inset to the card's edges and see-through, so the card painted behind the rows (RowCardDecoration) shows, with the
+     ripple on top; a dragged row is given a card of its own (bg_notification_detail_lifted), so it hides the rows it passes. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@color/settings_group_card"
+    android:layout_marginStart="@dimen/settings_card_horizontal_margin"
+    android:layout_marginEnd="@dimen/settings_card_horizontal_margin"
     android:foreground="?attr/selectableItemBackground"
     android:clickable="true"
     android:focusable="true"

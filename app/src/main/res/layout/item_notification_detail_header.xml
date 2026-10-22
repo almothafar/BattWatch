@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The notification-details picker's header, between the preview and the rows (#357): how many families are chosen, of the most allowed. Inset as the rows
+     are, card margin plus list-item padding, so the text lines up with theirs on any screen: the padding is wider on tablets and unfolded foldables than on
+     phones. A polite live region, so TalkBack reads out a count that changes. -->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/notification_details_header"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginStart="@dimen/settings_card_horizontal_margin"
+    android:layout_marginEnd="@dimen/settings_card_horizontal_margin"
+    android:accessibilityLiveRegion="polite"
+    android:paddingStart="?android:attr/listPreferredItemPaddingStart"
+    android:paddingTop="@dimen/settings_card_group_gap"
+    android:paddingEnd="?android:attr/listPreferredItemPaddingEnd"
+    android:paddingBottom="8dp"
+    android:textAppearance="?attr/textAppearanceBodyMedium"
+    android:textColor="?attr/colorOnSurfaceVariant" />

@@ -5,6 +5,8 @@
     android:id="@+id/notification_details_divider"
     android:layout_width="match_parent"
     android:layout_height="17dp"
+    android:layout_marginStart="@dimen/settings_card_horizontal_margin"
+    android:layout_marginEnd="@dimen/settings_card_horizontal_margin"
     android:importantForAccessibility="noHideDescendants"
     android:paddingStart="?android:attr/listPreferredItemPaddingStart"
     android:paddingEnd="?android:attr/listPreferredItemPaddingEnd">

@@ -13,4 +13,6 @@
     <dimen name="settings_card_corner_radius">20dp</dimen>
     <dimen name="settings_card_horizontal_margin">16dp</dimen>
     <dimen name="settings_card_group_gap">14dp</dimen>
+    <!-- How far a dragged notification-details row rises above its card (#358). -->
+    <dimen name="notification_detail_lift">6dp</dimen>
 </resources>
