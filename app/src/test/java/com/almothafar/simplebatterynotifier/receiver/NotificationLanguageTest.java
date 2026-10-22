@@ -29,6 +29,7 @@ import org.robolectric.shadows.ShadowToast;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 import static java.util.Objects.nonNull;
@@ -38,8 +39,9 @@ import static org.robolectric.Shadows.shadowOf;
 
 /**
  * The notifications speak the in-app language on Android 8–12 (#381), where the system applies the choice only to the app's own screens. Each test stores the
- * choice where AppCompat keeps it and opens no screen, as when the monitoring service starts on boot, then reads what the shade would show. One test per path
- * that posts: the monitoring service, {@link BatteryLevelReceiver} and {@link PowerConnectionReceiver}.
+ * choice where AppCompat keeps it and opens no screen, as when the monitoring service starts on boot, then reads what the shade would show. The three paths
+ * that post each have a test, the monitoring service, {@link BatteryLevelReceiver} and {@link PowerConnectionReceiver}; the remaining alerts are posted
+ * through the {@link NotificationService} methods that post them.
  */
 @RunWith(RobolectricTestRunner.class)
 // Android 10, what the Mate 10 Pro runs. From Android 13 the system applies the choice itself, so the defect cannot show on the sdk 34 the other tests use.
@@ -71,26 +73,28 @@ public class NotificationLanguageTest {
 
 	@Test
 	public void theMonitoringService_postsTheStatusNotification_inTheAppLanguage() {
-		chooseAppLanguage("ar");
+		chooseArabic();
 		publishBattery(BatteryManager.BATTERY_STATUS_DISCHARGING, 85, 0);
 
 		service = Robolectric.buildService(PowerConnectionService.class).create();
 
+		assertTheDefaultPicksEasternDigits();
 		assertEquals("85% · تستهلك", titleOf(shadowOf(service.get()).getLastForegroundNotification()));
 	}
 
 	@Test
 	public void theBatteryReceiver_postsTheAlertAndTheStatusNotification_inTheAppLanguage() {
-		chooseAppLanguage("ar");
+		chooseArabic();
 
 		new BatteryLevelReceiver().onReceive(context, publishBattery(BatteryManager.BATTERY_STATUS_DISCHARGING, 5, 0));
 
+		assertTheDefaultPicksEasternDigits();
 		assertEquals(List.of("5% · تستهلك", "البطارية منخفضة جداً"), postedTitles());
 	}
 
 	@Test
 	public void thePowerReceiver_announcesCharging_inTheAppLanguage() {
-		chooseAppLanguage("ar");
+		chooseArabic();
 
 		new PowerConnectionReceiver().onReceive(context, publishBattery(BatteryManager.BATTERY_STATUS_CHARGING, 50, BatteryManager.BATTERY_PLUGGED_AC));
 		// Past the whole sampling window. Robolectric reports no charging current, so the speed stays unknown and the plain message is the one shown.
@@ -100,10 +104,10 @@ public class NotificationLanguageTest {
 		assertEquals("شحن سلكي", ShadowToast.getTextOfLatestToast());
 	}
 
-	/** The detectors' alerts: the receiver's broadcast reaches them through {@code FastDrainDetector} and {@code SlowChargeDetector}. */
+	/** Posted the way {@code FastDrainDetector} and {@code SlowChargeDetector} post them; the detectors only decide when, and have tests of their own. */
 	@Test
 	public void theFastDrainAlert_isInTheAppLanguage() {
-		chooseAppLanguage("ar");
+		chooseArabic();
 
 		NotificationService.sendFastDrainNotification(context, 27, 20, 45);
 
@@ -112,10 +116,11 @@ public class NotificationLanguageTest {
 
 	@Test
 	public void theSlowChargeWarning_isInTheAppLanguage() {
-		chooseAppLanguage("ar");
+		chooseArabic();
 
 		NotificationService.sendSlowChargeWarning(context, 3);
 
+		assertTheDefaultPicksEasternDigits();
 		assertEquals("الشحن بطيء (~3 واط) — جرّب كابلاً آخر، أو نظّف المنفذ، أو استخدم شاحناً مختلفاً.",
 		             BidiVisualOrder.stripControls(String.valueOf(ShadowToast.getTextOfLatestToast())));
 	}
@@ -126,10 +131,11 @@ public class NotificationLanguageTest {
 	 */
 	@Test
 	public void anArabicAlert_keepsTheUnitOnItsReading_withNoScreenOpen() {
-		chooseAppLanguage("ar");
+		chooseArabic();
 
 		NotificationService.sendTemperatureNotification(context, 460);
 
+		assertTheDefaultPicksEasternDigits();
 		final String text = textOf(shadowOf(notificationManager()).getAllNotifications().get(0));
 		assertTrue(text, text.contains("حرارة"));
 		BidiVisualOrder.assertRendersAsWritten(text, "46.0 °C");
@@ -145,14 +151,22 @@ public class NotificationLanguageTest {
 	// --- Helpers ----------------------------------------------------------------------------------
 
 	/**
-	 * Store the choice where AppCompat keeps it below Android 13 ({@code autoStoreLocales} in the manifest), as Settings → App language leaves it.
-	 *
-	 * @param tag the language tag the picker stores, e.g. "ar"
+	 * Choose Arabic in Settings → App language, stored where AppCompat keeps it below Android 13 ({@code autoStoreLocales} in the manifest). As {@code ar-EG},
+	 * though the picker stores a bare {@code ar}: under a region tag CLDR picks Eastern digits, so a number formatted by the default locale would show in what
+	 * these tests read, where a bare {@code ar} would hide it (#241).
 	 */
-	// AppCompat's own writer, so the choice is stored in exactly the form the app reads back.
+	// Core's writer, the one AppCompat stores the choice with, so the choice is in exactly the form the app reads back.
 	@SuppressLint("RestrictedApi")
-	private void chooseAppLanguage(String tag) {
-		AppLocalesStorageHelper.persistLocales(context, tag);
+	private void chooseArabic() {
+		AppLocalesStorageHelper.persistLocales(context, "ar-EG");
+	}
+
+	/**
+	 * Premise for a test that reads numbers: the default locale the app set while posting really picks Eastern digits, so the Western ones in the shade are
+	 * the formatters' doing rather than the locale's.
+	 */
+	private static void assertTheDefaultPicksEasternDigits() {
+		assertEquals("ar-EG should select Eastern Arabic digits", "٤٠", String.format(Locale.getDefault(), "%d", 40));
 	}
 
 	/** A battery-changed broadcast, published sticky too, since the service and the power receiver read the battery from the sticky copy. */

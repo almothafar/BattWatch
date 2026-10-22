@@ -28,11 +28,14 @@ public final class AppLanguage {
 	}
 
 	/**
-	 * Apply the app's language to text about to be built: below Android 13, a context whose resources speak it, and the process's default locale set to it,
-	 * as AppCompat sets it for each screen. The default decides whether {@link BidiText#isolate} wraps a number, which Arabic copy needs (#275).
+	 * Apply the app's language to text about to be built: below Android 13, a context whose resources speak it, and the process's default locale set to it, as
+	 * AppCompat sets it for each screen. The default decides whether {@link BidiText#isolate} wraps a number, which Arabic copy needs (#275).
 	 * <p>
 	 * The default is set on each call rather than once at start, because the framework puts it back: on every configuration change the process receives, a
 	 * dark-mode switch say, {@code ActivityThread} resets it to the phone's locales.
+	 * <p>
+	 * The choice is read on each call too, not cached: it is a one-line file, and the status notification, rebuilt on every battery broadcast, already asks
+	 * the system to re-create every notification channel each time, which costs far more. A cache would also need the language picker to keep it current.
 	 *
 	 * @param context the caller's context
 	 * @return a context in the app's language; the same context from Android 13, or when the language is left on System
