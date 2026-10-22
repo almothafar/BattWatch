@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A notification-details row lifted out of its card by a drag (#358): a card of its own, which hides the rows it passes over. Outlined, so it stands off the
+     card beneath in the dark theme too, where its shadow barely shows. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+
+    <solid android:color="@color/settings_group_card" />
+
+    <corners android:radius="@dimen/settings_card_corner_radius" />
+
+    <stroke
+        android:width="1dp"
+        android:color="?attr/colorOutlineVariant" />
+
+</shape>

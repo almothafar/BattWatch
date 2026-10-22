@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The line between the chosen families and the rest in the notification-details picker (#358). A row of the list rather than a drawn decoration, so a row
+     dragged across it changes sides. Nothing to read: TalkBack skips it. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/notification_details_divider"
+    android:layout_width="match_parent"
+    android:layout_height="17dp"
+    android:layout_marginStart="@dimen/settings_card_horizontal_margin"
+    android:layout_marginEnd="@dimen/settings_card_horizontal_margin"
+    android:importantForAccessibility="noHideDescendants"
+    android:paddingStart="?android:attr/listPreferredItemPaddingStart"
+    android:paddingEnd="?android:attr/listPreferredItemPaddingEnd">
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_gravity="center_vertical"
+        android:background="?attr/colorOutlineVariant" />
+
+</FrameLayout>

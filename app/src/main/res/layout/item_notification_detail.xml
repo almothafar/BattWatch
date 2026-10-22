@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- One family in the notification-details picker: the whole row is the touch target and reports itself to TalkBack as the checkbox, so the box itself
-     takes no clicks or focus of its own. -->
+     takes no clicks or focus of its own. Inset to the card's edges and see-through, so the card painted behind the rows (RowCardDecoration) shows, with the
+     ripple on top; a dragged row is given a card of its own (bg_notification_detail_lifted), so it hides the rows it passes. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="?attr/selectableItemBackground"
+    android:layout_marginStart="@dimen/settings_card_horizontal_margin"
+    android:layout_marginEnd="@dimen/settings_card_horizontal_margin"
+    android:foreground="?attr/selectableItemBackground"
     android:clickable="true"
     android:focusable="true"
     android:gravity="center_vertical"
@@ -13,10 +17,14 @@
     android:paddingStart="?android:attr/listPreferredItemPaddingStart"
     android:paddingEnd="?android:attr/listPreferredItemPaddingEnd">
 
+    <!-- No 48dp minimum: the box takes no touches of its own, and the 16dp the minimum added came out of the name and value columns, which broke
+         "Temperature" in the middle of the word on a 360dp-wide phone (NotificationDetailsRowWidthTest). -->
     <com.google.android.material.checkbox.MaterialCheckBox
         android:id="@+id/detail_checkbox"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:minWidth="0dp"
+        android:minHeight="0dp"
         android:clickable="false"
         android:focusable="false"
         android:importantForAccessibility="no" />
@@ -42,5 +50,18 @@
         android:gravity="end"
         android:textAppearance="?android:attr/textAppearanceListItemSecondary"
         android:textColor="?android:attr/textColorSecondary" />
+
+    <!-- The grip a row is dragged by (#358): a 48dp target, pulled 12dp into the row's end padding so the bars line up with the text edges above and below.
+         TalkBack skips it; the row offers Move up and Move down instead. -->
+    <ImageView
+        android:id="@+id/detail_drag_handle"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginStart="4dp"
+        android:layout_marginEnd="-12dp"
+        android:importantForAccessibility="no"
+        android:scaleType="center"
+        android:src="@drawable/ic_drag_handle"
+        app:tint="?android:attr/textColorSecondary" />
 
 </LinearLayout>

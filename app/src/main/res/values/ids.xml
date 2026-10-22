@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The notification-details picker's TalkBack actions for reordering a chosen row (#358), the only way to reorder without dragging -->
+    <item name="notification_details_action_move_up" type="id" />
+    <item name="notification_details_action_move_down" type="id" />
+</resources>
