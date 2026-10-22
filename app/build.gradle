@@ -51,8 +51,8 @@ android {
         versionName = appVersion.name
     }
 
-    // Every install carries all of the app's languages (#381). Settings → App language can pick Arabic on a phone set to English, and below Android 13 the
-    // app applies that choice itself, so Play must not split languages by the phone's own: an English-only phone would never receive the Arabic strings.
+    // Every Play install carries every language (#388). Settings → App language (#48) can pick Arabic on a phone set to English, and below Android 13 that
+    // choice lives inside the app, so Play, which splits languages by the phone's own, would never deliver the Arabic strings it needs.
     bundle {
         language {
             enableSplit = false
