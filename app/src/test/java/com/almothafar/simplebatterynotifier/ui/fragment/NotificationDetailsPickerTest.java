@@ -823,7 +823,8 @@ public class NotificationDetailsPickerTest {
 
 	/**
 	 * Fill the rate window as minutes of readings would: one level three minutes before another, 20%/h, and no current in either. The file, the keys and the
-	 * "time:level:current" form are {@code BatteryRateTracker}'s persisted ones, which the picker reads the rate from.
+	 * "time:level:current" form are {@code BatteryRateTracker}'s persisted ones, which the picker reads the rate from. Each test that fills it checks Speed
+	 * reads 20%/h first, so a change to that form fails the test instead of leaving it to pass on an empty window.
 	 */
 	private void fillRateWindow(boolean charging, int fromLevel, int toLevel) {
 		final long now = System.currentTimeMillis();

@@ -285,7 +285,7 @@ public class NotificationDetailsFragment extends Fragment {
 		liveStatus = next;
 		for (final DetailFamily family : DetailFamily.values()) {
 			// The values rather than the segments: a row can turn from "Calculating…" to "—" with no segment either side.
-			if (!Objects.equals(valueOf(shown, family), valueOf(next, family))) {
+			if (!Objects.equals(rowValue(shown, family), rowValue(next, family))) {
 				adapter.notifyItemChanged(rows.positionOf(family), LIVE_VALUE);
 			}
 		}
@@ -313,16 +313,16 @@ public class NotificationDetailsFragment extends Fragment {
 	}
 
 	/** What a family's row shows: its segment, else "—" when none is coming or "Calculating…" while one is on its way (#359); null when there is no reading. */
-	private String valueOf(DetailFamily family) {
-		return valueOf(liveStatus, family);
+	private String rowValue(DetailFamily family) {
+		return rowValue(liveStatus, family);
 	}
 
-	private String valueOf(NotificationService.LiveStatus status, DetailFamily family) {
+	private String rowValue(NotificationService.LiveStatus status, DetailFamily family) {
 		final String segment = segmentOf(status, family);
 		if (isNull(status) || nonNull(segment)) {
 			return segment;
 		}
-		// The details table's words for the same two states (#216).
+		// battery_value_pending is the details table's "—" for a value that is not coming (#216); "Calculating…" is for one on its way.
 		return getString(status.unavailable().contains(family) ? R.string.battery_value_pending : R.string.notification_status_calculating);
 	}
 
@@ -403,7 +403,7 @@ public class NotificationDetailsFragment extends Fragment {
 			if (payloads.isEmpty()) {
 				onBindViewHolder(holder, position);
 			} else if (holder instanceof final RowHolder row) {
-				row.showValue(valueOf(rows.familyAt(position)));
+				row.showValue(rowValue(rows.familyAt(position)));
 			}
 		}
 
@@ -428,7 +428,7 @@ public class NotificationDetailsFragment extends Fragment {
 
 		private void bindRow(RowHolder holder, DetailFamily family) {
 			final List<DetailFamily> chosen = rows.chosen();
-			holder.bind(getString(labelRes(family)), valueOf(family), chosen.contains(family) || chosen.size() < DetailFamily.MAX_SELECTED);
+			holder.bind(getString(labelRes(family)), rowValue(family), chosen.contains(family) || chosen.size() < DetailFamily.MAX_SELECTED);
 			showTick(holder, family);
 			holder.itemView.setOnClickListener(row -> {
 				applyTap(family);

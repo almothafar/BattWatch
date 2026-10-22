@@ -127,7 +127,7 @@ public final class OngoingStatusContent {
 	 * the details table does (#216): no family stands in, since any of them is one the user can choose, and showing it unbidden would override a choice that
 	 * left it out (#359). An empty choice renders an empty line: the user asked for the title alone.
 	 *
-	 * @param context   The context to word the line in
+	 * @param context   the context to word the line in
 	 * @param selection the chosen families, in the order the line shows them
 	 * @param segmentOf each family's segment, or null when it has nothing to show yet
 	 * @return the line
@@ -174,7 +174,7 @@ public final class OngoingStatusContent {
 	 */
 	static boolean isUnavailable(DetailFamily family, BatteryRateTracker.BatteryRate rate) {
 		return switch (family) {
-			case CURRENT -> rate.currentUnavailable();
+			case CURRENT -> rate.isCurrentUnavailable();
 			// With the rate in, a missing estimate means the battery is already full or empty, where none comes until the plug changes.
 			case TIME -> rate.hasRate();
 			// Speed is missing only while the rate warms up, and the other two always have a reading.

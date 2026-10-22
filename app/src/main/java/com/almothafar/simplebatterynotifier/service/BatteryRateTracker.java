@@ -590,7 +590,7 @@ public final class BatteryRateTracker {
 		 *
 		 * @return true when there is a rate but no current
 		 */
-		public boolean currentUnavailable() {
+		public boolean isCurrentUnavailable() {
 			return hasRate && !hasCurrent;
 		}
 	}
