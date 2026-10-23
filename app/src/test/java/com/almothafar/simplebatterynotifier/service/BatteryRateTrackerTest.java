@@ -259,8 +259,8 @@ public class BatteryRateTrackerTest {
 	}
 
 	/**
-	 * {@link BatteryRate#isCurrentUnavailable}: whether a missing current is absent rather than late (#359), the flag that lets the notification-details picker
-	 * say "—" instead of "Calculating…".
+	 * {@link BatteryRate#isCurrentUnavailable}: whether a missing current is absent rather than late (#359), the flag behind the notification-details picker's
+	 * "—" and the line's "Not available", where "Calculating…" would promise a current.
 	 */
 	public static class CurrentAvailability {
 

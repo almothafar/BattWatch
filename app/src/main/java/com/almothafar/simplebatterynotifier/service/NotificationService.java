@@ -429,7 +429,7 @@ public final class NotificationService {
 	/**
 	 * The status notification's title, and each family's segment as the collapsed line would render it, from a battery reading — the notification-details
 	 * picker's live-value column (#357) and its preview (#358), which orders the segments into a line with {@link OngoingStatusContent#detailLine}. A family
-	 * with no segment is either still on its way or unavailable, which the column tells apart (#359).
+	 * with no segment is either still on its way or unavailable, which the column and the preview tell apart (#359).
 	 *
 	 * @param context The picker's own context, so the text is worded in the language the screen is showing
 	 * @param battery The {@code ACTION_BATTERY_CHANGED} broadcast just received, or the sticky copy registering for it returned; null when there is none
@@ -447,7 +447,7 @@ public final class NotificationService {
 			final String segment = OngoingStatusContent.detailSegment(context, family, batteryDO, rate);
 			if (nonNull(segment)) {
 				segments.put(family, segment);
-			} else if (OngoingStatusContent.isUnavailable(family, rate)) {
+			} else if (OngoingStatusContent.isUnavailable(family, batteryDO, rate)) {
 				unavailable.add(family);
 			}
 		}

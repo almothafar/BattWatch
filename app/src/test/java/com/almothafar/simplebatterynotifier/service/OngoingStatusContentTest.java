@@ -65,7 +65,7 @@ public class OngoingStatusContentTest {
 		                      .setVoltage(5000);
 	}
 
-	/** Rate with a %/h only (no current/average yet) — the warm-up shape. */
+	/** Rate with a %/h but no current or average: a phone that reports no usable current, so none is coming (#359). */
 	private static BatteryRateTracker.BatteryRate rate(boolean charging, int pph) {
 		return new BatteryRateTracker.BatteryRate(true, pph, charging, false, 0, false, 0);
 	}
@@ -119,7 +119,7 @@ public class OngoingStatusContentTest {
 
 	@Test
 	public void collapsed_dropsCurrent_whenNoneYet() {
-		// Warm-up: %/h available, no current → rate · remaining, no mA segment.
+		// A %/h but no current → rate · remaining, no mA segment.
 		final String remaining = context.getString(R.string.notification_status_time_remaining, "~9h 27m");
 		assertEquals("9%/h" + SEP + remaining,
 				OngoingStatusContent.statusDetail(context, discharging85(), rate(false, 9)));
@@ -194,7 +194,7 @@ public class OngoingStatusContentTest {
 
 	@Test
 	public void aFamilyWithNoDataYet_dropsOutSilently() {
-		// Warm-up: no current yet, so Current vanishes and its neighbours close up around it.
+		// No current, so Current drops out and its neighbours close up around it.
 		select(DetailFamily.SPEED, DetailFamily.CURRENT, DetailFamily.POWER_SOURCE);
 		assertEquals("9%/h" + SEP + "On battery", OngoingStatusContent.statusDetail(context, discharging85(), rate(false, 9)));
 	}
@@ -237,6 +237,31 @@ public class OngoingStatusContentTest {
 		// A phone that reports no current: the rate is in, so Current alone has nothing coming, and "Calculating…" would promise it.
 		select(DetailFamily.CURRENT);
 		assertEquals("Not available", OngoingStatusContent.statusDetail(context, discharging85(), rate(false, 9)));
+	}
+
+	@Test
+	public void aFullBattery_readsNotAvailable_notCalculating() {
+		// Full on USB, as the Mate 10 Pro sits: no current, and a level that no longer moves, so no rate either. None comes while it stays full, and
+		// "Calculating…" would stand there all night.
+		final BatteryRateTracker.BatteryRate noRate = new BatteryRateTracker.BatteryRate(false, 0, true, false, 0, false, 0);
+		final BatteryDO full = new BatteryDO().setLevel(100)
+		                                      .setScale(100)
+		                                      .setStatus(BatteryManager.BATTERY_STATUS_FULL)
+		                                      .setPlugged(BatteryManager.BATTERY_PLUGGED_USB);
+		select(DetailFamily.SPEED, DetailFamily.CURRENT, DetailFamily.TIME);
+		assertEquals("Not available", OngoingStatusContent.statusDetail(context, full, noRate));
+		// Still charging at 100%, as some phones report before they say full: no time left to estimate either.
+		assertEquals("Not available", OngoingStatusContent.statusDetail(context, full.setStatus(BatteryManager.BATTERY_STATUS_CHARGING), noRate));
+		// One point short of full, the same readings are a rate still settling.
+		assertEquals("Calculating…", OngoingStatusContent.statusDetail(context, full.setLevel(99), noRate));
+	}
+
+	@Test
+	public void aTimeEstimateWithNoTimeLeft_readsNotAvailable() {
+		// Discharging at 0%, where some phones hold for a while before they shut down: the rate is in, but there is no time left to estimate. The details
+		// table shows its dash there too (#216).
+		select(DetailFamily.TIME);
+		assertEquals("Not available", OngoingStatusContent.statusDetail(context, discharging85().setLevel(0), rate(false, 9)));
 	}
 
 	@Test

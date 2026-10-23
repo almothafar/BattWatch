@@ -118,10 +118,11 @@ public final class OngoingStatusContent {
 			return "";
 		}
 		final BatteryRateTracker.BatteryRate rateOrEmpty = nonNull(rate) ? rate : BatteryRateTracker.BatteryRate.empty();
-		return detailLine(context,
+		return detailLine(
+				context,
 				AppPrefs.notificationDetails(context),
 				family -> detailSegment(context, family, batteryDO, rateOrEmpty),
-				family -> isUnavailable(family, rateOrEmpty));
+				family -> isUnavailable(family, batteryDO, rateOrEmpty));
 	}
 
 	/**
@@ -176,21 +177,37 @@ public final class OngoingStatusContent {
 
 	/**
 	 * Whether a family with nothing to show is unavailable rather than late: its value is not coming, so the picker's live-value column reads "—" for it, and
-	 * a line of nothing else "Not available", rather than "Calculating…" — the split the details table makes for the same readings (#216, #359). Asked only of
-	 * a family whose {@link #detailSegment} is null.
+	 * a line of nothing else "Not available", rather than "Calculating…" (#359). The details table splits Time the same way (#216); its Current row never
+	 * learned the flag below, so it keeps "calculating" there. Asked only of a family whose {@link #detailSegment} is null.
+	 * <p>
+	 * A full battery has none of them coming: its level no longer moves, so no rate settles, and nothing is left to time. Telling that apart from a warm-up is
+	 * what keeps a phone left on the charger from reading "Calculating…" all night.
 	 *
-	 * @param family The family with nothing to show
-	 * @param rate   The precomputed charge/drain rate
+	 * @param family    The family with nothing to show
+	 * @param batteryDO Current battery snapshot
+	 * @param rate      The precomputed charge/drain rate
 	 * @return true when nothing is coming until the battery's state changes
 	 */
-	static boolean isUnavailable(DetailFamily family, BatteryRateTracker.BatteryRate rate) {
+	static boolean isUnavailable(DetailFamily family, BatteryDO batteryDO, BatteryRateTracker.BatteryRate rate) {
+		final boolean full = isFull(batteryDO);
 		return switch (family) {
-			case CURRENT -> rate.isCurrentUnavailable();
-			// With the rate in, a missing estimate means the battery is already full or empty, where none comes until the plug changes.
-			case TIME -> rate.hasRate();
-			// Speed is missing only while the rate warms up, and the other two always have a reading.
-			case SPEED, TEMPERATURE, POWER_SOURCE -> false;
+			case CURRENT -> full || rate.isCurrentUnavailable();
+			// With the rate in, a missing estimate means there is no time left to estimate: the battery is empty, or one rounding step from it.
+			case TIME -> full || rate.hasRate();
+			// Speed goes missing wherever the level stops moving, and short of a full battery nothing tells that apart from a rate still settling.
+			case SPEED -> full;
+			// Both always have a reading, so neither is ever asked.
+			case TEMPERATURE, POWER_SOURCE -> false;
 		};
+	}
+
+	/**
+	 * Whether the battery is full: reported so, or still charging at 100%, as some phones report before they say full. Many phones also keep reporting full
+	 * for a while after the cable comes out (see {@code BatteryLevelReceiver}), when the level has not moved yet either.
+	 */
+	private static boolean isFull(BatteryDO batteryDO) {
+		return batteryDO.getStatus() == BatteryManager.BATTERY_STATUS_FULL
+				|| (batteryDO.getStatus() == BatteryManager.BATTERY_STATUS_CHARGING && batteryDO.getBatteryPercentageInt() >= 100);
 	}
 
 	/**
