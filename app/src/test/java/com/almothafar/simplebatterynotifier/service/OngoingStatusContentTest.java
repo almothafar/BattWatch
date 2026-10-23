@@ -267,7 +267,15 @@ public class OngoingStatusContentTest {
 	public void aFullBattery_readsNotAvailable_notCalculating() {
 		// Full on USB, as the Mate 10 Pro sits: no current, and a level that no longer moves, so no rate either. None comes while it stays full, and
 		// "Calculating…" would stand there all night.
-		final BatteryRateTracker.BatteryRate noRate = new BatteryRateTracker.BatteryRate(false, 0, true, false, 0, false, 0);
+		final BatteryRateTracker.BatteryRate noRate = new BatteryRateTracker.BatteryRate(
+				false,
+				0,
+				true,
+				false,
+				0,
+				false,
+				0,
+				ScreenDrainTracker.ScreenSplit.NONE);
 		final BatteryDO full = new BatteryDO().setLevel(100)
 		                                      .setScale(100)
 		                                      .setStatus(BatteryManager.BATTERY_STATUS_FULL)
