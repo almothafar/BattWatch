@@ -67,8 +67,8 @@ public final class BatteryRateTracker {
 	// Amber sits just below the red limit; 0.75x keeps colour reserved for genuinely high drain (#108).
 	private static final float AMBER_RATIO = 0.75f;
 
-	// getIntProperty returns this for an unsupported property.
-	private static final int PROPERTY_UNSUPPORTED = Integer.MIN_VALUE;
+	// getIntProperty returns this for an unsupported property; every current check skips it, so it also stands for "no reading".
+	static final int PROPERTY_UNSUPPORTED = Integer.MIN_VALUE;
 
 	private BatteryRateTracker() {
 		// Utility class - prevent instantiation
@@ -84,7 +84,7 @@ public final class BatteryRateTracker {
 	 *
 	 * @return the smoothed rate + instantaneous current, or an empty result when {@code batteryDO} is null
 	 */
-	public static BatteryRate record(final Context context, final BatteryDO batteryDO) {
+	public static BatteryRate record(Context context, BatteryDO batteryDO) {
 		if (isNull(context) || isNull(batteryDO)) {
 			return BatteryRate.empty();
 		}
@@ -116,7 +116,8 @@ public final class BatteryRateTracker {
 			     .apply();
 		}
 
-		return computeRate(updated, batteryDO.getCapacity(), charging, now, batteryDO.getCurrentMicroAmps());
+		// The since-unplug screen-on / screen-off split (#193) rides along read-only: only the monitoring service's receivers feed it.
+		return rateFrom(updated, batteryDO, charging, now).withScreenSplit(ScreenDrainTracker.read(prefs, batteryDO));
 	}
 
 	/**
@@ -128,7 +129,7 @@ public final class BatteryRateTracker {
 	 *
 	 * @return the smoothed rate + instantaneous current, or an empty result when {@code batteryDO} is null
 	 */
-	public static BatteryRate getRate(final Context context, final BatteryDO batteryDO) {
+	public static BatteryRate getRate(Context context, BatteryDO batteryDO) {
 		if (isNull(context) || isNull(batteryDO)) {
 			return BatteryRate.empty();
 		}
@@ -137,7 +138,12 @@ public final class BatteryRateTracker {
 		// Rate window lives in the backup-excluded transient file (#167), not the default prefs.
 		final SharedPreferences prefs = TransientState.prefs(context);
 
-		return computeRate(loadWindow(prefs, charging, now), batteryDO.getCapacity(), charging, now, batteryDO.getCurrentMicroAmps());
+		return rateFrom(loadWindow(prefs, charging, now), batteryDO, charging, now).withScreenSplit(ScreenDrainTracker.read(prefs, batteryDO));
+	}
+
+	/** {@link #computeRate} over a window, taking the capacity and the latest current from the snapshot. */
+	private static BatteryRate rateFrom(List<Sample> window, BatteryDO batteryDO, boolean charging, long now) {
+		return computeRate(window, batteryDO.getCapacity(), charging, now, batteryDO.getCurrentMicroAmps());
 	}
 
 	/**
@@ -266,8 +272,11 @@ public final class BatteryRateTracker {
 	 *
 	 * @return the computed {@link BatteryRate}
 	 */
-	static BatteryRate computeRate(final List<Sample> window, final int capacityMah, final boolean charging,
-	                               final long nowMillis, final int latestCurrentMicroAmps) {
+	static BatteryRate computeRate(List<Sample> window,
+	                               int capacityMah,
+	                               boolean charging,
+	                               long nowMillis,
+	                               int latestCurrentMicroAmps) {
 		// Floor-gate on the windowed average when available (#173): the average moves slowly, so the
 		// row's visibility can't flicker with a momentary dip, and sustained garbage (Kirin pre-#152-v2
 		// calibration averages ~1 mA) stays hidden. The instant gates itself only while the window is
@@ -275,8 +284,7 @@ public final class BatteryRateTracker {
 		final int avgMicroAmps = averagedCurrentMicroAmps(window);
 		final boolean hasAvg = avgMicroAmps != PROPERTY_UNSUPPORTED;
 		final int floorGateMicroAmps = hasAvg ? avgMicroAmps : latestCurrentMicroAmps;
-		final boolean hasCurrent = isPlausibleCurrentMicroAmps(latestCurrentMicroAmps)
-				&& Math.round(Math.abs(floorGateMicroAmps) / 1000f) >= MIN_DISPLAY_CURRENT_MA;
+		final boolean hasCurrent = isPlausibleCurrentMicroAmps(latestCurrentMicroAmps) && clearsDisplayFloor(floorGateMicroAmps);
 		final int signedMilliAmps = hasCurrent ? signedCurrentMilliAmps(latestCurrentMicroAmps, charging) : 0;
 		final boolean hasAvgCurrent = hasCurrent && hasAvg;
 		final int signedAvgMilliAmps = hasAvgCurrent ? signedCurrentMilliAmps(avgMicroAmps, charging) : 0;
@@ -284,7 +292,15 @@ public final class BatteryRateTracker {
 		final int pph = ratePercentPerHour(window, capacityMah);
 		final boolean hasRate = pph >= 1 && pph <= MAX_PLAUSIBLE_RATE_PPH;
 
-		return new BatteryRate(hasRate, hasRate ? pph : 0, charging, hasCurrent, signedMilliAmps, hasAvgCurrent, signedAvgMilliAmps);
+		return new BatteryRate(
+				hasRate,
+				hasRate ? pph : 0,
+				charging,
+				hasCurrent,
+				signedMilliAmps,
+				hasAvgCurrent,
+				signedAvgMilliAmps,
+				ScreenDrainTracker.ScreenSplit.NONE);
 	}
 
 	/**
@@ -349,6 +365,18 @@ public final class BatteryRateTracker {
 			}
 		}
 		return 0;
+	}
+
+	/**
+	 * Whether a current clears the display floor (#152): {@link #MIN_DISPLAY_CURRENT_MA} or more once rounded to mA. Shared by the window's gate and the
+	 * screen-on / screen-off averages (#193), so the two can't disagree about what is too small to show.
+	 *
+	 * @param microAmps current in µA, either sign
+	 *
+	 * @return true when the current is large enough to display
+	 */
+	static boolean clearsDisplayFloor(int microAmps) {
+		return Math.round(Math.abs(microAmps) / 1000f) >= MIN_DISPLAY_CURRENT_MA;
 	}
 
 	/**
@@ -563,9 +591,8 @@ public final class BatteryRateTracker {
 	}
 
 	/**
-	 * Result of a rate computation: the smoothed %/h and the signed instantaneous current, each with a
-	 * flag saying whether it is trustworthy enough to display, plus the windowed average current shown
-	 * next to the instant (#173).
+	 * Result of a rate computation: the smoothed %/h and the signed instantaneous current, each with a flag saying whether it is trustworthy enough to
+	 * display, plus the windowed average current shown next to the instant (#173), and the since-unplug screen-on / screen-off split (#193).
 	 *
 	 * @param hasRate             whether a trustworthy %/h is available
 	 * @param percentPerHour      rate magnitude in %/h (valid only when {@code hasRate})
@@ -574,13 +601,39 @@ public final class BatteryRateTracker {
 	 * @param currentMilliAmps    signed current in mA (valid only when {@code hasCurrent})
 	 * @param hasAvgCurrent       whether the windowed average current is available for display
 	 * @param avgCurrentMilliAmps signed windowed-average current in mA (valid only when {@code hasAvgCurrent})
+	 * @param screenSplit         the screen-on / screen-off drain since the last unplug; {@link ScreenDrainTracker.ScreenSplit#NONE} while plugged in
 	 */
-	public record BatteryRate(boolean hasRate, int percentPerHour, boolean charging,
-	                          boolean hasCurrent, int currentMilliAmps,
-	                          boolean hasAvgCurrent, int avgCurrentMilliAmps) {
+	public record BatteryRate(boolean hasRate,
+	                          int percentPerHour,
+	                          boolean charging,
+	                          boolean hasCurrent,
+	                          int currentMilliAmps,
+	                          boolean hasAvgCurrent,
+	                          int avgCurrentMilliAmps,
+	                          ScreenDrainTracker.ScreenSplit screenSplit) {
 
 		static BatteryRate empty() {
-			return new BatteryRate(false, 0, false, false, 0, false, 0);
+			return new BatteryRate(
+					false,
+					0,
+					false,
+					false,
+					0,
+					false,
+					0,
+					ScreenDrainTracker.ScreenSplit.NONE);
+		}
+
+		BatteryRate withScreenSplit(ScreenDrainTracker.ScreenSplit split) {
+			return new BatteryRate(
+					hasRate,
+					percentPerHour,
+					charging,
+					hasCurrent,
+					currentMilliAmps,
+					hasAvgCurrent,
+					avgCurrentMilliAmps,
+					split);
 		}
 
 		/**

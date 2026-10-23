@@ -104,6 +104,14 @@ public class FastDrainDetectorCleanupTest {
 	}
 
 	private static BatteryRate rate(int percentPerHour) {
-		return new BatteryRate(true, percentPerHour, false, false, 0, false, 0);
+		return new BatteryRate(
+				true,
+				percentPerHour,
+				false,
+				false,
+				0,
+				false,
+				0,
+				ScreenDrainTracker.ScreenSplit.NONE);
 	}
 }

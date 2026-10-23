@@ -229,13 +229,12 @@ public final class OngoingStatusContent {
 	}
 
 	/**
-	 * The expanded content (BigText) — the same numbers on labelled lines (#194): Now / Average /
-	 * Time&nbsp;remaining / Temperature while discharging, Now / Average / Time&nbsp;to&nbsp;full /
-	 * Temperature while charging. "Now" is the instantaneous current (plus the charge wattage while
-	 * charging); "Average" is the windowed average, carrying the smoothed %/h while discharging — the app
-	 * computes a single smoothed rate, which is itself an average, so there is no separate instantaneous
-	 * %/h. Every line is dropped when its data is absent; the temperature always shows. Returns a single
-	 * line when nothing but temperature is available, which {@link #pullDownAddsToLine} offers only where the line leaves it out.
+	 * The expanded content (BigText) — the same numbers on labelled lines (#194): Now / Average / Time&nbsp;remaining / Temperature while discharging, Now /
+	 * Average / Time&nbsp;to&nbsp;full / Temperature while charging. "Now" is the instantaneous current (plus the charge wattage while charging); "Average" is
+	 * the windowed average, carrying the smoothed %/h while discharging — the app computes a single smoothed rate, which is itself an average, so there is no
+	 * separate instantaneous %/h. On battery, the screen-on and screen-off drain follow Average: the drain since the last unplug split by screen state
+	 * (#193), each line appearing once its own state has warmed up. Every line is dropped when its data is absent; the temperature always shows. Returns a
+	 * single line when nothing but temperature is available, which {@link #pullDownAddsToLine} offers only where the line leaves it out.
 	 * <p>
 	 * Deliberately blind to the notification details the collapsed line follows: this is the everything view, which is what makes the collapsed line's silent
 	 * drop-outs acceptable (docs/adr/0002). It is blind to the show-rate switch #357 removed for the same reason, though that switch used to hide its rate
@@ -247,10 +246,12 @@ public final class OngoingStatusContent {
 	 * @return newline-joined expanded text (may be a single line or empty)
 	 */
 	static String statusDetailExpanded(Context context, BatteryDO batteryDO, BatteryRateTracker.BatteryRate rate) {
-		final List<String> lines = new ArrayList<>(4);
+		final List<String> lines = new ArrayList<>(6);
 		if (nonNull(batteryDO) && nonNull(rate)) {
 			addLine(context, lines, R.string.notification_label_now, nowSegment(context, batteryDO, rate));
 			addAverageLine(context, lines, rate);
+			addLine(context, lines, R.string.screen_on_drain, ScreenDrainTracker.formatValue(context, rate.screenSplit().on()));
+			addLine(context, lines, R.string.screen_off_drain, ScreenDrainTracker.formatValue(context, rate.screenSplit().off()));
 			addTimeLine(context, lines, batteryDO, rate);
 		}
 		if (nonNull(batteryDO)) {

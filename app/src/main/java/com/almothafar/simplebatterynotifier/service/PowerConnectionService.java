@@ -3,6 +3,7 @@ package com.almothafar.simplebatterynotifier.service;
 import android.app.ForegroundServiceStartNotAllowedException;
 import android.app.Notification;
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.ServiceInfo;
@@ -14,21 +15,23 @@ import androidx.core.app.ServiceCompat;
 import com.almothafar.simplebatterynotifier.model.BatteryDO;
 import com.almothafar.simplebatterynotifier.receiver.BatteryLevelReceiver;
 import com.almothafar.simplebatterynotifier.receiver.PowerConnectionReceiver;
+import com.almothafar.simplebatterynotifier.receiver.ScreenStateReceiver;
 import com.almothafar.simplebatterynotifier.util.AppPrefs;
 
 import java.util.Locale;
 
-import static java.util.Objects.nonNull;
+import static java.util.Objects.isNull;
 
 /**
  * Service to register battery monitoring receivers.
- * Registers PowerConnectionReceiver and BatteryLevelReceiver on service creation.
+ * Registers PowerConnectionReceiver, BatteryLevelReceiver and ScreenStateReceiver on service creation.
  */
 public class PowerConnectionService extends Service {
 	private static final String TAG = "PowerConnectionService";
 
 	private PowerConnectionReceiver powerConnectionReceiver;
 	private BatteryLevelReceiver batteryLevelReceiver;
+	private ScreenStateReceiver screenStateReceiver;
 
 	@Override
 	public IBinder onBind(final Intent intent) {
@@ -46,7 +49,10 @@ public class PowerConnectionService extends Service {
 		Log.i(TAG, "Starting with locale: " + Locale.getDefault().toLanguageTag());
 		// Promote to foreground first so the OS keeps the process (and our receivers) alive on Android 8+.
 		startForegroundWithStatus();
-		registerPowerConnectionReceiver();
+		// #193: until the receivers below are back, screen toggles went unseen, so the screen-on / screen-off split drops the stretch it was in the middle of
+		// rather than credit it to one state.
+		ScreenDrainTracker.onMonitoringStarted(this, SystemService.getBatteryInfo(this));
+		registerReceivers();
 	}
 
 	@Override
@@ -103,12 +109,12 @@ public class PowerConnectionService extends Service {
 	}
 
 	/**
-	 * Register battery monitoring receivers.
+	 * Register the battery and screen monitoring receivers; the screen one feeds the screen-on / screen-off drain split (#193).
 	 * Initializes the current plugged state to avoid unnecessary triggers on the first battery change event.
 	 */
-	private void registerPowerConnectionReceiver() {
+	private void registerReceivers() {
 		final Intent batteryStatus = getApplicationContext().registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
-		final int plugged = batteryStatus == null ? -1 : batteryStatus.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1);
+		final int plugged = isNull(batteryStatus) ? -1 : batteryStatus.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1);
 
 		powerConnectionReceiver = new PowerConnectionReceiver();
 		PowerConnectionReceiver.setCurrentState(plugged);
@@ -118,28 +124,34 @@ public class PowerConnectionService extends Service {
 		final IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
 		registerReceiver(powerConnectionReceiver, filter);
 		registerReceiver(batteryLevelReceiver, filter);
+
+		screenStateReceiver = new ScreenStateReceiver();
+		final IntentFilter screenFilter = new IntentFilter(Intent.ACTION_SCREEN_ON);
+		screenFilter.addAction(Intent.ACTION_SCREEN_OFF);
+		registerReceiver(screenStateReceiver, screenFilter);
 	}
 
 	/**
-	 * Unregister battery monitoring receivers to prevent memory leaks
+	 * Unregister the monitoring receivers to prevent memory leaks
 	 */
 	private void unregisterReceivers() {
-		if (nonNull(powerConnectionReceiver)) {
-			try {
-				unregisterReceiver(powerConnectionReceiver);
-			} catch (IllegalArgumentException e) {
-				// Receiver was already unregistered, ignore
-			}
-			powerConnectionReceiver = null;
-		}
+		unregister(powerConnectionReceiver);
+		powerConnectionReceiver = null;
+		unregister(batteryLevelReceiver);
+		batteryLevelReceiver = null;
+		unregister(screenStateReceiver);
+		screenStateReceiver = null;
+	}
 
-		if (nonNull(batteryLevelReceiver)) {
-			try {
-				unregisterReceiver(batteryLevelReceiver);
-			} catch (IllegalArgumentException e) {
-				// Receiver was already unregistered, ignore
-			}
-			batteryLevelReceiver = null;
+	private void unregister(BroadcastReceiver receiver) {
+		if (isNull(receiver)) {
+			return;
+		}
+		try {
+			unregisterReceiver(receiver);
+		} catch (IllegalArgumentException e) {
+			// Nothing to undo: the receiver is already gone, which is the state this was asked to reach.
+			Log.w(TAG, "Receiver was already unregistered: " + receiver.getClass().getSimpleName(), e);
 		}
 	}
 }
