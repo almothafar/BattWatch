@@ -560,10 +560,18 @@ public class BatteryDetailsFragment extends Fragment {
 		}
 
 		addTimeRow(view, rate, charging);
+		addCurrentRow(view, rate);
+		addScreenDrainRows(view, rate);
+	}
 
-		// Current row: the signed mA (with the windowed-average second line), else "calculating". A device
-		// that never reports current keeps the hint indefinitely — the info dialog covers that case; a
-		// real "unsupported" detection wasn't worth the plumbing for it (#216).
+	/**
+	 * Adds the Current row: the signed mA (with the windowed-average second line), else "calculating". A device that never reports current keeps the hint
+	 * indefinitely — the info dialog covers that case; a real "unsupported" detection wasn't worth the plumbing for it (#216).
+	 *
+	 * @param view The fragment view
+	 * @param rate The already-computed rate for this refresh
+	 */
+	private void addCurrentRow(View view, BatteryRateTracker.BatteryRate rate) {
 		final String currentLabel = getString(R.string.battery_current);
 		if (rate.hasCurrent()) {
 			valuesMap.put(currentLabel, currentValueText(view, rate));
@@ -571,12 +579,20 @@ public class BatteryDetailsFragment extends Fragment {
 			putHintRow(currentLabel, R.string.battery_value_calculating,
 					R.string.battery_current_pending_dialog_title, R.string.battery_current_pending_dialog_message);
 		}
+	}
 
-		// #193: the drain since the last unplug, split by screen state. On battery only, by the tracker's own test, so a phone held at a charge cap shows no
-		// rows that can never fill; each state warms up on its own, so one row can show its drain while the other still calculates.
+	/**
+	 * Adds the screen-on and screen-off drain rows (#193): the drain since the last unplug, split by screen state. On battery only, by the tracker's own
+	 * test, so a phone held at a charge cap shows no rows that can never fill; each state warms up on its own, so one row can show its drain while the other
+	 * still calculates.
+	 *
+	 * @param view The fragment view
+	 * @param rate The already-computed rate for this refresh, carrying the split
+	 */
+	private void addScreenDrainRows(View view, BatteryRateTracker.BatteryRate rate) {
 		if (ScreenDrainTracker.appliesTo(batteryDO)) {
-			addScreenDrainRow(view, R.string.screen_on_drain, rate.screen().on());
-			addScreenDrainRow(view, R.string.screen_off_drain, rate.screen().off());
+			addScreenDrainRow(view, R.string.screen_on_drain, rate.screenSplit().on());
+			addScreenDrainRow(view, R.string.screen_off_drain, rate.screenSplit().off());
 		}
 	}
 

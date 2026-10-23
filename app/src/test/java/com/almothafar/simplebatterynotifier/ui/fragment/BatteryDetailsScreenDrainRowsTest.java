@@ -29,17 +29,18 @@ import static org.junit.Assert.assertNull;
 import static org.robolectric.Shadows.shadowOf;
 
 /**
- * The details table's Screen on / Screen off rows (#193). Like the other live rows (#188), they are always there while discharging: a state still gathering
- * time shows the small "calculating" hint with an info icon instead of the row appearing later and pushing the table down. While charging there is no
- * split to show, so neither row is there.
+ * The details table's screen-on and screen-off drain rows (#193). Like the other live rows (#188), they are always there on battery: a state still
+ * gathering time shows the small "calculating" hint with an info icon instead of the row appearing later and pushing the table down. On the charger there
+ * is no split to show, so neither row is there.
  * <p>
- * The fragment feeds the tracker itself, through {@code BatteryRateTracker.record} with the screen state Robolectric's PowerManager reports. Robolectric
- * leaves the wall clock real for app code, so a past stretch of screen-off is recorded through {@link ScreenDrainTestSupport} and the fragment's own
- * observation closes it.
+ * The table only reads the split; the monitoring service's receivers are what feed it. Robolectric leaves the wall clock real for app code, so the past
+ * stretches a test needs are recorded through {@link ScreenDrainTestSupport} at times of its choosing.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 34)
 public class BatteryDetailsScreenDrainRowsTest {
+
+	private static final long MINUTE = 60_000L;
 
 	private Context context;
 
@@ -63,16 +64,31 @@ public class BatteryDetailsScreenDrainRowsTest {
 
 	@Test
 	public void aStateThatHasRunLongEnough_showsItsDrain_whileTheOtherStillCalculates() {
-		// The screen went off two hours ago at 80%; it is on again now, at 78%, as the details table opens.
+		// Monitoring saw the screen go off two hours ago at 80%, and come back on a minute ago at 78%.
+		final long now = System.currentTimeMillis();
 		publishBattery(80, false);
-		ScreenDrainTestSupport.recordAt(context, System.currentTimeMillis() - 2 * 3_600_000L, SystemService.getBatteryInfo(context), false);
+		ScreenDrainTestSupport.recordAt(context, now - 120 * MINUTE, SystemService.getBatteryInfo(context), false);
 		publishBattery(78, false);
+		ScreenDrainTestSupport.recordAt(context, now - MINUTE, SystemService.getBatteryInfo(context), true);
 		setScreenOn(true);
 		final TableLayout table = showDetails();
 
-		assertEquals("2% in two hours off", "1.0%/h", valueOf(table, R.string.screen_off_drain).getText().toString());
+		assertEquals("2% in 119 minutes off", "1.0%/h", valueOf(table, R.string.screen_off_drain).getText().toString());
 		assertNull("a ready row has no info icon", valueOf(table, R.string.screen_off_drain).getContentDescription());
 		assertEquals(context.getString(R.string.battery_value_calculating), valueOf(table, R.string.screen_on_drain).getText().toString());
+	}
+
+	@Test
+	public void openingTheTable_creditsNothingThatMonitoringDidNotWatch() {
+		// Monitoring saw the screen go off two hours ago at 80%, then the system stopped it. The phone was used unseen down to 60%, and now the app opens
+		// before the service is back: the table must not credit those two hours to the screen-off drain.
+		publishBattery(80, false);
+		ScreenDrainTestSupport.recordAt(context, System.currentTimeMillis() - 120 * MINUTE, SystemService.getBatteryInfo(context), false);
+		publishBattery(60, false);
+		setScreenOn(true);
+		final TableLayout table = showDetails();
+
+		assertEquals(context.getString(R.string.battery_value_calculating), valueOf(table, R.string.screen_off_drain).getText().toString());
 	}
 
 	@Test

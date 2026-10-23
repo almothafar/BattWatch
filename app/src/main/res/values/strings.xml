@@ -68,7 +68,8 @@
     <string name="battery_time_pending_dialog_message">This time estimate is projected from the charge/drain rate, so it appears once that rate has settled. It\'s also hidden very close to a full charge, where the estimate would be meaningless.</string>
     <string name="battery_current_pending_dialog_title">Live current unavailable</string>
     <string name="battery_current_pending_dialog_message">The instantaneous current can take a moment to settle, and some devices don\'t report it at all. When it\'s available it shows here in milliamps (mA).</string>
-    <!-- #193: opened from the Screen-on drain / Screen-off drain rows while either is still gathering time. The durations match ScreenDrainTracker's warm-ups. -->
+    <!-- #193: opened from the Screen-on drain / Screen-off drain rows while either is still gathering time. The durations match
+         ScreenDrainTracker's warm-ups. -->
     <string name="battery_screen_drain_pending_dialog_title">Still gathering time</string>
     <string name="battery_screen_drain_pending_dialog_message">These two rows split the drain since you last unplugged by whether the screen was on or off. Each fills in once the battery has spent long enough in that state for its level to drop: about a quarter of an hour with the screen on, and about an hour with it off. Plugging in starts them over.</string>
     <!-- #188: shown on the always-present Design capacity row when the user hasn\'t entered one -->

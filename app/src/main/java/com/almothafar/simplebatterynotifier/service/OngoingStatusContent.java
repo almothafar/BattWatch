@@ -201,8 +201,8 @@ public final class OngoingStatusContent {
 		if (nonNull(batteryDO) && nonNull(rate)) {
 			addLine(context, lines, R.string.notification_label_now, nowSegment(context, batteryDO, rate));
 			addAverageLine(context, lines, rate);
-			addLine(context, lines, R.string.screen_on_drain, ScreenDrainTracker.formatValue(context, rate.screen().on()));
-			addLine(context, lines, R.string.screen_off_drain, ScreenDrainTracker.formatValue(context, rate.screen().off()));
+			addLine(context, lines, R.string.screen_on_drain, ScreenDrainTracker.formatValue(context, rate.screenSplit().on()));
+			addLine(context, lines, R.string.screen_off_drain, ScreenDrainTracker.formatValue(context, rate.screenSplit().off()));
 			addTimeLine(context, lines, batteryDO, rate);
 		}
 		if (nonNull(batteryDO)) {

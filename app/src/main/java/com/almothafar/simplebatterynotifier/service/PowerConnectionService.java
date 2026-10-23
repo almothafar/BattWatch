@@ -49,6 +49,9 @@ public class PowerConnectionService extends Service {
 		Log.i(TAG, "Starting with locale: " + Locale.getDefault().toLanguageTag());
 		// Promote to foreground first so the OS keeps the process (and our receivers) alive on Android 8+.
 		startForegroundWithStatus();
+		// #193: until the receivers below are back, screen toggles went unseen, so the screen-on / screen-off split drops the stretch it was in the middle of
+		// rather than credit it to one state.
+		ScreenDrainTracker.onMonitoringStarted(this, SystemService.getBatteryInfo(this));
 		registerReceivers();
 	}
 
@@ -106,11 +109,8 @@ public class PowerConnectionService extends Service {
 	}
 
 	/**
-	 * Register the battery and screen monitoring receivers.
+	 * Register the battery and screen monitoring receivers; the screen one feeds the screen-on / screen-off drain split (#193).
 	 * Initializes the current plugged state to avoid unnecessary triggers on the first battery change event.
-	 * <p>
-	 * The screen receiver feeds the screen-on / screen-off drain split (#193). Until it is registered, screen toggles go unseen, so the split first drops the
-	 * stretch it was in the middle of when monitoring last stopped rather than credit it to one state.
 	 */
 	private void registerReceivers() {
 		final Intent batteryStatus = getApplicationContext().registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
@@ -125,7 +125,6 @@ public class PowerConnectionService extends Service {
 		registerReceiver(powerConnectionReceiver, filter);
 		registerReceiver(batteryLevelReceiver, filter);
 
-		ScreenDrainTracker.onMonitoringStarted(this, SystemService.getBatteryInfo(this, batteryStatus));
 		screenStateReceiver = new ScreenStateReceiver();
 		final IntentFilter screenFilter = new IntentFilter(Intent.ACTION_SCREEN_ON);
 		screenFilter.addAction(Intent.ACTION_SCREEN_OFF);

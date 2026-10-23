@@ -15,6 +15,7 @@ import com.almothafar.simplebatterynotifier.service.BatteryRateTracker;
 import com.almothafar.simplebatterynotifier.service.BatteryTemperatureTracker;
 import com.almothafar.simplebatterynotifier.service.FastDrainDetector;
 import com.almothafar.simplebatterynotifier.service.NotificationService;
+import com.almothafar.simplebatterynotifier.service.ScreenDrainTracker;
 import com.almothafar.simplebatterynotifier.service.SlowChargeDetector;
 import com.almothafar.simplebatterynotifier.service.SystemService;
 import com.almothafar.simplebatterynotifier.util.AppPrefs;
@@ -113,6 +114,10 @@ public class BatteryLevelReceiver extends BroadcastReceiver {
 
 		// Build the reading from the delivered intent; with a non-null intent this never returns null.
 		final BatteryDO batteryDO = SystemService.getBatteryInfo(context, intent);
+
+		// #193: the screen-on / screen-off split is fed only from here and the screen broadcasts — the monitoring service's own receivers — so it never
+		// credits time when nothing was watching the screen. Fed first, so the rate read next carries this observation.
+		ScreenDrainTracker.onBatteryChanged(context, batteryDO);
 
 		// Feed the charge/drain rate window from this broadcast (no polling timer of our own) so both the
 		// ongoing notification below and the details table reflect the latest reading (issue #108). The

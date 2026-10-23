@@ -25,8 +25,8 @@ import static org.junit.Assert.assertTrue;
 
 /**
  * The screen-on / screen-off drain split (#193): a session accumulator that runs from the last unplug, attributing each stretch of time and level drop to
- * the screen state it was spent in. Driven through the tracker's own record/toggle/restart/read entry points on the real transient preferences, with the
- * clock and the screen state passed in, so a test can say "an hour later, with the screen off" without waiting an hour.
+ * the screen state it was spent in. Driven through the tracker's clock-taking entry points — a battery broadcast, a screen broadcast, a monitoring start —
+ * on the real transient preferences, so a test can say "an hour later, with the screen off" without waiting an hour.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 34)
@@ -57,13 +57,14 @@ public class ScreenDrainTrackerTest {
 		return unplugged(level).setCurrentMicroAmps(currentMilliAmps * 1000);
 	}
 
-	/** A battery sample, as {@link BatteryRateTracker#record} feeds one. */
+	/** A battery broadcast the monitoring service receives, and the split as it reads straight after. */
 	private ScreenDrainTracker.ScreenSplit observe(long at, BatteryDO batteryDO, ScreenState screen) {
-		return ScreenDrainTracker.record(prefs, at, batteryDO, screen);
+		ScreenDrainTracker.batteryChangedAt(prefs, at, batteryDO, screen);
+		return read(batteryDO);
 	}
 
-	private ScreenDrainTracker.ScreenSplit read(long at, BatteryDO batteryDO) {
-		return ScreenDrainTracker.read(prefs, at, batteryDO);
+	private ScreenDrainTracker.ScreenSplit read(BatteryDO batteryDO) {
+		return ScreenDrainTracker.read(prefs, batteryDO);
 	}
 
 	@Test
@@ -89,8 +90,8 @@ public class ScreenDrainTrackerTest {
 	public void eachState_warmsUpOnItsOwn() {
 		observe(T0, unplugged(80), ON);
 		final ScreenDrainTracker.ScreenSplit split = observe(T0 + 15 * MINUTE, unplugged(78), OFF);
-		final ScreenDrainTracker.ScreenSplit later = read(T0 + 74 * MINUTE, unplugged(77));
-		final ScreenDrainTracker.ScreenSplit warm = read(T0 + 75 * MINUTE, unplugged(77));
+		final ScreenDrainTracker.ScreenSplit later = observe(T0 + 74 * MINUTE, unplugged(77), OFF);
+		final ScreenDrainTracker.ScreenSplit warm = observe(T0 + 75 * MINUTE, unplugged(77), OFF);
 
 		assertTrue("a quarter of an hour on is enough for the screen-on rate", split.on().hasRate());
 		assertFalse("59 minutes off is not yet enough for the screen-off rate", later.off().hasRate());
@@ -115,31 +116,32 @@ public class ScreenDrainTrackerTest {
 	}
 
 	@Test
-	public void pluggingIn_startsTheNextSessionFromNothing() {
+	public void pluggingIn_startsTheNextSessionFromNothing_evenWithoutACharge() {
 		observe(T0, unplugged(80), OFF);
 		observe(T0 + 120 * MINUTE, unplugged(78), OFF);
+		// Plugged in for a minute and out again at the same level, so no rise in level can be what restarts the session.
 		final BatteryDO charging = unplugged(78).setStatus(BatteryManager.BATTERY_STATUS_CHARGING).setPlugged(BatteryManager.BATTERY_PLUGGED_AC);
 		final ScreenDrainTracker.ScreenSplit whilePlugged = observe(T0 + 121 * MINUTE, charging, OFF);
-		observe(T0 + 180 * MINUTE, unplugged(95), OFF);
-		final ScreenDrainTracker.ScreenSplit split = read(T0 + 200 * MINUTE, unplugged(95));
+		final ScreenDrainTracker.ScreenSplit split = observe(T0 + 122 * MINUTE, unplugged(78), OFF);
 
 		assertFalse("nothing shows while plugged in", whilePlugged.off().hasRate());
-		assertFalse("the two hours before the charge are gone; 20 minutes since is not enough", split.off().hasRate());
+		assertFalse("the two hours before the plug-in belong to the last session", split.off().hasRate());
 	}
 
 	@Test
 	public void readWhilePlugged_showsNothing() {
 		observe(T0, unplugged(80), OFF);
+		observe(T0 + 120 * MINUTE, unplugged(79), OFF);
 		final BatteryDO plugged = unplugged(79).setPlugged(BatteryManager.BATTERY_PLUGGED_USB);
 
-		assertFalse(read(T0 + 120 * MINUTE, plugged).off().hasRate());
+		assertFalse(read(plugged).off().hasRate());
 	}
 
 	@Test
 	public void aChargeNobodySaw_startsANewSession() {
 		observe(T0, unplugged(50), OFF);
 		observe(T0 + 120 * MINUTE, unplugged(48), ON);
-		// Monitoring was down while the phone charged; the next sample finds the level well above where the open stretch began.
+		// Monitoring was down while the phone charged; the next broadcast finds the level well above where the open stretch began.
 		final ScreenDrainTracker.ScreenSplit split = observe(T0 + 300 * MINUTE, unplugged(90), ON);
 
 		assertFalse("the two hours off before the charge belong to the last session", split.off().hasRate());
@@ -149,9 +151,9 @@ public class ScreenDrainTrackerTest {
 	public void aChargeNobodySaw_startsANewSession_whenMonitoringRestarts() {
 		observe(T0, unplugged(50), OFF);
 		observe(T0 + 120 * MINUTE, unplugged(48), ON);
-		ScreenDrainTracker.restart(prefs, T0 + 300 * MINUTE, unplugged(90), ON);
+		ScreenDrainTracker.monitoringStartedAt(prefs, T0 + 300 * MINUTE, unplugged(90), ON);
 
-		assertFalse(read(T0 + 300 * MINUTE, unplugged(90)).off().hasRate());
+		assertFalse(read(unplugged(90)).off().hasRate());
 	}
 
 	@Test
@@ -167,20 +169,21 @@ public class ScreenDrainTrackerTest {
 	@Test
 	public void currentReadings_closerThanTheSpacingCountOnce() {
 		observe(T0, unplugged(80, -100), OFF);
-		observe(T0 + 5_000, unplugged(80, -900), OFF);
-		observe(T0 + 10_000, unplugged(80, -900), OFF);
+		observe(T0 + 25_000, unplugged(80, -100), OFF);
+		observe(T0 + 30_000, unplugged(80, -900), OFF);
+		observe(T0 + 35_000, unplugged(80, -900), OFF);
 		observe(T0 + 30 * MINUTE, unplugged(80, -100), OFF);
 		observe(T0 + 60 * MINUTE, unplugged(79, -100), OFF);
 
-		assertEquals("the two readings within 20 s of the first are skipped", -100, read(T0 + 60 * MINUTE, unplugged(79)).off().avgCurrentMilliAmps());
+		assertEquals("the two readings within 20 s of the one before are skipped", -100, read(unplugged(79)).off().avgCurrentMilliAmps());
 	}
 
 	@Test
 	public void twoReadings_areNotAnAverageYet() {
-		observe(T0, unplugged(80, -100), OFF);
+		observe(T0, unplugged(80), OFF);
 		observe(T0 + 30 * MINUTE, unplugged(80, -100), OFF);
+		final ScreenDrainTracker.ScreenSplit split = observe(T0 + 60 * MINUTE, unplugged(79, -100), OFF);
 
-		final ScreenDrainTracker.ScreenSplit split = read(T0 + 60 * MINUTE, unplugged(79));
 		assertTrue(split.off().hasRate());
 		assertFalse("an average needs three readings, like the rate window's", split.off().hasCurrent());
 	}
@@ -188,25 +191,28 @@ public class ScreenDrainTrackerTest {
 	@Test
 	public void anAverageBelowTenMilliAmps_isHidden() {
 		// Kirin reports CURRENT_NOW in mA, so a real 800 mA arrives as 800 µA and would read as a nonsense 1 mA (#152).
-		observe(T0, unplugged(80).setCurrentMicroAmps(-800), OFF);
-		observe(T0 + 30 * MINUTE, unplugged(80).setCurrentMicroAmps(-800), OFF);
-		observe(T0 + 60 * MINUTE, unplugged(79).setCurrentMicroAmps(-800), OFF);
+		observe(T0, unplugged(80), OFF);
+		observe(T0 + 20 * MINUTE, unplugged(80).setCurrentMicroAmps(-800), OFF);
+		observe(T0 + 40 * MINUTE, unplugged(80).setCurrentMicroAmps(-800), OFF);
+		final ScreenDrainTracker.ScreenSplit split = observe(T0 + 60 * MINUTE, unplugged(79).setCurrentMicroAmps(-800), OFF);
 
-		assertFalse(read(T0 + 60 * MINUTE, unplugged(79)).off().hasCurrent());
+		assertFalse(split.off().hasCurrent());
 	}
 
 	@Test
-	public void currentReadings_averageWithinTheStateTheyWereTakenIn_exceptTheOneAtTheToggle() {
-		observe(T0, unplugged(80, -400), ON);
+	public void currentReadings_averageWithinTheirState_leavingOutTheUnplugAndTheToggle() {
+		// The unplug's own broadcast can still carry the charger's current.
+		observe(T0, unplugged(80, 1500), ON);
+		observe(T0 + 2 * MINUTE, unplugged(80, -400), ON);
 		observe(T0 + 5 * MINUTE, unplugged(80, -380), ON);
 		observe(T0 + 10 * MINUTE, unplugged(79, -420), ON);
-		// The sample that first sees the screen off: the display is still powering down, so its reading belongs to neither state.
+		// The sample that first sees the screen off, and one just after it, while the display is still powering down.
 		observe(T0 + 15 * MINUTE, unplugged(78, -900), OFF);
+		observe(T0 + 15 * MINUTE + 10_000, unplugged(78, -900), OFF);
 		observe(T0 + 30 * MINUTE, unplugged(78, -60), OFF);
 		observe(T0 + 45 * MINUTE, unplugged(78, -50), OFF);
-		observe(T0 + 75 * MINUTE, unplugged(77, -70), OFF);
+		final ScreenDrainTracker.ScreenSplit split = observe(T0 + 75 * MINUTE, unplugged(77, -70), OFF);
 
-		final ScreenDrainTracker.ScreenSplit split = read(T0 + 75 * MINUTE, unplugged(77));
 		assertTrue(split.on().hasCurrent());
 		assertEquals("the three screen-on readings average to 400 mA", -400, split.on().avgCurrentMilliAmps());
 		assertTrue(split.off().hasCurrent());
@@ -218,14 +224,13 @@ public class ScreenDrainTrackerTest {
 		observe(T0, unplugged(80, -400), ON);
 		observe(T0 + 5 * MINUTE, unplugged(80, -400), ON);
 		observe(T0 + 10 * MINUTE, unplugged(79, -400), ON);
-		ScreenDrainTracker.toggle(prefs, T0 + 20 * MINUTE, unplugged(77, -900), OFF);
-		// A late broadcast after a sample already saw the change: the same state, so nothing closes, and still no reading.
-		ScreenDrainTracker.toggle(prefs, T0 + 25 * MINUTE, unplugged(77, -900), OFF);
+		ScreenDrainTracker.screenChangedAt(prefs, T0 + 20 * MINUTE, unplugged(77, -900), OFF);
+		// A late broadcast after the toggle was already seen: the same state, so nothing closes, and still no reading.
+		ScreenDrainTracker.screenChangedAt(prefs, T0 + 25 * MINUTE, unplugged(77, -900), OFF);
 		observe(T0 + 40 * MINUTE, unplugged(77, -60), OFF);
 		observe(T0 + 60 * MINUTE, unplugged(77, -60), OFF);
-		observe(T0 + 80 * MINUTE, unplugged(76, -60), OFF);
+		final ScreenDrainTracker.ScreenSplit split = observe(T0 + 80 * MINUTE, unplugged(76, -60), OFF);
 
-		final ScreenDrainTracker.ScreenSplit split = read(T0 + 80 * MINUTE, unplugged(76));
 		assertEquals("the 20 minutes up to the broadcast are screen-on: 3% is 9.0 %/h", 90, split.on().tenthsPercentPerHour());
 		assertEquals("neither broadcast's reading lands in the screen-off average", -60, split.off().avgCurrentMilliAmps());
 	}
@@ -234,11 +239,23 @@ public class ScreenDrainTrackerTest {
 	public void monitoringRestart_dropsTheStretchItCouldNotWatch() {
 		observe(T0, unplugged(80), OFF);
 		// Monitoring was down for five hours: the screen may have gone on and off in that time without anyone seeing it.
-		ScreenDrainTracker.restart(prefs, T0 + 300 * MINUTE, unplugged(70), ON);
+		ScreenDrainTracker.monitoringStartedAt(prefs, T0 + 300 * MINUTE, unplugged(70), ON);
 		final ScreenDrainTracker.ScreenSplit split = observe(T0 + 320 * MINUTE, unplugged(67), OFF);
 
 		assertFalse("the five unwatched hours count towards neither state", split.off().hasRate());
 		assertEquals("only the 20 watched minutes count: 3% in 20 min is 9.0 %/h", 90, split.on().tenthsPercentPerHour());
+	}
+
+	@Test
+	public void monitoringRestart_keepsWhatWasWatchedBeforeIt() {
+		// Screen off overnight from 95%, a broadcast at each hourly level tick; the system kills monitoring just after the sixth and restarts it.
+		observe(T0, unplugged(95), OFF);
+		for (int hour = 1; hour <= 6; hour++) {
+			observe(T0 + hour * 60 * MINUTE, unplugged(95 - hour), OFF);
+		}
+		ScreenDrainTracker.monitoringStartedAt(prefs, T0 + 365 * MINUTE, unplugged(89), OFF);
+
+		assertEquals("the six watched hours stay: 6% in 6 h is 1.0 %/h", 10, read(unplugged(89)).off().tenthsPercentPerHour());
 	}
 
 	@Test
@@ -255,20 +272,9 @@ public class ScreenDrainTrackerTest {
 		observe(T0, unplugged(80, -100), OFF);
 		observe(T0 - 30 * MINUTE, unplugged(80, -100), OFF);
 		observe(T0 - 20 * MINUTE, unplugged(80, -100), OFF);
-		observe(T0 + 40 * MINUTE, unplugged(79, -100), OFF);
+		final ScreenDrainTracker.ScreenSplit split = observe(T0 + 40 * MINUTE, unplugged(79, -100), OFF);
 
-		assertTrue("the readings stamped before the first still count, so there are four", read(T0 + 40 * MINUTE, unplugged(79)).off().hasCurrent());
-	}
-
-	@Test
-	public void aReadFromBeforeTheOpenStretchBegan_creditsItNothing() {
-		observe(T0, unplugged(80), OFF);
-		observe(T0 + 120 * MINUTE, unplugged(78), ON);
-		observe(T0 + 130 * MINUTE, unplugged(78), OFF);
-		// The clock is set back before anything observes again: the open screen-off stretch would end before it began.
-		final ScreenDrainTracker.ScreenSplit split = read(T0 + 100 * MINUTE, unplugged(77));
-
-		assertEquals("only the two closed hours count: 2% in 2 h is 1.0 %/h", 10, split.off().tenthsPercentPerHour());
+		assertTrue("the readings stamped before the start still count, so there are three", split.off().hasCurrent());
 	}
 
 	@Test
