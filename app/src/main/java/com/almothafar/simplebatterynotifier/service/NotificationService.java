@@ -31,7 +31,9 @@ import com.almothafar.simplebatterynotifier.util.TemperatureUtils;
 
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.Map;
+import java.util.Set;
 
 import static com.almothafar.simplebatterynotifier.util.BidiText.isolate;
 import static java.util.Objects.isNull;
@@ -426,11 +428,12 @@ public final class NotificationService {
 
 	/**
 	 * The status notification's title, and each family's segment as the collapsed line would render it, from a battery reading — the notification-details
-	 * picker's live-value column (#357) and its preview (#358), which orders the segments into a line with {@link OngoingStatusContent#detailLine}.
+	 * picker's live-value column (#357) and its preview (#358), which orders the segments into a line with {@link OngoingStatusContent#detailLine}. A family
+	 * with no segment is either still on its way or unavailable, which the column and the preview tell apart (#359).
 	 *
 	 * @param context The picker's own context, so the text is worded in the language the screen is showing
 	 * @param battery The {@code ACTION_BATTERY_CHANGED} broadcast just received, or the sticky copy registering for it returned; null when there is none
-	 * @return the title and segments; null when there is no battery reading
+	 * @return the title, segments and unavailable families; null when there is no battery reading
 	 */
 	public static LiveStatus liveStatus(Context context, Intent battery) {
 		final BatteryDO batteryDO = SystemService.getBatteryInfo(context, battery);
@@ -439,13 +442,16 @@ public final class NotificationService {
 		}
 		final BatteryRateTracker.BatteryRate rate = BatteryRateTracker.getRate(context, batteryDO);
 		final Map<DetailFamily, String> segments = new EnumMap<>(DetailFamily.class);
+		final Set<DetailFamily> unavailable = EnumSet.noneOf(DetailFamily.class);
 		for (final DetailFamily family : DetailFamily.values()) {
 			final String segment = OngoingStatusContent.detailSegment(context, family, batteryDO, rate);
 			if (nonNull(segment)) {
 				segments.put(family, segment);
+			} else if (OngoingStatusContent.isUnavailable(family, batteryDO, rate)) {
+				unavailable.add(family);
 			}
 		}
-		return new LiveStatus(OngoingStatusContent.statusTitle(context, batteryDO), segments);
+		return new LiveStatus(OngoingStatusContent.statusTitle(context, batteryDO), segments, unavailable);
 	}
 
 	// ========== Private Helper Methods ==========
@@ -775,13 +781,15 @@ public final class NotificationService {
 	/**
 	 * One battery reading as the status notification renders it, before a choice of families orders it into a line.
 	 *
-	 * @param title    the notification's title, e.g. "85% · Discharging"
-	 * @param segments each family that has something to show, mapped to its segment of the collapsed line; read-only
+	 * @param title       the notification's title, e.g. "85% · Discharging"
+	 * @param segments    each family that has something to show, mapped to its segment of the collapsed line; read-only
+	 * @param unavailable each family with nothing to show and nothing coming (#359); any other family without a segment is still on its way. Read-only
 	 */
-	public record LiveStatus(String title, Map<DetailFamily, String> segments) {
-		/** Keeps the segments read-only, so whoever holds the reading cannot change it under anyone else. */
+	public record LiveStatus(String title, Map<DetailFamily, String> segments, Set<DetailFamily> unavailable) {
+		/** Keeps the segments and the unavailable families read-only, so whoever holds the reading cannot change it under anyone else. */
 		public LiveStatus {
 			segments = Collections.unmodifiableMap(segments);
+			unavailable = Collections.unmodifiableSet(unavailable);
 		}
 	}
 }

@@ -243,6 +243,11 @@
     <string name="notification_status_source_wireless">Wireless</string>
     <!-- Any other charger Android reports: a dock (API 33+), or a type added later -->
     <string name="notification_status_source_other">Plugged in</string>
+    <!-- #359: the collapsed line while none of the chosen details has a value yet, and a picker row whose value is still on its way. The details table's
+         "calculating" (#216), as a line of its own. -->
+    <string name="notification_status_calculating">Calculating…</string>
+    <!-- #359: the collapsed line when none of the chosen details has a value and none is coming, such as Current on a phone that never reports one -->
+    <string name="notification_status_unavailable">Not available</string>
     <!-- #194: expanded (pull-down) breakdown — one "label: value" line each. Labels for Time remaining /
          Time to full / Temperature / Drain rate are reused from the details table. -->
     <string name="notification_detail_line">%1$s: %2$s</string>

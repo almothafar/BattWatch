@@ -461,10 +461,11 @@ public class NotificationDetailsPickerTest {
 
 	@Test
 	public void thePreview_followsTheBattery_whileThePickerIsOpen() {
+		// The temperature, since it has a reading with no rate in yet.
+		AppPrefs.setNotificationDetails(context, List.of(DetailFamily.TEMPERATURE));
 		openPicker();
 		publishBattery(412);
 		shadowOf(Looper.getMainLooper()).idle();
-		// No rate yet, so the default choice falls back to the temperature.
 		assertEquals(TemperatureUtils.format(context, 412), previewLine().getText().toString());
 	}
 
@@ -498,8 +499,8 @@ public class NotificationDetailsPickerTest {
 
 		assertEquals(List.of(DetailFamily.SPEED, DetailFamily.CURRENT, DetailFamily.TIME), AppPrefs.notificationDetails(context));
 		assertEquals("SPEED CURRENT TIME | TEMPERATURE POWER_SOURCE", screen());
-		// No rate yet, so the default choice falls back to the temperature.
-		assertEquals(TemperatureUtils.format(context, TEMPERATURE), statusText());
+		// No rate yet, so none of the default choice has a value.
+		assertEquals("Calculating…", statusText());
 	}
 
 	@Test
@@ -562,6 +563,66 @@ public class NotificationDetailsPickerTest {
 		openPicker();
 		assertEquals(TemperatureUtils.format(context, TEMPERATURE), value(DetailFamily.TEMPERATURE));
 		assertEquals("On battery", value(DetailFamily.POWER_SOURCE));
+	}
+
+	@Test
+	public void aFamilyStillWarmingUp_readsCalculating() {
+		// Nothing has filled the rate window yet, as right after a plug change: the three families built on it are on their way (#359).
+		openPicker();
+		assertEquals("Calculating…", value(DetailFamily.SPEED));
+		assertEquals("Calculating…", value(DetailFamily.CURRENT));
+		assertEquals("Calculating…", value(DetailFamily.TIME));
+		assertEquals("Calculating…", previewLine().getText().toString());
+	}
+
+	@Test
+	public void aCurrentTheDeviceDoesNotReport_turnsToADash_onceTheRateIsIn() {
+		// The column is where a phone that never reports a current (the Kirin Mate 10 Pro) shows it is not coming (#356). It turns while the screen is open,
+		// with the broadcast that brings the rate, though the Current row's own segment is missing before and after.
+		openPicker();
+		assertEquals("Calculating…", value(DetailFamily.CURRENT));
+
+		fillRateWindow(false, 87, 85);
+		publishBattery(TEMPERATURE);
+		shadowOf(Looper.getMainLooper()).idle();
+
+		assertEquals("20%/h", value(DetailFamily.SPEED));
+		assertEquals("—", value(DetailFamily.CURRENT));
+	}
+
+	@Test
+	public void aChoiceWithNothingComing_previewsNotAvailable_likeTheNotification() {
+		// Current alone on a phone that reports none: the preview has to say what the notification says, not promise the value with "Calculating…".
+		AppPrefs.setNotificationDetails(context, List.of(DetailFamily.CURRENT));
+		fillRateWindow(false, 87, 85);
+		postStatusNotification();
+		openPicker();
+		assertEquals("20%/h", value(DetailFamily.SPEED));
+		assertEquals("—", value(DetailFamily.CURRENT));
+		assertEquals("Not available", previewLine().getText().toString());
+		assertEquals(statusText(), previewLine().getText().toString());
+	}
+
+	@Test
+	public void aFullBattery_readsADash_forEachValueThatStoppedMoving() {
+		// Full on USB with no current, as the Mate 10 Pro sits: no rate comes while it stays full, so none of the three is on its way.
+		publish(batteryIntent(TEMPERATURE, 100, BatteryManager.BATTERY_STATUS_FULL, BatteryManager.BATTERY_PLUGGED_USB));
+		openPicker();
+		assertEquals("—", value(DetailFamily.SPEED));
+		assertEquals("—", value(DetailFamily.CURRENT));
+		assertEquals("—", value(DetailFamily.TIME));
+		assertEquals("Not available", previewLine().getText().toString());
+	}
+
+	@Test
+	public void aTimeEstimateWithNoneComing_readsADash() {
+		// Still charging at 100%, as some phones report for a while before they say full: the rate is in, but there is no time left to estimate. The details
+		// table shows the same dash there (#216).
+		fillRateWindow(true, 98, 100);
+		publish(batteryIntent(TEMPERATURE, 100, BatteryManager.BATTERY_STATUS_CHARGING, BatteryManager.BATTERY_PLUGGED_AC));
+		openPicker();
+		assertEquals("20%/h", value(DetailFamily.SPEED));
+		assertEquals("—", value(DetailFamily.TIME));
 	}
 
 	@Test
@@ -662,14 +723,14 @@ public class NotificationDetailsPickerTest {
 	public void aTap_redrawsTheStatusNotification_whileThePickerIsStillOpen() {
 		// Pulling the shade down over the picker doesn't pause it, so a redraw saved for the way out would show the old line meanwhile.
 		postStatusNotification();
-		assertEquals(TemperatureUtils.format(context, TEMPERATURE), statusText());
+		// No rate yet, so none of the default choice has a value.
+		assertEquals("Calculating…", statusText());
 		openPicker();
 		tap(DetailFamily.SPEED);
 		tap(DetailFamily.CURRENT);
 		tap(DetailFamily.TIME);
 		tap(DetailFamily.POWER_SOURCE);
 
-		// Before: no rate yet, so the default choice fell back to the temperature. Now: the one family chosen.
 		assertEquals("On battery", statusText());
 	}
 
@@ -758,21 +819,46 @@ public class NotificationDetailsPickerTest {
 	// --- Helpers ----------------------------------------------------------------------------------
 
 	/** Publish {@link #batteryIntent} as the sticky broadcast {@code SystemService} reads and the picker listens for. */
-	@SuppressWarnings("deprecation")
 	private void publishBattery(int temperature) {
-		context.sendStickyBroadcast(batteryIntent(temperature));
+		publish(batteryIntent(temperature));
+	}
+
+	/** Publish a battery reading as the sticky broadcast {@code SystemService} reads and the picker listens for. */
+	@SuppressWarnings("deprecation")
+	private void publish(Intent battery) {
+		context.sendStickyBroadcast(battery);
 	}
 
 	/** A plugged-out battery at 85%. */
 	private static Intent batteryIntent(int temperature) {
+		return batteryIntent(temperature, 85, BatteryManager.BATTERY_STATUS_DISCHARGING, 0);
+	}
+
+	private static Intent batteryIntent(int temperature, int level, int status, int plugged) {
 		final Intent battery = new Intent(Intent.ACTION_BATTERY_CHANGED);
-		battery.putExtra(BatteryManager.EXTRA_LEVEL, 85);
+		battery.putExtra(BatteryManager.EXTRA_LEVEL, level);
 		battery.putExtra(BatteryManager.EXTRA_SCALE, 100);
-		battery.putExtra(BatteryManager.EXTRA_STATUS, BatteryManager.BATTERY_STATUS_DISCHARGING);
-		battery.putExtra(BatteryManager.EXTRA_PLUGGED, 0);
+		battery.putExtra(BatteryManager.EXTRA_STATUS, status);
+		battery.putExtra(BatteryManager.EXTRA_PLUGGED, plugged);
 		battery.putExtra(BatteryManager.EXTRA_TEMPERATURE, temperature);
 		battery.putExtra(BatteryManager.EXTRA_PRESENT, true);
 		return battery;
+	}
+
+	/**
+	 * Fill the rate window as minutes of readings would: two levels apart over six minutes, 20%/h, and no current in either. Six minutes keeps clear of both
+	 * the three the level-over-time rate needs and the ten the window keeps. The file, the keys and the "time:level:current" form are
+	 * {@code BatteryRateTracker}'s persisted ones, which the picker reads the rate from. Each test that fills it checks Speed reads 20%/h first, so a change to
+	 * that form fails the test instead of leaving it to pass on an empty window.
+	 */
+	private void fillRateWindow(boolean charging, int fromLevel, int toLevel) {
+		final long now = System.currentTimeMillis();
+		final String samples = (now - 420_000) + ":" + fromLevel + ":" + Integer.MIN_VALUE + ";" + (now - 60_000) + ":" + toLevel + ":" + Integer.MIN_VALUE;
+		context.getSharedPreferences("battery_transient", Context.MODE_PRIVATE)
+		       .edit()
+		       .putString("_battery_rate_samples", samples)
+		       .putInt("_battery_rate_charging", charging ? 1 : 0)
+		       .commit();
 	}
 
 	/** Put the status notification up, as the monitoring service keeps it. */

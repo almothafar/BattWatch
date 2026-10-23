@@ -222,6 +222,9 @@
     <string name="notification_status_source_ac">شاحن</string>
     <string name="notification_status_source_wireless">لاسلكي</string>
     <string name="notification_status_source_other">موصول بالطاقة</string>
+    <!-- #359: السطر المطوي ما دامت التفاصيل المختارة كلها بلا قيمة بعد، وقيمة صف في المنتقي ما زالت في الطريق. «جارٍ الحساب» من جدول التفاصيل (#216). -->
+    <string name="notification_status_calculating">جارٍ الحساب…</string>
+    <string name="notification_status_unavailable">غير متوفر</string>
     <!-- #194: التفصيل الموسّع (عند السحب للأسفل) — سطر "التسمية: القيمة". تسميات الوقت المتبقي/الوقت
          حتى الاكتمال/الحرارة/معدل الاستهلاك مُعاد استخدامها من جدول التفاصيل. -->
     <string name="notification_detail_line">%1$s: %2$s</string>

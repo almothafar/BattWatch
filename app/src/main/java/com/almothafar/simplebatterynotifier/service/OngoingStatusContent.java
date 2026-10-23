@@ -15,6 +15,7 @@ import com.almothafar.simplebatterynotifier.util.TemperatureUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import static com.almothafar.simplebatterynotifier.util.BidiText.isolate;
 import static java.util.Objects.isNull;
@@ -117,26 +118,39 @@ public final class OngoingStatusContent {
 			return "";
 		}
 		final BatteryRateTracker.BatteryRate rateOrEmpty = nonNull(rate) ? rate : BatteryRateTracker.BatteryRate.empty();
-		return detailLine(AppPrefs.notificationDetails(context), family -> detailSegment(context, family, batteryDO, rateOrEmpty));
+		return detailLine(
+				context,
+				AppPrefs.notificationDetails(context),
+				family -> detailSegment(context, family, batteryDO, rateOrEmpty),
+				family -> isUnavailable(family, batteryDO, rateOrEmpty));
 	}
 
 	/**
 	 * The collapsed line a choice makes from its families' segments — the one rule the notification and the picker's preview (#358) both render by.
 	 * <p>
-	 * A family with nothing to show yet drops out silently. When a non-empty choice shows nothing at all — a warm-up tick — the line falls back to the
-	 * Temperature family, which always has a reading, so it is never blank. An empty choice renders an empty line: the user asked for the title alone.
+	 * A family with nothing to show yet drops out silently. When a non-empty choice shows nothing at all, the line says why rather than go blank: "Not
+	 * available" when none of it is coming, otherwise "Calculating…", as the details table does (#216). No family stands in, since any of them is one the user
+	 * can choose, and showing it unbidden would override a choice that left it out (#359). An empty choice renders an empty line: the user asked for the title
+	 * alone.
 	 *
-	 * @param selection the chosen families, in the order the line shows them
-	 * @param segmentOf each family's segment, or null when it has nothing to show yet
+	 * @param context     the context to word the line in
+	 * @param selection   the chosen families, in the order the line shows them
+	 * @param segmentOf   each family's segment, or null when it has nothing to show yet
+	 * @param unavailable whether a family with no segment has none coming ({@link #isUnavailable})
 	 * @return the line
 	 */
-	public static String detailLine(List<DetailFamily> selection, Function<DetailFamily, String> segmentOf) {
+	public static String detailLine(
+			Context context,
+			List<DetailFamily> selection,
+			Function<DetailFamily, String> segmentOf,
+			Predicate<DetailFamily> unavailable) {
 		final List<String> parts = new ArrayList<>(selection.size());
 		for (final DetailFamily family : selection) {
 			addIfPresent(parts, segmentOf.apply(family));
 		}
 		if (parts.isEmpty() && !selection.isEmpty()) {
-			return segmentOf.apply(DetailFamily.TEMPERATURE);
+			final boolean noneComing = selection.stream().allMatch(unavailable);
+			return context.getString(noneComing ? R.string.notification_status_unavailable : R.string.notification_status_calculating);
 		}
 		return String.join(DETAIL_SEPARATOR, parts);
 	}
@@ -162,9 +176,44 @@ public final class OngoingStatusContent {
 	}
 
 	/**
+	 * Whether a family with nothing to show is unavailable rather than late: its value is not coming, so the picker's live-value column reads "—" for it, and
+	 * a line of nothing else "Not available", rather than "Calculating…" (#359). The details table splits Time the same way (#216); its Current row never
+	 * learned the flag below, so it keeps "calculating" there. Asked only of a family whose {@link #detailSegment} is null.
+	 * <p>
+	 * A full battery has none of them coming: its level no longer moves, so no rate settles, and nothing is left to time. Telling that apart from a warm-up is
+	 * what keeps a phone left on the charger from reading "Calculating…" all night.
+	 *
+	 * @param family    The family with nothing to show
+	 * @param batteryDO Current battery snapshot
+	 * @param rate      The precomputed charge/drain rate
+	 * @return true when nothing is coming until the battery's state changes
+	 */
+	static boolean isUnavailable(DetailFamily family, BatteryDO batteryDO, BatteryRateTracker.BatteryRate rate) {
+		final boolean full = isFull(batteryDO);
+		return switch (family) {
+			case CURRENT -> full || rate.isCurrentUnavailable();
+			// With the rate in, a missing estimate means there is no time left to estimate: the battery is empty, or one rounding step from it.
+			case TIME -> full || rate.hasRate();
+			// Speed goes missing wherever the level stops moving, and short of a full battery nothing tells that apart from a rate still settling.
+			case SPEED -> full;
+			// Both always have a reading, so neither is ever asked.
+			case TEMPERATURE, POWER_SOURCE -> false;
+		};
+	}
+
+	/**
+	 * Whether the battery is full: reported so, or still charging at 100%, as some phones report before they say full. Many phones also keep reporting full
+	 * for a while after the cable comes out (see {@code BatteryLevelReceiver}), when the level has not moved yet either.
+	 */
+	private static boolean isFull(BatteryDO batteryDO) {
+		return batteryDO.getStatus() == BatteryManager.BATTERY_STATUS_FULL
+				|| (batteryDO.getStatus() == BatteryManager.BATTERY_STATUS_CHARGING && batteryDO.getBatteryPercentageInt() >= 100);
+	}
+
+	/**
 	 * Whether the pull-down says anything the collapsed line doesn't, and so earns an expand chevron (#194). The labelled breakdown always does. On a warm-up
-	 * tick the pull-down is the temperature alone, which adds something only when the line leaves the temperature out: a choice without Temperature that still
-	 * has another family to show (#357). This reads the rendered line, so the line's fallback to the temperature needs no second copy here.
+	 * tick the pull-down is the temperature alone, which adds something only when the line leaves the temperature out: a choice without Temperature, whether
+	 * the line shows another family (#357) or says why it shows none (#359).
 	 *
 	 * @param context   The application context
 	 * @param batteryDO Current battery snapshot, or null if unavailable
