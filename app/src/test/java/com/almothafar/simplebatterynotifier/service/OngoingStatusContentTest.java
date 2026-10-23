@@ -358,8 +358,16 @@ public class OngoingStatusContentTest {
 		assertEquals(expected, OngoingStatusContent.statusDetailExpanded(context, discharging85(), rate(false, 9)));
 	}
 
-	/** The full discharging rate, carrying a screen-on / screen-off split (#193). */
+	/** The full discharging rate, carrying a screen-on / screen-off split (#193) whose overall drain is still warming up. */
 	private static BatteryRateTracker.BatteryRate rateWithScreen(ScreenDrainTracker.ScreenDrain on, ScreenDrainTracker.ScreenDrain off) {
+		return rateWithScreen(on, off, ScreenDrainTracker.ScreenDrain.NONE);
+	}
+
+	/** The full discharging rate, 9 %/h over the last ten minutes, carrying a screen-on / screen-off split and its overall drain (#193, #354). */
+	private static BatteryRateTracker.BatteryRate rateWithScreen(
+			ScreenDrainTracker.ScreenDrain on,
+			ScreenDrainTracker.ScreenDrain off,
+			ScreenDrainTracker.ScreenDrain overall) {
 		return new BatteryRateTracker.BatteryRate(
 				true,
 				9,
@@ -368,18 +376,29 @@ public class OngoingStatusContentTest {
 				-250,
 				true,
 				-338,
-				new ScreenDrainTracker.ScreenSplit(on, off));
+				new ScreenDrainTracker.ScreenSplit(on, off, overall));
+	}
+
+	/** A figure as a screen-state line shows it, with nowhere to break inside: a line too wide for the shade wraps between figures, never inside one (#354). */
+	private static String glued(String figure) {
+		return figure.replace(' ', '\u00A0').replace("/", "/\u2060");
+	}
+
+	/** A drain known only in tenths of a %/h, with no current: how the session's figures arrive (#193). */
+	private static ScreenDrainTracker.ScreenDrain drainAt(int tenthsPercentPerHour) {
+		return new ScreenDrainTracker.ScreenDrain(false, 0, true, tenthsPercentPerHour);
 	}
 
 	@Test
-	public void expanded_addsScreenOnAndOffLines_underAverage() {
+	public void expanded_addsScreenOnAndOffLines_underAverage_eachWithTheTimeThatStateWouldLast() {
+		// 85% at 10.4 %/h lasts 490 min; at 1.5 %/h, 3400 min (#354).
 		final ScreenDrainTracker.ScreenDrain on = new ScreenDrainTracker.ScreenDrain(true, -392, true, 104);
 		final ScreenDrainTracker.ScreenDrain off = new ScreenDrainTracker.ScreenDrain(true, -56, true, 15);
 		final String expected = String.join("\n",
 				line(R.string.notification_label_now, cur(-250)),
 				line(R.string.notification_label_average, cur(-338) + SEP + "9%/h"),
-				line(R.string.screen_on_drain, cur(-392) + SEP + "10.4%/h"),
-				line(R.string.screen_off_drain, cur(-56) + SEP + "1.5%/h"),
+				line(R.string.screen_on_drain, glued(cur(-392)) + SEP + glued("10.4%/h") + SEP + glued("~8h 10m")),
+				line(R.string.screen_off_drain, glued(cur(-56)) + SEP + glued("1.5%/h") + SEP + glued("~56h 40m")),
 				line(R.string.time_remaining, "~9h 27m"),
 				line(R.string.temperature, temp()));
 		assertEquals(expected, OngoingStatusContent.statusDetailExpanded(context, discharging85(), rateWithScreen(on, off)));
@@ -390,13 +409,59 @@ public class OngoingStatusContentTest {
 		// Screen-on has its current but no level drop yet; screen-off has nothing yet. The two degrade on their own.
 		final ScreenDrainTracker.ScreenDrain on = new ScreenDrainTracker.ScreenDrain(true, -392, false, 0);
 		final String expanded = OngoingStatusContent.statusDetailExpanded(context, discharging85(), rateWithScreen(on, ScreenDrainTracker.ScreenDrain.NONE));
-		assertTrue(expanded, expanded.contains(line(R.string.screen_on_drain, cur(-392)) + "\n"));
+		assertTrue(expanded, expanded.contains(line(R.string.screen_on_drain, glued(cur(-392))) + "\n"));
 		assertFalse(expanded, expanded.contains(context.getString(R.string.screen_off_drain)));
 
-		final ScreenDrainTracker.ScreenDrain rateOnly = new ScreenDrainTracker.ScreenDrain(false, 0, true, 5);
+		// The time hangs on the %/h alone, so a state with no current yet still has one.
 		final String rateOnlyExpanded = OngoingStatusContent.statusDetailExpanded(context, discharging85(),
-				rateWithScreen(ScreenDrainTracker.ScreenDrain.NONE, rateOnly));
-		assertTrue(rateOnlyExpanded, rateOnlyExpanded.contains(line(R.string.screen_off_drain, "0.5%/h") + "\n"));
+				rateWithScreen(ScreenDrainTracker.ScreenDrain.NONE, drainAt(5)));
+		assertTrue(rateOnlyExpanded, rateOnlyExpanded.contains(line(R.string.screen_off_drain, glued("0.5%/h") + SEP + glued("~170h 0m")) + "\n"));
+	}
+
+	// --- Time remaining: the whole cycle, not the last ten minutes (#354) ------------------------
+
+	@Test
+	public void timeRemaining_projectsFromTheOverallDrain_onceItIsIn() {
+		// The last ten minutes ran at 9 %/h, which would say ~9h 27m. Over the whole time off the charger it has been 1.5 %/h: 85% lasts 3400 min.
+		final BatteryRateTracker.BatteryRate rate = rateWithScreen(ScreenDrainTracker.ScreenDrain.NONE, ScreenDrainTracker.ScreenDrain.NONE, drainAt(15));
+
+		assertEquals(context.getString(R.string.notification_status_time_remaining, "~56h 40m"), alone(DetailFamily.TIME, discharging85(), rate));
+		final String expanded = OngoingStatusContent.statusDetailExpanded(context, discharging85(), rate);
+		assertTrue(expanded, expanded.contains(line(R.string.time_remaining, "~56h 40m")));
+	}
+
+	@Test
+	public void timeRemaining_fallsBackToTheTenMinuteRate_whileTheOverallDrainWarmsUp() {
+		// Under an hour off the charger, with the screen-on drain already in: the 10-minute 9 %/h stands in, so the estimate is there as it was before.
+		final BatteryRateTracker.BatteryRate rate = rateWithScreen(drainAt(104), ScreenDrainTracker.ScreenDrain.NONE);
+
+		assertEquals(context.getString(R.string.notification_status_time_remaining, "~9h 27m"), alone(DetailFamily.TIME, discharging85(), rate));
+	}
+
+	/** Only the session's figures: the 10-minute window has no rate, as on a phone whose level sat still for the last ten minutes. */
+	private static BatteryRateTracker.BatteryRate sessionOnly(ScreenDrainTracker.ScreenDrain overall) {
+		return new BatteryRateTracker.BatteryRate(
+				false,
+				0,
+				false,
+				false,
+				0,
+				false,
+				0,
+				new ScreenDrainTracker.ScreenSplit(ScreenDrainTracker.ScreenDrain.NONE, ScreenDrainTracker.ScreenDrain.NONE, overall));
+	}
+
+	@Test
+	public void timeRemaining_needsNoTenMinuteRate_onceTheOverallDrainIsIn() {
+		// Screen off, the level has not ticked in the last ten minutes, so the window has no rate; the session still does. 85% at 0.5 %/h lasts 170 h.
+		assertEquals(context.getString(R.string.notification_status_time_remaining, "~170h 0m"),
+				alone(DetailFamily.TIME, discharging85(), sessionOnly(drainAt(5))));
+	}
+
+	@Test
+	public void timeRemaining_atZero_readsNotAvailable_whenOnlyTheOverallDrainIsIn() {
+		// The session's rate is in, so a missing estimate means no time is left, not that one is on its way.
+		assertEquals("Not available", alone(DetailFamily.TIME, discharging85().setLevel(0), sessionOnly(drainAt(15))));
 	}
 
 	@Test

@@ -597,7 +597,8 @@ public class BatteryDetailsFragment extends Fragment {
 	}
 
 	/**
-	 * Adds one screen state's row (#193): its average current and %/h, or the "calculating" hint until that state has run long enough since the last unplug.
+	 * Adds one screen state's row (#193): its average current, %/h and the time the battery would last in that state (#354), or the "calculating" hint until
+	 * that state has run long enough since the last unplug.
 	 *
 	 * @param view     The fragment view
 	 * @param labelRes The row label, screen-on or screen-off drain
@@ -605,7 +606,7 @@ public class BatteryDetailsFragment extends Fragment {
 	 */
 	private void addScreenDrainRow(View view, int labelRes, ScreenDrainTracker.ScreenDrain drain) {
 		final String label = getString(labelRes);
-		final String value = ScreenDrainTracker.formatValue(view.getContext(), drain);
+		final String value = ScreenDrainTracker.formatValue(view.getContext(), drain, batteryDO.getBatteryPercentageInt());
 		if (nonNull(value)) {
 			valuesMap.put(label, value);
 		} else {
@@ -615,35 +616,30 @@ public class BatteryDetailsFragment extends Fragment {
 	}
 
 	/**
-	 * Adds the estimated-time row directly below the rate it is derived from: "Time to full" while charging,
-	 * "Time remaining" while discharging (#124/#188). A rough capacity-free linear projection (see
-	 * {@link BatteryRateTracker#estimateMinutesToFull} / {@link BatteryRateTracker#estimateMinutesToEmpty});
-	 * precision is a non-goal — the OS owns the accurate figure. The row always stays put, but its no-value
-	 * state is split (#216): while the rate is still settling the estimate is genuinely on its way, so it
-	 * shows "calculating"; once the rate is known but the projection degenerates (already full/empty, or
-	 * right at the charge taper where a figure would mislead) nothing more is coming, so it shows the "—"
-	 * dash. Reuses the already-computed {@code rate}; only the level is read here.
+	 * Adds the estimated-time row directly below the rate: "Time to full" while charging, "Time remaining" while discharging (#124/#188). A rough
+	 * capacity-free linear projection, by the same rule as the status notification ({@link BatteryRateTracker.BatteryRate#estimatedMinutes}): the time
+	 * remaining projects from the overall drain since the last unplug once it is in (#354), and from the drain rate until then. Precision is a non-goal — the
+	 * OS owns the accurate figure. The row always stays put, but its no-value state is split (#216): while no rate is in yet the estimate is genuinely on its
+	 * way, so it shows "calculating"; once one is but the projection degenerates (already full/empty) nothing more is coming, so it shows the "—" dash.
+	 * Reuses the already-computed {@code rate}; only the level is read here.
 	 *
 	 * @param view     The fragment view
 	 * @param rate     The already-computed rate for this refresh
-	 * @param charging Whether the battery is charging (picks the label and the projection direction)
+	 * @param charging Whether the battery is charging (picks the label and the info dialog)
 	 */
 	private void addTimeRow(View view, BatteryRateTracker.BatteryRate rate, boolean charging) {
 		final String label = getString(charging ? R.string.time_to_full : R.string.time_remaining);
-		if (!rate.hasRate()) {
-			putHintRow(label, R.string.battery_value_calculating,
-					R.string.battery_time_pending_dialog_title, R.string.battery_time_pending_dialog_message);
+		final int messageRes = charging ? R.string.battery_time_to_full_pending_dialog_message : R.string.battery_time_remaining_pending_dialog_message;
+		if (!rate.hasEstimateRate()) {
+			putHintRow(label, R.string.battery_value_calculating, R.string.battery_time_pending_dialog_title, messageRes);
 			return;
 		}
-		final int level = batteryDO.getBatteryPercentageInt();
-		final int minutes = charging
-				? BatteryRateTracker.estimateMinutesToFull(level, rate.percentPerHour())
-				: BatteryRateTracker.estimateMinutesToEmpty(level, rate.percentPerHour());
+		final int minutes = rate.estimatedMinutes(batteryDO.getBatteryPercentageInt());
 		if (minutes > 0) {
 			valuesMap.put(label, BatteryRateTracker.formatDuration(view.getContext(), minutes));
 			return;
 		}
-		putUnavailableRow(label, R.string.battery_time_pending_dialog_title, R.string.battery_time_pending_dialog_message);
+		putUnavailableRow(label, R.string.battery_time_pending_dialog_title, messageRes);
 	}
 
 	/**

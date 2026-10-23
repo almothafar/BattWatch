@@ -30,6 +30,7 @@ import com.almothafar.simplebatterynotifier.model.BatteryDO;
 import com.almothafar.simplebatterynotifier.model.DetailFamily;
 import com.almothafar.simplebatterynotifier.service.BatteryRateTracker;
 import com.almothafar.simplebatterynotifier.service.NotificationService;
+import com.almothafar.simplebatterynotifier.service.RateWindowTestSupport;
 import com.almothafar.simplebatterynotifier.service.SystemService;
 import com.almothafar.simplebatterynotifier.ui.SettingsActivity;
 import com.almothafar.simplebatterynotifier.util.AppPrefs;
@@ -582,7 +583,7 @@ public class NotificationDetailsPickerTest {
 		openPicker();
 		assertEquals("Calculating…", value(DetailFamily.CURRENT));
 
-		fillRateWindow(false, 87, 85);
+		RateWindowTestSupport.fill(context, false, 87, 85);
 		publishBattery(TEMPERATURE);
 		shadowOf(Looper.getMainLooper()).idle();
 
@@ -594,7 +595,7 @@ public class NotificationDetailsPickerTest {
 	public void aChoiceWithNothingComing_previewsNotAvailable_likeTheNotification() {
 		// Current alone on a phone that reports none: the preview has to say what the notification says, not promise the value with "Calculating…".
 		AppPrefs.setNotificationDetails(context, List.of(DetailFamily.CURRENT));
-		fillRateWindow(false, 87, 85);
+		RateWindowTestSupport.fill(context, false, 87, 85);
 		postStatusNotification();
 		openPicker();
 		assertEquals("20%/h", value(DetailFamily.SPEED));
@@ -618,7 +619,7 @@ public class NotificationDetailsPickerTest {
 	public void aTimeEstimateWithNoneComing_readsADash() {
 		// Still charging at 100%, as some phones report for a while before they say full: the rate is in, but there is no time left to estimate. The details
 		// table shows the same dash there (#216).
-		fillRateWindow(true, 98, 100);
+		RateWindowTestSupport.fill(context, true, 98, 100);
 		publish(batteryIntent(TEMPERATURE, 100, BatteryManager.BATTERY_STATUS_CHARGING, BatteryManager.BATTERY_PLUGGED_AC));
 		openPicker();
 		assertEquals("20%/h", value(DetailFamily.SPEED));
@@ -843,22 +844,6 @@ public class NotificationDetailsPickerTest {
 		battery.putExtra(BatteryManager.EXTRA_TEMPERATURE, temperature);
 		battery.putExtra(BatteryManager.EXTRA_PRESENT, true);
 		return battery;
-	}
-
-	/**
-	 * Fill the rate window as minutes of readings would: two levels apart over six minutes, 20%/h, and no current in either. Six minutes keeps clear of both
-	 * the three the level-over-time rate needs and the ten the window keeps. The file, the keys and the "time:level:current" form are
-	 * {@code BatteryRateTracker}'s persisted ones, which the picker reads the rate from. Each test that fills it checks Speed reads 20%/h first, so a change to
-	 * that form fails the test instead of leaving it to pass on an empty window.
-	 */
-	private void fillRateWindow(boolean charging, int fromLevel, int toLevel) {
-		final long now = System.currentTimeMillis();
-		final String samples = (now - 420_000) + ":" + fromLevel + ":" + Integer.MIN_VALUE + ";" + (now - 60_000) + ":" + toLevel + ":" + Integer.MIN_VALUE;
-		context.getSharedPreferences("battery_transient", Context.MODE_PRIVATE)
-		       .edit()
-		       .putString("_battery_rate_samples", samples)
-		       .putInt("_battery_rate_charging", charging ? 1 : 0)
-		       .commit();
 	}
 
 	/** Put the status notification up, as the monitoring service keeps it. */

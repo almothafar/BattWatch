@@ -192,8 +192,8 @@ public final class OngoingStatusContent {
 		final boolean full = isFull(batteryDO);
 		return switch (family) {
 			case CURRENT -> full || rate.isCurrentUnavailable();
-			// With the rate in, a missing estimate means there is no time left to estimate: the battery is empty, or one rounding step from it.
-			case TIME -> full || rate.hasRate();
+			// With a rate in, a missing estimate means there is no time left to estimate: the battery is empty, or one rounding step from it.
+			case TIME -> full || rate.hasEstimateRate();
 			// Speed goes missing wherever the level stops moving, and short of a full battery nothing tells that apart from a rate still settling.
 			case SPEED -> full;
 			// Both always have a reading, so neither is ever asked.
@@ -233,8 +233,9 @@ public final class OngoingStatusContent {
 	 * Average / Time&nbsp;to&nbsp;full / Temperature while charging. "Now" is the instantaneous current (plus the charge wattage while charging); "Average" is
 	 * the windowed average, carrying the smoothed %/h while discharging — the app computes a single smoothed rate, which is itself an average, so there is no
 	 * separate instantaneous %/h. On battery, the screen-on and screen-off drain follow Average: the drain since the last unplug split by screen state
-	 * (#193), each line appearing once its own state has warmed up. Every line is dropped when its data is absent; the temperature always shows. Returns a
-	 * single line when nothing but temperature is available, which {@link #pullDownAddsToLine} offers only where the line leaves it out.
+	 * (#193), each line appearing once its own state has warmed up, and ending in the time the battery would last in that state. The time remaining projects
+	 * from both states together (#354), so it falls between those two times. Every line is dropped when its data is absent; the temperature always shows.
+	 * Returns a single line when nothing but temperature is available, which {@link #pullDownAddsToLine} offers only where the line leaves it out.
 	 * <p>
 	 * Deliberately blind to the notification details the collapsed line follows: this is the everything view, which is what makes the collapsed line's silent
 	 * drop-outs acceptable (docs/adr/0002). It is blind to the show-rate switch #357 removed for the same reason, though that switch used to hide its rate
@@ -250,8 +251,9 @@ public final class OngoingStatusContent {
 		if (nonNull(batteryDO) && nonNull(rate)) {
 			addLine(context, lines, R.string.notification_label_now, nowSegment(context, batteryDO, rate));
 			addAverageLine(context, lines, rate);
-			addLine(context, lines, R.string.screen_on_drain, ScreenDrainTracker.formatValue(context, rate.screenSplit().on()));
-			addLine(context, lines, R.string.screen_off_drain, ScreenDrainTracker.formatValue(context, rate.screenSplit().off()));
+			final int level = batteryDO.getBatteryPercentageInt();
+			addLine(context, lines, R.string.screen_on_drain, ScreenDrainTracker.formatValue(context, rate.screenSplit().on(), level));
+			addLine(context, lines, R.string.screen_off_drain, ScreenDrainTracker.formatValue(context, rate.screenSplit().off(), level));
 			addTimeLine(context, lines, batteryDO, rate);
 		}
 		if (nonNull(batteryDO)) {
@@ -336,7 +338,7 @@ public final class OngoingStatusContent {
 
 	/** The expanded time line: "Time remaining"/"Time to full" label with the bare duration (#194). */
 	private static void addTimeLine(Context context, List<String> lines, BatteryDO batteryDO, BatteryRateTracker.BatteryRate rate) {
-		final int minutes = estimatedMinutes(batteryDO, rate);
+		final int minutes = rate.estimatedMinutes(batteryDO.getBatteryPercentageInt());
 		if (minutes > 0) {
 			addLine(context, lines,
 					rate.charging() ? R.string.time_to_full : R.string.time_remaining,
@@ -399,7 +401,7 @@ public final class OngoingStatusContent {
 	 * it doesn't reorder inside an RTL line. Null when no non-degenerate estimate is available.
 	 */
 	private static String collapsedTimeSegment(Context context, BatteryDO batteryDO, BatteryRateTracker.BatteryRate rate) {
-		final int minutes = estimatedMinutes(batteryDO, rate);
+		final int minutes = rate.estimatedMinutes(batteryDO.getBatteryPercentageInt());
 		if (minutes <= 0) {
 			return null;
 		}
@@ -427,21 +429,6 @@ public final class OngoingStatusContent {
 			case WIRELESS -> R.string.notification_status_source_wireless;
 			case OTHER -> R.string.notification_status_source_other;
 		});
-	}
-
-	/**
-	 * The estimated minutes to full (charging) or empty (discharging), mirroring the details table's
-	 * gating (#124/#188): 0 when there's no trustworthy rate or the estimate degenerates (already
-	 * full/empty).
-	 */
-	private static int estimatedMinutes(BatteryDO batteryDO, BatteryRateTracker.BatteryRate rate) {
-		if (!rate.hasRate()) {
-			return 0;
-		}
-		final int level = batteryDO.getBatteryPercentageInt();
-		return rate.charging()
-				? BatteryRateTracker.estimateMinutesToFull(level, rate.percentPerHour())
-				: BatteryRateTracker.estimateMinutesToEmpty(level, rate.percentPerHour());
 	}
 
 	/**

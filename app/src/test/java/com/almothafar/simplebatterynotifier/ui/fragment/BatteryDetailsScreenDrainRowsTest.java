@@ -12,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.test.core.app.ApplicationProvider;
 
 import com.almothafar.simplebatterynotifier.R;
+import com.almothafar.simplebatterynotifier.service.RateWindowTestSupport;
 import com.almothafar.simplebatterynotifier.service.ScreenDrainTestSupport;
 import com.almothafar.simplebatterynotifier.service.SystemService;
 
@@ -29,9 +30,9 @@ import static org.junit.Assert.assertNull;
 import static org.robolectric.Shadows.shadowOf;
 
 /**
- * The details table's screen-on and screen-off drain rows (#193). Like the other live rows (#188), they are always there on battery: a state still
- * gathering time shows the small "calculating" hint with an info icon instead of the row appearing later and pushing the table down. On the charger there
- * is no split to show, so neither row is there.
+ * The details table's screen-on and screen-off drain rows (#193), and the time remaining they bracket (#354). Like the other live rows (#188), they are
+ * always there on battery: a state still gathering time shows the small "calculating" hint with an info icon instead of the row appearing later and pushing
+ * the table down. On the charger there is no split to show, so neither row is there.
  * <p>
  * The table only reads the split; the monitoring service's receivers are what feed it. Robolectric leaves the wall clock real for app code, so the past
  * stretches a test needs are recorded through {@link ScreenDrainTestSupport} at times of its choosing.
@@ -73,9 +74,45 @@ public class BatteryDetailsScreenDrainRowsTest {
 		setScreenOn(true);
 		final TableLayout table = showDetails();
 
-		assertEquals("2% in 119 minutes off", "1.0%/h", valueOf(table, R.string.screen_off_drain).getText().toString());
+		assertEquals("2% in 119 minutes off; 78% lasts 78 h", "1.0%/\u2060h · ~78h\u00A00m", valueOf(table, R.string.screen_off_drain).getText().toString());
 		assertNull("a ready row has no info icon", valueOf(table, R.string.screen_off_drain).getContentDescription());
 		assertEquals(context.getString(R.string.battery_value_calculating), valueOf(table, R.string.screen_on_drain).getText().toString());
+	}
+
+	@Test
+	public void theTimeRemaining_projectsFromTheWholeTimeOffTheCharger_andFallsBetweenTheTwoStates() {
+		// Monitoring saw an hour on from 90% to 80%, then 119 minutes off down to 78%: 12% in 179 minutes is 4.0 %/h overall.
+		final long now = System.currentTimeMillis();
+		publishBattery(90, false);
+		ScreenDrainTestSupport.recordAt(context, now - 180 * MINUTE, SystemService.getBatteryInfo(context), true);
+		publishBattery(80, false);
+		ScreenDrainTestSupport.recordAt(context, now - 120 * MINUTE, SystemService.getBatteryInfo(context), false);
+		publishBattery(78, false);
+		ScreenDrainTestSupport.recordAt(context, now - MINUTE, SystemService.getBatteryInfo(context), true);
+		setScreenOn(true);
+		final TableLayout table = showDetails();
+
+		// Nowhere to break inside a figure (a no-break space, a word joiner after the slash), so a row too wide for a phone wraps between figures.
+		assertEquals("78% at 10.0 %/h lasts 468 min", "10.0%/\u2060h · ~7h\u00A048m", valueOf(table, R.string.screen_on_drain).getText().toString());
+		assertEquals("78% at 1.0 %/h lasts 78 h", "1.0%/\u2060h · ~78h\u00A00m", valueOf(table, R.string.screen_off_drain).getText().toString());
+		assertEquals("78% at 4.0 %/h lasts 1170 min", "~19h 30m", valueOf(table, R.string.time_remaining).getText().toString());
+	}
+
+	@Test
+	public void theTimeRemaining_comesFromTheDrainRate_untilTheSessionHasRunAnHour() {
+		// Half an hour off the charger with the screen on: the screen-on drain is in, the overall drain is not, and the 10-minute drain rate stands in. The
+		// table records its own reading as it opens, which stretches the filled window to seven minutes: 2% in 7 minutes is 17 %/h.
+		final long now = System.currentTimeMillis();
+		publishBattery(80, false);
+		ScreenDrainTestSupport.recordAt(context, now - 30 * MINUTE, SystemService.getBatteryInfo(context), true);
+		publishBattery(78, false);
+		ScreenDrainTestSupport.recordAt(context, now - MINUTE, SystemService.getBatteryInfo(context), true);
+		RateWindowTestSupport.fill(context, false, 80, 78);
+		setScreenOn(true);
+		final TableLayout table = showDetails();
+
+		assertEquals("17%/h", valueOf(table, R.string.drain_rate).getText().toString());
+		assertEquals("78% at 17 %/h lasts 275 min", "~4h 35m", valueOf(table, R.string.time_remaining).getText().toString());
 	}
 
 	@Test
