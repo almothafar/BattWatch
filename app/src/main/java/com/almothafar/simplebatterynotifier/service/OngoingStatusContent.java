@@ -15,6 +15,7 @@ import com.almothafar.simplebatterynotifier.util.TemperatureUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import static com.almothafar.simplebatterynotifier.util.BidiText.isolate;
 import static java.util.Objects.isNull;
@@ -117,28 +118,38 @@ public final class OngoingStatusContent {
 			return "";
 		}
 		final BatteryRateTracker.BatteryRate rateOrEmpty = nonNull(rate) ? rate : BatteryRateTracker.BatteryRate.empty();
-		return detailLine(context, AppPrefs.notificationDetails(context), family -> detailSegment(context, family, batteryDO, rateOrEmpty));
+		return detailLine(context,
+				AppPrefs.notificationDetails(context),
+				family -> detailSegment(context, family, batteryDO, rateOrEmpty),
+				family -> isUnavailable(family, rateOrEmpty));
 	}
 
 	/**
 	 * The collapsed line a choice makes from its families' segments — the one rule the notification and the picker's preview (#358) both render by.
 	 * <p>
-	 * A family with nothing to show yet drops out silently. When a non-empty choice shows nothing at all — a warm-up tick — the line reads "Calculating…", as
-	 * the details table does (#216): no family stands in, since any of them is one the user can choose, and showing it unbidden would override a choice that
-	 * left it out (#359). An empty choice renders an empty line: the user asked for the title alone.
+	 * A family with nothing to show yet drops out silently. When a non-empty choice shows nothing at all, the line says why rather than go blank: "Not
+	 * available" when none of it is coming, otherwise "Calculating…", as the details table does (#216). No family stands in, since any of them is one the user
+	 * can choose, and showing it unbidden would override a choice that left it out (#359). An empty choice renders an empty line: the user asked for the title
+	 * alone.
 	 *
-	 * @param context   the context to word the line in
-	 * @param selection the chosen families, in the order the line shows them
-	 * @param segmentOf each family's segment, or null when it has nothing to show yet
+	 * @param context     the context to word the line in
+	 * @param selection   the chosen families, in the order the line shows them
+	 * @param segmentOf   each family's segment, or null when it has nothing to show yet
+	 * @param unavailable whether a family with no segment has none coming ({@link #isUnavailable})
 	 * @return the line
 	 */
-	public static String detailLine(Context context, List<DetailFamily> selection, Function<DetailFamily, String> segmentOf) {
+	public static String detailLine(
+			Context context,
+			List<DetailFamily> selection,
+			Function<DetailFamily, String> segmentOf,
+			Predicate<DetailFamily> unavailable) {
 		final List<String> parts = new ArrayList<>(selection.size());
 		for (final DetailFamily family : selection) {
 			addIfPresent(parts, segmentOf.apply(family));
 		}
 		if (parts.isEmpty() && !selection.isEmpty()) {
-			return context.getString(R.string.notification_status_calculating);
+			final boolean noneComing = selection.stream().allMatch(unavailable);
+			return context.getString(noneComing ? R.string.notification_status_unavailable : R.string.notification_status_calculating);
 		}
 		return String.join(DETAIL_SEPARATOR, parts);
 	}
@@ -164,9 +175,9 @@ public final class OngoingStatusContent {
 	}
 
 	/**
-	 * Whether a family with nothing to show is unavailable rather than late: its value is not coming, so the picker's live-value column reads "—" for it
-	 * rather than "Calculating…", the split the details table makes for the same readings (#216, #359). Asked only of a family whose {@link #detailSegment}
-	 * is null.
+	 * Whether a family with nothing to show is unavailable rather than late: its value is not coming, so the picker's live-value column reads "—" for it, and
+	 * a line of nothing else "Not available", rather than "Calculating…" — the split the details table makes for the same readings (#216, #359). Asked only of
+	 * a family whose {@link #detailSegment} is null.
 	 *
 	 * @param family The family with nothing to show
 	 * @param rate   The precomputed charge/drain rate
@@ -185,7 +196,7 @@ public final class OngoingStatusContent {
 	/**
 	 * Whether the pull-down says anything the collapsed line doesn't, and so earns an expand chevron (#194). The labelled breakdown always does. On a warm-up
 	 * tick the pull-down is the temperature alone, which adds something only when the line leaves the temperature out: a choice without Temperature, whether
-	 * the line shows another family (#357) or reads "Calculating…" (#359).
+	 * the line shows another family (#357) or says why it shows none (#359).
 	 *
 	 * @param context   The application context
 	 * @param batteryDO Current battery snapshot, or null if unavailable

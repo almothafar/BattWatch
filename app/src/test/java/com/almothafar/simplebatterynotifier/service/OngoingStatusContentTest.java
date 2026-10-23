@@ -233,6 +233,22 @@ public class OngoingStatusContentTest {
 	}
 
 	@Test
+	public void aChoiceWithNothingComing_readsNotAvailable() {
+		// A phone that reports no current: the rate is in, so Current alone has nothing coming, and "Calculating…" would promise it.
+		select(DetailFamily.CURRENT);
+		assertEquals("Not available", OngoingStatusContent.statusDetail(context, discharging85(), rate(false, 9)));
+	}
+
+	@Test
+	public void aChoiceWithOneValueStillComing_readsCalculating() {
+		// No family today can be on its way while another has none coming: both hang on the rate. A family added later can (#193, #354), and then one value
+		// still coming keeps the line at "Calculating…".
+		final List<DetailFamily> choice = List.of(DetailFamily.CURRENT, DetailFamily.TIME);
+		assertEquals("Calculating…", OngoingStatusContent.detailLine(context, choice, family -> null, family -> family == DetailFamily.CURRENT));
+		assertEquals("Not available", OngoingStatusContent.detailLine(context, choice, family -> null, family -> true));
+	}
+
+	@Test
 	public void aChosenTemperature_stillShowsOnAWarmUpTick() {
 		// Chosen, not a fallback: it has a reading from the first tick, so the line is never "Calculating…" while it is in the choice.
 		select(DetailFamily.TEMPERATURE);

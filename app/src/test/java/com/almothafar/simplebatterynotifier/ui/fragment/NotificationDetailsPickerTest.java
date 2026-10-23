@@ -591,6 +591,19 @@ public class NotificationDetailsPickerTest {
 	}
 
 	@Test
+	public void aChoiceWithNothingComing_previewsNotAvailable_likeTheNotification() {
+		// Current alone on a phone that reports none: the preview has to say what the notification says, not promise the value with "Calculating…".
+		AppPrefs.setNotificationDetails(context, List.of(DetailFamily.CURRENT));
+		fillRateWindow(false, 86, 85);
+		postStatusNotification();
+		openPicker();
+		assertEquals("20%/h", value(DetailFamily.SPEED));
+		assertEquals("—", value(DetailFamily.CURRENT));
+		assertEquals("Not available", previewLine().getText().toString());
+		assertEquals(statusText(), previewLine().getText().toString());
+	}
+
+	@Test
 	public void aTimeEstimateWithNoneComing_readsADash() {
 		// Still charging at 100%, as some phones report for a while before they say full: the rate is in, but there is no time left to estimate. The
 		// details table shows the same dash there (#216).

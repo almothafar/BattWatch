@@ -642,7 +642,10 @@ public class NotificationDetailsFragment extends Fragment {
 			}
 			card.setVisibility(View.VISIBLE);
 			title.setText(liveStatus.title());
-			final String text = OngoingStatusContent.detailLine(requireContext(), rows.chosen(), NotificationDetailsFragment.this::segmentOf);
+			final String text = OngoingStatusContent.detailLine(requireContext(),
+					rows.chosen(),
+					NotificationDetailsFragment.this::segmentOf,
+					liveStatus.unavailable()::contains);
 			line.setText(text);
 			line.setVisibility(text.isEmpty() ? View.GONE : View.VISIBLE);
 		}
