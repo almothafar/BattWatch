@@ -532,14 +532,12 @@ public class BatteryDetailsFragment extends Fragment {
 	}
 
 	/**
-	 * Adds the "live" rows at the top of the table — rate, time estimate and signed current (#108, #124, #188), then Screen on and Screen off while
-	 * discharging (#193). Unlike the rest, these are <b>always present</b>: rather than hiding when a value
-	 * isn't ready (which made rows appear/disappear and shift the table), a value that is still warming up
-	 * shows a small "calculating" hint with a tappable info icon explaining why (#216). The labels follow
-	 * the charge direction — "Charge rate"/"Drain rate" and "Time to full"/"Time remaining" — while
-	 * "Current" is constant; because the labels are stable within a direction, steady-state refreshes
-	 * update the values in place with no flicker (a label only changes on plug/unplug, when the whole
-	 * context changes anyway).
+	 * Adds the "live" rows at the top of the table — rate, time estimate and signed current (#108, #124, #188), then the screen-on and screen-off drain while
+	 * on battery (#193). Unlike the rest, these are <b>always present</b>: rather than hiding when a value isn't ready (which made rows appear/disappear and
+	 * shift the table), a value that is still warming up shows a small "calculating" hint with a tappable info icon explaining why (#216). The labels follow
+	 * the charge direction — "Charge rate"/"Drain rate" and "Time to full"/"Time remaining" — while "Current" is constant; because the labels are stable
+	 * within a direction, steady-state refreshes update the values in place with no flicker (a label only changes on plug/unplug, when the whole context
+	 * changes anyway).
 	 *
 	 * @param view The fragment view
 	 */
@@ -574,9 +572,9 @@ public class BatteryDetailsFragment extends Fragment {
 					R.string.battery_current_pending_dialog_title, R.string.battery_current_pending_dialog_message);
 		}
 
-		// #193: the drain since the last unplug, split by screen state. Discharging only; each state warms up on its own, so one row can show its drain
-		// while the other still calculates.
-		if (!charging) {
+		// #193: the drain since the last unplug, split by screen state. On battery only, by the tracker's own test, so a phone held at a charge cap shows no
+		// rows that can never fill; each state warms up on its own, so one row can show its drain while the other still calculates.
+		if (ScreenDrainTracker.appliesTo(batteryDO)) {
 			addScreenDrainRow(view, R.string.screen_on_drain, rate.screen().on());
 			addScreenDrainRow(view, R.string.screen_off_drain, rate.screen().off());
 		}
@@ -586,7 +584,7 @@ public class BatteryDetailsFragment extends Fragment {
 	 * Adds one screen state's row (#193): its average current and %/h, or the "calculating" hint until that state has run long enough since the last unplug.
 	 *
 	 * @param view     The fragment view
-	 * @param labelRes The row label, Screen on or Screen off
+	 * @param labelRes The row label, screen-on or screen-off drain
 	 * @param drain    That state's drain from this refresh's rate
 	 */
 	private void addScreenDrainRow(View view, int labelRes, ScreenDrainTracker.ScreenDrain drain) {

@@ -3,7 +3,6 @@ package com.almothafar.simplebatterynotifier.receiver;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import com.almothafar.simplebatterynotifier.service.BatteryRateTracker;
 import com.almothafar.simplebatterynotifier.service.ScreenDrainTracker;
 import com.almothafar.simplebatterynotifier.service.SystemService;
 
@@ -20,11 +19,12 @@ public class ScreenStateReceiver extends BroadcastReceiver {
 
 	@Override
 	public void onReceive(Context context, Intent intent) {
-		if (isNull(intent) || !(Intent.ACTION_SCREEN_ON.equals(intent.getAction()) || Intent.ACTION_SCREEN_OFF.equals(intent.getAction()))) {
+		final String action = isNull(intent) ? null : intent.getAction();
+		if (!Intent.ACTION_SCREEN_ON.equals(action) && !Intent.ACTION_SCREEN_OFF.equals(action)) {
 			return;
 		}
-		// An observation like any battery sample: the tracker reads the screen state itself, so a toggle that has already flipped back by the time this
-		// runs is recorded as the screen now is, not as the broadcast said.
-		BatteryRateTracker.record(context, SystemService.getBatteryInfo(context));
+		// The tracker reads the screen state itself, so a toggle that has already flipped back by the time this runs is recorded as the screen now is, not as
+		// the broadcast said.
+		ScreenDrainTracker.onScreenChanged(context, SystemService.getBatteryInfo(context));
 	}
 }

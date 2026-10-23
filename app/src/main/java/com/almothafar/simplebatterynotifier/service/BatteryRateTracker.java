@@ -117,8 +117,8 @@ public final class BatteryRateTracker {
 		}
 
 		// The same reading also feeds the since-unplug screen-on / screen-off split (#193), a longer horizon kept beside the window rather than in it.
-		final ScreenDrainTracker.ScreenSplit screen = ScreenDrainTracker.record(prefs, now, batteryDO, SystemService.isScreenOn(context));
-		return computeRate(updated, batteryDO.getCapacity(), charging, now, batteryDO.getCurrentMicroAmps()).withScreen(screen);
+		final ScreenDrainTracker.ScreenSplit screen = ScreenDrainTracker.record(prefs, now, batteryDO, ScreenDrainTracker.ScreenState.of(context));
+		return rateFrom(updated, batteryDO, charging, now).withScreen(screen);
 	}
 
 	/**
@@ -139,8 +139,12 @@ public final class BatteryRateTracker {
 		// Rate window lives in the backup-excluded transient file (#167), not the default prefs.
 		final SharedPreferences prefs = TransientState.prefs(context);
 
-		return computeRate(loadWindow(prefs, charging, now), batteryDO.getCapacity(), charging, now, batteryDO.getCurrentMicroAmps())
-				.withScreen(ScreenDrainTracker.read(prefs, now, batteryDO));
+		return rateFrom(loadWindow(prefs, charging, now), batteryDO, charging, now).withScreen(ScreenDrainTracker.read(prefs, now, batteryDO));
+	}
+
+	/** {@link #computeRate} over a window, taking the capacity and the latest current from the snapshot. */
+	private static BatteryRate rateFrom(List<Sample> window, BatteryDO batteryDO, boolean charging, long now) {
+		return computeRate(window, batteryDO.getCapacity(), charging, now, batteryDO.getCurrentMicroAmps());
 	}
 
 	/**
@@ -597,11 +601,27 @@ public final class BatteryRateTracker {
 	                          ScreenDrainTracker.ScreenSplit screen) {
 
 		static BatteryRate empty() {
-			return new BatteryRate(false, 0, false, false, 0, false, 0, ScreenDrainTracker.ScreenSplit.NONE);
+			return new BatteryRate(
+					false,
+					0,
+					false,
+					false,
+					0,
+					false,
+					0,
+					ScreenDrainTracker.ScreenSplit.NONE);
 		}
 
 		BatteryRate withScreen(ScreenDrainTracker.ScreenSplit split) {
-			return new BatteryRate(hasRate, percentPerHour, charging, hasCurrent, currentMilliAmps, hasAvgCurrent, avgCurrentMilliAmps, split);
+			return new BatteryRate(
+					hasRate,
+					percentPerHour,
+					charging,
+					hasCurrent,
+					currentMilliAmps,
+					hasAvgCurrent,
+					avgCurrentMilliAmps,
+					split);
 		}
 	}
 }

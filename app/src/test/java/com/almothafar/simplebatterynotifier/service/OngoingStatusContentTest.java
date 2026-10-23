@@ -67,12 +67,28 @@ public class OngoingStatusContentTest {
 
 	/** Rate with a %/h only (no current/average yet) — the warm-up shape. */
 	private static BatteryRateTracker.BatteryRate rate(boolean charging, int pph) {
-		return new BatteryRateTracker.BatteryRate(true, pph, charging, false, 0, false, 0, ScreenDrainTracker.ScreenSplit.NONE);
+		return new BatteryRateTracker.BatteryRate(
+				true,
+				pph,
+				charging,
+				false,
+				0,
+				false,
+				0,
+				ScreenDrainTracker.ScreenSplit.NONE);
 	}
 
 	/** Rate with a %/h plus instantaneous and windowed-average current. */
 	private static BatteryRateTracker.BatteryRate rateFull(boolean charging, int pph, int mA, int avgMa) {
-		return new BatteryRateTracker.BatteryRate(true, pph, charging, true, mA, true, avgMa, ScreenDrainTracker.ScreenSplit.NONE);
+		return new BatteryRateTracker.BatteryRate(
+				true,
+				pph,
+				charging,
+				true,
+				mA,
+				true,
+				avgMa,
+				ScreenDrainTracker.ScreenSplit.NONE);
 	}
 
 	private String cur(int mA) {
@@ -130,7 +146,15 @@ public class OngoingStatusContentTest {
 		// #207: warm-up with an instantaneous current but no rate/time — the segment that used to read as a
 		// bare, meaningless "−199 mA". It must now stand alone as the worded "Using 199 mA".
 		final BatteryRateTracker.BatteryRate loneCurrent =
-				new BatteryRateTracker.BatteryRate(false, 0, false, true, -199, false, 0, ScreenDrainTracker.ScreenSplit.NONE);
+				new BatteryRateTracker.BatteryRate(
+						false,
+						0,
+						false,
+						true,
+						-199,
+						false,
+						0,
+						ScreenDrainTracker.ScreenSplit.NONE);
 		assertEquals(curCollapsed(false, -199),
 				OngoingStatusContent.statusDetail(context, discharging85(), loneCurrent));
 	}
@@ -278,7 +302,15 @@ public class OngoingStatusContentTest {
 
 	/** The full discharging rate, carrying a screen-on / screen-off split (#193). */
 	private static BatteryRateTracker.BatteryRate rateWithScreen(ScreenDrainTracker.ScreenDrain on, ScreenDrainTracker.ScreenDrain off) {
-		return new BatteryRateTracker.BatteryRate(true, 9, false, true, -250, true, -338, new ScreenDrainTracker.ScreenSplit(on, off));
+		return new BatteryRateTracker.BatteryRate(
+				true,
+				9,
+				false,
+				true,
+				-250,
+				true,
+				-338,
+				new ScreenDrainTracker.ScreenSplit(on, off));
 	}
 
 	@Test

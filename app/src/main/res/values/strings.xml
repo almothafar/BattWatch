@@ -38,8 +38,8 @@
     <string name="time_remaining">Time remaining</string>
     <!-- #193: the drain since the last unplug, split by whether the screen was on or off; each value reads "−392 mA · 10.4%/h". Labels both the details
          table rows and the status notification's pull-down lines. -->
-    <string name="screen_on_drain">Screen on</string>
-    <string name="screen_off_drain">Screen off</string>
+    <string name="screen_on_drain">Screen-on drain</string>
+    <string name="screen_off_drain">Screen-off drain</string>
 
     <!-- #217: honest explanation of the smoothed/estimated live gauge percentage, opened from a small
          info icon in the gauge corner. -->
@@ -68,7 +68,7 @@
     <string name="battery_time_pending_dialog_message">This time estimate is projected from the charge/drain rate, so it appears once that rate has settled. It\'s also hidden very close to a full charge, where the estimate would be meaningless.</string>
     <string name="battery_current_pending_dialog_title">Live current unavailable</string>
     <string name="battery_current_pending_dialog_message">The instantaneous current can take a moment to settle, and some devices don\'t report it at all. When it\'s available it shows here in milliamps (mA).</string>
-    <!-- #193: opened from the Screen on / Screen off rows while either is still gathering time. The durations match ScreenDrainTracker's warm-ups. -->
+    <!-- #193: opened from the Screen-on drain / Screen-off drain rows while either is still gathering time. The durations match ScreenDrainTracker's warm-ups. -->
     <string name="battery_screen_drain_pending_dialog_title">Still gathering time</string>
     <string name="battery_screen_drain_pending_dialog_message">These two rows split the drain since you last unplugged by whether the screen was on or off. Each fills in once the battery has spent long enough in that state for its level to drop: about a quarter of an hour with the screen on, and about an hour with it off. Plugging in starts them over.</string>
     <!-- #188: shown on the always-present Design capacity row when the user hasn\'t entered one -->

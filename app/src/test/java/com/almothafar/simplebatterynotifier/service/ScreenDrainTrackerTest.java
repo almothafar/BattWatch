@@ -7,6 +7,7 @@ import android.os.BatteryManager;
 import androidx.test.core.app.ApplicationProvider;
 
 import com.almothafar.simplebatterynotifier.model.BatteryDO;
+import com.almothafar.simplebatterynotifier.service.ScreenDrainTracker.ScreenState;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -14,14 +15,18 @@ import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 
+import java.util.Locale;
+
+import static com.almothafar.simplebatterynotifier.service.ScreenDrainTracker.ScreenState.OFF;
+import static com.almothafar.simplebatterynotifier.service.ScreenDrainTracker.ScreenState.ON;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
  * The screen-on / screen-off drain split (#193): a session accumulator that runs from the last unplug, attributing each stretch of time and level drop to
- * the screen state it was spent in. Driven through the tracker's own record/read entry points on the real transient preferences, with the clock and the
- * screen state passed in, so a test can say "an hour later, with the screen off" without waiting an hour.
+ * the screen state it was spent in. Driven through the tracker's own record/toggle/restart/read entry points on the real transient preferences, with the
+ * clock and the screen state passed in, so a test can say "an hour later, with the screen off" without waiting an hour.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 34)
@@ -29,14 +34,13 @@ public class ScreenDrainTrackerTest {
 
 	private static final long T0 = 1_700_000_000_000L;
 	private static final long MINUTE = 60_000L;
-	private static final boolean ON = true;
-	private static final boolean OFF = false;
 
+	private Context context;
 	private SharedPreferences prefs;
 
 	@Before
 	public void setUp() {
-		final Context context = ApplicationProvider.getApplicationContext();
+		context = ApplicationProvider.getApplicationContext();
 		prefs = TransientState.prefs(context);
 		prefs.edit().clear().commit();
 	}
@@ -53,8 +57,9 @@ public class ScreenDrainTrackerTest {
 		return unplugged(level).setCurrentMicroAmps(currentMilliAmps * 1000);
 	}
 
-	private ScreenDrainTracker.ScreenSplit observe(long at, BatteryDO batteryDO, boolean screenOn) {
-		return ScreenDrainTracker.record(prefs, at, batteryDO, screenOn);
+	/** A battery sample, as {@link BatteryRateTracker#record} feeds one. */
+	private ScreenDrainTracker.ScreenSplit observe(long at, BatteryDO batteryDO, ScreenState screen) {
+		return ScreenDrainTracker.record(prefs, at, batteryDO, screen);
 	}
 
 	private ScreenDrainTracker.ScreenSplit read(long at, BatteryDO batteryDO) {
@@ -131,6 +136,35 @@ public class ScreenDrainTrackerTest {
 	}
 
 	@Test
+	public void aChargeNobodySaw_startsANewSession() {
+		observe(T0, unplugged(50), OFF);
+		observe(T0 + 120 * MINUTE, unplugged(48), ON);
+		// Monitoring was down while the phone charged; the next sample finds the level well above where the open stretch began.
+		final ScreenDrainTracker.ScreenSplit split = observe(T0 + 300 * MINUTE, unplugged(90), ON);
+
+		assertFalse("the two hours off before the charge belong to the last session", split.off().hasRate());
+	}
+
+	@Test
+	public void aChargeNobodySaw_startsANewSession_whenMonitoringRestarts() {
+		observe(T0, unplugged(50), OFF);
+		observe(T0 + 120 * MINUTE, unplugged(48), ON);
+		ScreenDrainTracker.restart(prefs, T0 + 300 * MINUTE, unplugged(90), ON);
+
+		assertFalse(read(T0 + 300 * MINUTE, unplugged(90)).off().hasRate());
+	}
+
+	@Test
+	public void aOnePointRise_isTheGaugeWobbling_notACharge() {
+		observe(T0, unplugged(80), ON);
+		observe(T0 + 20 * MINUTE, unplugged(77), OFF);
+		observe(T0 + 30 * MINUTE, unplugged(78), OFF);
+		final ScreenDrainTracker.ScreenSplit split = observe(T0 + 80 * MINUTE, unplugged(76), ON);
+
+		assertEquals("the 20 minutes on are still there: 9.0 %/h", 90, split.on().tenthsPercentPerHour());
+	}
+
+	@Test
 	public void currentReadings_closerThanTheSpacingCountOnce() {
 		observe(T0, unplugged(80, -100), OFF);
 		observe(T0 + 5_000, unplugged(80, -900), OFF);
@@ -139,6 +173,16 @@ public class ScreenDrainTrackerTest {
 		observe(T0 + 60 * MINUTE, unplugged(79, -100), OFF);
 
 		assertEquals("the two readings within 20 s of the first are skipped", -100, read(T0 + 60 * MINUTE, unplugged(79)).off().avgCurrentMilliAmps());
+	}
+
+	@Test
+	public void twoReadings_areNotAnAverageYet() {
+		observe(T0, unplugged(80, -100), OFF);
+		observe(T0 + 30 * MINUTE, unplugged(80, -100), OFF);
+
+		final ScreenDrainTracker.ScreenSplit split = read(T0 + 60 * MINUTE, unplugged(79));
+		assertTrue(split.off().hasRate());
+		assertFalse("an average needs three readings, like the rate window's", split.off().hasCurrent());
 	}
 
 	@Test
@@ -152,11 +196,13 @@ public class ScreenDrainTrackerTest {
 	}
 
 	@Test
-	public void currentReadings_averageWithinTheStateTheyWereTakenIn() {
+	public void currentReadings_averageWithinTheStateTheyWereTakenIn_exceptTheOneAtTheToggle() {
 		observe(T0, unplugged(80, -400), ON);
 		observe(T0 + 5 * MINUTE, unplugged(80, -380), ON);
 		observe(T0 + 10 * MINUTE, unplugged(79, -420), ON);
-		observe(T0 + 15 * MINUTE, unplugged(78, -60), OFF);
+		// The sample that first sees the screen off: the display is still powering down, so its reading belongs to neither state.
+		observe(T0 + 15 * MINUTE, unplugged(78, -900), OFF);
+		observe(T0 + 30 * MINUTE, unplugged(78, -60), OFF);
 		observe(T0 + 45 * MINUTE, unplugged(78, -50), OFF);
 		observe(T0 + 75 * MINUTE, unplugged(77, -70), OFF);
 
@@ -164,7 +210,24 @@ public class ScreenDrainTrackerTest {
 		assertTrue(split.on().hasCurrent());
 		assertEquals("the three screen-on readings average to 400 mA", -400, split.on().avgCurrentMilliAmps());
 		assertTrue(split.off().hasCurrent());
-		assertEquals("the three screen-off readings average to 60 mA", -60, split.off().avgCurrentMilliAmps());
+		assertEquals("the three screen-off readings after the toggle average to 60 mA", -60, split.off().avgCurrentMilliAmps());
+	}
+
+	@Test
+	public void aScreenBroadcast_closesTheStretchAtTheToggle_andTakesNoReading() {
+		observe(T0, unplugged(80, -400), ON);
+		observe(T0 + 5 * MINUTE, unplugged(80, -400), ON);
+		observe(T0 + 10 * MINUTE, unplugged(79, -400), ON);
+		ScreenDrainTracker.toggle(prefs, T0 + 20 * MINUTE, unplugged(77, -900), OFF);
+		// A late broadcast after a sample already saw the change: the same state, so nothing closes, and still no reading.
+		ScreenDrainTracker.toggle(prefs, T0 + 25 * MINUTE, unplugged(77, -900), OFF);
+		observe(T0 + 40 * MINUTE, unplugged(77, -60), OFF);
+		observe(T0 + 60 * MINUTE, unplugged(77, -60), OFF);
+		observe(T0 + 80 * MINUTE, unplugged(76, -60), OFF);
+
+		final ScreenDrainTracker.ScreenSplit split = read(T0 + 80 * MINUTE, unplugged(76));
+		assertEquals("the 20 minutes up to the broadcast are screen-on: 3% is 9.0 %/h", 90, split.on().tenthsPercentPerHour());
+		assertEquals("neither broadcast's reading lands in the screen-off average", -60, split.off().avgCurrentMilliAmps());
 	}
 
 	@Test
@@ -188,6 +251,16 @@ public class ScreenDrainTrackerTest {
 	}
 
 	@Test
+	public void aClockSetBack_keepsTakingCurrentReadings() {
+		observe(T0, unplugged(80, -100), OFF);
+		observe(T0 - 30 * MINUTE, unplugged(80, -100), OFF);
+		observe(T0 - 20 * MINUTE, unplugged(80, -100), OFF);
+		observe(T0 + 40 * MINUTE, unplugged(79, -100), OFF);
+
+		assertTrue("the readings stamped before the first still count, so there are four", read(T0 + 40 * MINUTE, unplugged(79)).off().hasCurrent());
+	}
+
+	@Test
 	public void aReadFromBeforeTheOpenStretchBegan_creditsItNothing() {
 		observe(T0, unplugged(80), OFF);
 		observe(T0 + 120 * MINUTE, unplugged(78), ON);
@@ -196,5 +269,15 @@ public class ScreenDrainTrackerTest {
 		final ScreenDrainTracker.ScreenSplit split = read(T0 + 100 * MINUTE, unplugged(77));
 
 		assertEquals("only the two closed hours count: 2% in 2 h is 1.0 %/h", 10, split.off().tenthsPercentPerHour());
+	}
+
+	@Test
+	@Config(qualifiers = "ar-rEG")
+	public void theValue_keepsWesternDigits_onAnArabicPhone() {
+		// Premise: this locale really does pick Eastern Arabic digits for a plain %d, so a locale-following format would fail here (#96, #273).
+		assertEquals("٤٠", String.format(Locale.getDefault(), "%d", 40));
+
+		final String value = ScreenDrainTracker.formatValue(context, new ScreenDrainTracker.ScreenDrain(true, -392, true, 104));
+		assertTrue(value, value.contains("392") && value.contains("10.4"));
 	}
 }

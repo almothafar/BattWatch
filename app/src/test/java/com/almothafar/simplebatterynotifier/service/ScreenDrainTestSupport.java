@@ -14,8 +14,8 @@ public final class ScreenDrainTestSupport {
 		// Utility class - prevent instantiation
 	}
 
-	/** Records one observation at {@code atMillis}, as {@link BatteryRateTracker#record} would have at that time. */
+	/** Records one battery sample at {@code atMillis}, as {@link BatteryRateTracker#record} would have at that time. */
 	public static void recordAt(Context context, long atMillis, BatteryDO batteryDO, boolean screenOn) {
-		ScreenDrainTracker.record(TransientState.prefs(context), atMillis, batteryDO, screenOn);
+		ScreenDrainTracker.record(TransientState.prefs(context), atMillis, batteryDO, ScreenDrainTracker.ScreenState.of(screenOn));
 	}
 }

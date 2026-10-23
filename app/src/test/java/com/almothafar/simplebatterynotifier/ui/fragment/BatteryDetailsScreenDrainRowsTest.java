@@ -85,16 +85,33 @@ public class BatteryDetailsScreenDrainRowsTest {
 		assertNotNull("the table itself is there", valueOf(table, R.string.charge_rate));
 	}
 
+	@Test
+	public void heldOnTheChargerAtACap_neitherRowIsThere() {
+		// A charge cap reports NOT_CHARGING while plugged in, which the rate rows read as discharging. The split is not kept on the charger, so two rows
+		// here could never fill.
+		publishBattery(80, BatteryManager.BATTERY_STATUS_NOT_CHARGING, BatteryManager.BATTERY_PLUGGED_AC);
+		final TableLayout table = showDetails();
+
+		assertNotNull("the rate rows read this as discharging", valueOf(table, R.string.drain_rate));
+		assertNull(valueOf(table, R.string.screen_on_drain));
+		assertNull(valueOf(table, R.string.screen_off_drain));
+	}
+
 	// --- Helpers ----------------------------------------------------------------------------------
+
+	private void publishBattery(int level, boolean charging) {
+		final int status = charging ? BatteryManager.BATTERY_STATUS_CHARGING : BatteryManager.BATTERY_STATUS_DISCHARGING;
+		publishBattery(level, status, charging ? BatteryManager.BATTERY_PLUGGED_AC : 0);
+	}
 
 	/** Publishes the sticky battery broadcast {@code SystemService} reads. */
 	@SuppressWarnings("deprecation")
-	private void publishBattery(int level, boolean charging) {
+	private void publishBattery(int level, int status, int plugged) {
 		final Intent battery = new Intent(Intent.ACTION_BATTERY_CHANGED);
 		battery.putExtra(BatteryManager.EXTRA_LEVEL, level);
 		battery.putExtra(BatteryManager.EXTRA_SCALE, 100);
-		battery.putExtra(BatteryManager.EXTRA_STATUS, charging ? BatteryManager.BATTERY_STATUS_CHARGING : BatteryManager.BATTERY_STATUS_DISCHARGING);
-		battery.putExtra(BatteryManager.EXTRA_PLUGGED, charging ? BatteryManager.BATTERY_PLUGGED_AC : 0);
+		battery.putExtra(BatteryManager.EXTRA_STATUS, status);
+		battery.putExtra(BatteryManager.EXTRA_PLUGGED, plugged);
 		battery.putExtra(BatteryManager.EXTRA_TEMPERATURE, 300);
 		battery.putExtra(BatteryManager.EXTRA_PRESENT, true);
 		context.sendStickyBroadcast(battery);
