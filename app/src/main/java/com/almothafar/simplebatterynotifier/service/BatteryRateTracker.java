@@ -495,11 +495,23 @@ public final class BatteryRateTracker {
 	 *
 	 * @return estimated minutes to empty, or 0 when not computable (non-positive rate, or already empty)
 	 */
-	public static int estimateMinutesToEmpty(final int level, final int ratePercentPerHour) {
-		if (ratePercentPerHour <= 0 || level <= 0) {
+	public static int estimateMinutesToEmpty(int level, int ratePercentPerHour) {
+		return estimateMinutesToEmptyFromTenths(level, ratePercentPerHour * 10);
+	}
+
+	/**
+	 * {@link #estimateMinutesToEmpty} from a drain in tenths of a %/h, the precision of the drain since the last unplug (#193, #354). Pure so it is testable.
+	 *
+	 * @param level                current battery level (0-100)
+	 * @param tenthsPercentPerHour drain-rate magnitude in tenths of a %/h, so 15 is 1.5 %/h
+	 *
+	 * @return estimated minutes to empty, or 0 when not computable (non-positive rate, or already empty)
+	 */
+	public static int estimateMinutesToEmptyFromTenths(int level, int tenthsPercentPerHour) {
+		if (tenthsPercentPerHour <= 0 || level <= 0) {
 			return 0;
 		}
-		return (int) Math.round(level * 60.0 / ratePercentPerHour);
+		return (int) Math.round(level * 600.0 / tenthsPercentPerHour);
 	}
 
 	/**
@@ -645,6 +657,35 @@ public final class BatteryRateTracker {
 		 */
 		boolean isCurrentUnavailable() {
 			return hasRate && !hasCurrent;
+		}
+
+		/**
+		 * Whether a rate is in for the time estimate to project from ({@link #estimatedMinutes}).
+		 *
+		 * @return true when the 10-minute rate is in, or on battery the overall drain since the last unplug
+		 */
+		public boolean hasEstimateRate() {
+			return hasRate || (!charging && screenSplit.overall().hasRate());
+		}
+
+		/**
+		 * The time estimate in minutes: to full from the 10-minute charge rate, to empty from the overall drain since the last unplug (#354). The time
+		 * remaining covers the rest of the charge, and the last ten minutes are nearly all screen-on whenever someone looks, so it projects from the whole time
+		 * off the charger. The 10-minute drain rate stands in while the overall drain warms up.
+		 *
+		 * @param level the battery level in percent
+		 *
+		 * @return the minutes, or 0 when there is no rate to project from or no time left to estimate
+		 */
+		public int estimatedMinutes(int level) {
+			if (charging) {
+				return hasRate ? estimateMinutesToFull(level, percentPerHour) : 0;
+			}
+			final ScreenDrainTracker.ScreenDrain overall = screenSplit.overall();
+			if (overall.hasRate()) {
+				return estimateMinutesToEmptyFromTenths(level, overall.tenthsPercentPerHour());
+			}
+			return hasRate ? estimateMinutesToEmpty(level, percentPerHour) : 0;
 		}
 	}
 }
