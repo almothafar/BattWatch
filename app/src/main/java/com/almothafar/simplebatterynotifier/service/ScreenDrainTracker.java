@@ -19,7 +19,7 @@ import static java.util.Objects.nonNull;
 /**
  * The drain since the last unplug, split by whether the screen was on or off at the time (#193): the <b>screen-on drain</b> and the <b>screen-off
  * drain</b>, each as an average current and a %/h. The split tells usage apart from idle drain, which the single drain rate blends together. The two
- * tallies together give the <b>overall drain</b> over the whole time off the charger, which the time remaining projects from (#354).
+ * tallies together give the overall drain over the whole time off the charger, which the time remaining projects from (#354).
  * <p>
  * <b>Why a session, not the rate window.</b> {@link BatteryRateTracker}'s window covers ten minutes, which almost always holds one screen state only. This
  * accumulates from the moment the charger comes out until it goes back in — hours of both states — so each figure rests on a long horizon. The window is

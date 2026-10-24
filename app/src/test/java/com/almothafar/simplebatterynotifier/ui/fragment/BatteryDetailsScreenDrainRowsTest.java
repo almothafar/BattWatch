@@ -59,7 +59,8 @@ public class BatteryDetailsScreenDrainRowsTest {
 			final TextView value = valueOf(table, labelRes);
 			assertNotNull(context.getString(labelRes) + " row is missing", value);
 			assertEquals(context.getString(R.string.battery_value_calculating), value.getText().toString());
-			assertEquals("a calculating row carries the info icon", context.getString(R.string.battery_value_info_cd), value.getContentDescription());
+			assertEquals("a calculating row has the info icon, read after its words", infoDescription(context.getString(R.string.battery_value_calculating)),
+					value.getContentDescription());
 		}
 	}
 
@@ -96,6 +97,35 @@ public class BatteryDetailsScreenDrainRowsTest {
 		assertEquals("78% at 10.0 %/h lasts 468 min", "10.0%/\u2060h · ~7h\u00A048m", valueOf(table, R.string.screen_on_drain).getText().toString());
 		assertEquals("78% at 1.0 %/h lasts 78 h", "1.0%/\u2060h · ~78h\u00A00m", valueOf(table, R.string.screen_off_drain).getText().toString());
 		assertEquals("78% at 4.0 %/h lasts 1170 min", "~19h 30m", valueOf(table, R.string.time_remaining).getText().toString());
+		assertEquals("on battery the time keeps its info icon, which says why it sits between the two", infoDescription("~19h 30m"),
+				valueOf(table, R.string.time_remaining).getContentDescription());
+	}
+
+	@Test
+	public void theTimeRemaining_atZero_readsTheDash_whenOnlyTheSessionRateIsIn() {
+		// The overall drain is in and the window has no rate: with nothing left to time, the row says none is coming rather than "calculating".
+		final long now = System.currentTimeMillis();
+		publishBattery(2, false);
+		ScreenDrainTestSupport.recordAt(context, now - 120 * MINUTE, SystemService.getBatteryInfo(context), false);
+		publishBattery(0, false);
+		ScreenDrainTestSupport.recordAt(context, now - MINUTE, SystemService.getBatteryInfo(context), true);
+		setScreenOn(true);
+		final TableLayout table = showDetails();
+
+		assertEquals(context.getString(R.string.battery_value_pending), valueOf(table, R.string.time_remaining).getText().toString());
+	}
+
+	@Test
+	public void theTimeToFull_keepsNoInfoIcon_onceItShowsATime() {
+		// Charging is untouched: the info icon still marks only a value that isn't ready. The table's own reading stretches the filled window to seven
+		// minutes, as above, so the rate is 17 %/h, and 38 points at that is 134 min.
+		publishBattery(62, true);
+		RateWindowTestSupport.fill(context, true, 60, 62);
+		final TableLayout table = showDetails();
+
+		assertEquals("17%/h", valueOf(table, R.string.charge_rate).getText().toString());
+		assertEquals("~2h 14m", valueOf(table, R.string.time_to_full).getText().toString());
+		assertNull(valueOf(table, R.string.time_to_full).getContentDescription());
 	}
 
 	@Test
@@ -168,6 +198,11 @@ public class BatteryDetailsScreenDrainRowsTest {
 		battery.putExtra(BatteryManager.EXTRA_TEMPERATURE, 300);
 		battery.putExtra(BatteryManager.EXTRA_PRESENT, true);
 		context.sendStickyBroadcast(battery);
+	}
+
+	/** What TalkBack reads for a value cell with the info icon: its own words, then that more is a tap away. */
+	private String infoDescription(String value) {
+		return context.getString(R.string.battery_value_with_info_cd, value);
 	}
 
 	private void setScreenOn(boolean on) {

@@ -254,7 +254,7 @@ public final class OngoingStatusContent {
 			final int level = batteryDO.getBatteryPercentageInt();
 			addLine(context, lines, R.string.screen_on_drain, ScreenDrainTracker.formatValue(context, rate.screenSplit().on(), level));
 			addLine(context, lines, R.string.screen_off_drain, ScreenDrainTracker.formatValue(context, rate.screenSplit().off(), level));
-			addTimeLine(context, lines, batteryDO, rate);
+			addTimeLine(context, lines, level, rate);
 		}
 		if (nonNull(batteryDO)) {
 			addLine(context, lines, R.string.temperature, TemperatureUtils.format(context, batteryDO.getTemperature()));
@@ -337,12 +337,10 @@ public final class OngoingStatusContent {
 	}
 
 	/** The expanded time line: "Time remaining"/"Time to full" label with the bare duration (#194). */
-	private static void addTimeLine(Context context, List<String> lines, BatteryDO batteryDO, BatteryRateTracker.BatteryRate rate) {
-		final int minutes = rate.estimatedMinutes(batteryDO.getBatteryPercentageInt());
+	private static void addTimeLine(Context context, List<String> lines, int level, BatteryRateTracker.BatteryRate rate) {
+		final int minutes = rate.estimatedMinutes(level);
 		if (minutes > 0) {
-			addLine(context, lines,
-					rate.charging() ? R.string.time_to_full : R.string.time_remaining,
-					BatteryRateTracker.formatDuration(context, minutes));
+			addLine(context, lines, rate.charging() ? R.string.time_to_full : R.string.time_remaining, BatteryRateTracker.formatDuration(context, minutes));
 		}
 	}
 

@@ -64,7 +64,7 @@
     <string name="battery_value_pending">—</string>
     <string name="battery_value_calculating">جارٍ الحساب</string>
     <string name="battery_value_tap_to_set">انقر للتحديد</string>
-    <string name="battery_value_info_cd">مزيد من المعلومات</string>
+    <string name="battery_value_with_info_cd">%1$s، مزيد من المعلومات</string>
     <string name="battery_rate_pending_dialog_title">جارٍ حساب المعدل</string>
     <string name="battery_rate_pending_dialog_message">يُحسب معدل الشحن/الاستهلاك كمتوسط لقراءات الدقائق القليلة الماضية، لذا يحتاج إلى دقيقة أو دقيقتين بعد توصيل الشاحن أو فصله أو فتح التطبيق قبل أن يعرض قيمة موثوقة.</string>
     <string name="battery_time_pending_dialog_title">التقدير غير جاهز</string>

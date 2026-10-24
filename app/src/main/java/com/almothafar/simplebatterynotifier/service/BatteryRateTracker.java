@@ -495,7 +495,7 @@ public final class BatteryRateTracker {
 	 *
 	 * @return estimated minutes to empty, or 0 when not computable (non-positive rate, or already empty)
 	 */
-	public static int estimateMinutesToEmpty(final int level, final int ratePercentPerHour) {
+	public static int estimateMinutesToEmpty(int level, int ratePercentPerHour) {
 		return estimateMinutesToEmptyFromTenths(level, ratePercentPerHour * 10);
 	}
 

@@ -61,11 +61,12 @@
     <string name="battery_value_pending">—</string>
     <string name="battery_value_calculating">calculating</string>
     <string name="battery_value_tap_to_set">tap to set</string>
-    <string name="battery_value_info_cd">More information</string>
+    <!-- TalkBack for a value cell with the info icon; %1$s is the cell's own text, so the icon never hides it -->
+    <string name="battery_value_with_info_cd">%1$s, more information</string>
     <string name="battery_rate_pending_dialog_title">Rate is still settling</string>
     <string name="battery_rate_pending_dialog_message">The charge/drain rate is averaged over the last few minutes of readings, so it needs a minute or two after you plug in, unplug, or open the app before it can show a reliable figure.</string>
     <string name="battery_time_pending_dialog_title">Estimate not ready</string>
-    <string name="battery_time_remaining_pending_dialog_message">Time remaining is projected from the drain since you last unplugged, screen on and off together, so it covers the rest of this charge. In the first hour it uses the drain rate of the last few minutes instead. The screen-on and screen-off drain rows show how long the battery would last in each state, and the real time left falls between them.</string>
+    <string name="battery_time_remaining_pending_dialog_message">Time remaining is projected from the drain since you last unplugged, screen on and off together, so it covers the rest of this charge. In the first hour it uses the drain rate of the last few minutes instead. The screen-on and screen-off drain rows show how long the battery would last in each state, and the real time remaining falls between them.</string>
     <string name="battery_time_to_full_pending_dialog_message">This time estimate is projected from the charge rate, so it appears once that rate has settled. It\'s also hidden very close to a full charge, where the estimate would be meaningless.</string>
     <string name="battery_current_pending_dialog_title">Live current unavailable</string>
     <string name="battery_current_pending_dialog_message">The instantaneous current can take a moment to settle, and some devices don\'t report it at all. When it\'s available it shows here in milliamps (mA).</string>

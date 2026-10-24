@@ -21,7 +21,7 @@ The drain since the battery was last unplugged, split by whether the screen was 
 _Avoid_: active/idle drain, foreground/background drain.
 
 **Time remaining**:
-The estimated time until the battery is empty, projected from the drain since it was last unplugged with the screen on and off together, so it covers the whole charge rather than the last ten minutes. It falls between the times the screen-on and screen-off drain give.
+The estimated time until the battery is empty, projected from the drain since it was last unplugged with the screen on and off together, so it covers the whole charge rather than the last ten minutes. Once the screen-on and screen-off drain are both in, it falls between the times they give.
 _Avoid_: battery life, runtime.
 
 **Instantaneous current**:
