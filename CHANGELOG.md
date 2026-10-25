@@ -1,5 +1,22 @@
 # Changelog
 
+## [3.4.0](https://github.com/almothafar/BattWatch/compare/v3.3.1...v3.4.0) (2026-10-25)
+
+
+### Features
+
+* give the status notification its own settings entry ([#386](https://github.com/almothafar/BattWatch/issues/386)) ([20a64d9](https://github.com/almothafar/BattWatch/commit/20a64d9275b4f64fc74470ca78b0fe9230083275))
+* let users choose the status notification's details ([#379](https://github.com/almothafar/BattWatch/issues/379)) ([331ab8a](https://github.com/almothafar/BattWatch/commit/331ab8a96fb4da9e5dfd102201b5656bc3b6302c))
+* let users reorder the status notification's details ([#383](https://github.com/almothafar/BattWatch/issues/383)) ([165df0c](https://github.com/almothafar/BattWatch/commit/165df0c89845e015deae8e055a74baa3397c686c))
+* show screen-on and screen-off drain since the last unplug ([#391](https://github.com/almothafar/BattWatch/issues/391)) ([1095310](https://github.com/almothafar/BattWatch/commit/1095310e7e1a22122f65462065bc05527b904347))
+* show when a status notification detail is still calculating or unavailable ([#390](https://github.com/almothafar/BattWatch/issues/390)) ([ed24836](https://github.com/almothafar/BattWatch/commit/ed24836f3fa62100a03a4e1152f93dce2d0aa980))
+
+
+### Bug Fixes
+
+* ship every language with every Play install ([#389](https://github.com/almothafar/BattWatch/issues/389)) ([cfd451a](https://github.com/almothafar/BattWatch/commit/cfd451a5b808d1695699682f0d2e84a34495fc4d))
+* word notifications in the in-app language on Android 8–12 ([#387](https://github.com/almothafar/BattWatch/issues/387)) ([6efc48f](https://github.com/almothafar/BattWatch/commit/6efc48faf03084ad68cef2c6f4aeeef8d6204e81))
+
 ## [3.3.1](https://github.com/almothafar/BattWatch/compare/v3.3.0...v3.3.1) (2026-09-19)
 
 
