@@ -7,6 +7,9 @@ import com.almothafar.simplebatterynotifier.R;
 import com.almothafar.simplebatterynotifier.model.BatteryDO;
 import com.almothafar.simplebatterynotifier.model.PowerSource;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static com.almothafar.simplebatterynotifier.service.BatteryRateTracker.MIN_CURRENT_SAMPLES;
 import static com.almothafar.simplebatterynotifier.service.BatteryRateTracker.MIN_SAMPLE_SPACING_MS;
 import static com.almothafar.simplebatterynotifier.service.BatteryRateTracker.PROPERTY_UNSUPPORTED;
@@ -15,7 +18,8 @@ import static java.util.Objects.nonNull;
 
 /**
  * The drain since the last unplug, split by whether the screen was on or off at the time (#193): the <b>screen-on drain</b> and the <b>screen-off
- * drain</b>, each as an average current and a %/h. The split tells usage apart from idle drain, which the single drain rate blends together.
+ * drain</b>, each as an average current and a %/h. The split tells usage apart from idle drain, which the single drain rate blends together. The two
+ * tallies together give the overall drain over the whole time off the charger, which the time remaining projects from (#354).
  * <p>
  * <b>Why a session, not the rate window.</b> {@link BatteryRateTracker}'s window covers ten minutes, which almost always holds one screen state only. This
  * accumulates from the moment the charger comes out until it goes back in — hours of both states — so each figure rests on a long horizon. The window is
@@ -58,6 +62,10 @@ public final class ScreenDrainTracker {
 
 	// A level this many points above the anchor means the battery charged while nothing was watching. One point is left to the gauge's own wobble.
 	static final int UNSEEN_CHARGE_POINTS = 2;
+
+	// The overall drain waits an hour, as the screen-off drain does: by then one level tick moves it by 1 %/h at most. Until then the time remaining projects
+	// from the 10-minute drain rate.
+	static final long OVERALL_WARM_UP_MS = 60L * 60 * 1000;
 
 	private ScreenDrainTracker() {
 		// Utility class - prevent instantiation
@@ -116,22 +124,33 @@ public final class ScreenDrainTracker {
 	}
 
 	/**
-	 * Formats one state's drain for the details table and the notification's pull-down: {@code "−392 mA · 10.4%/h"}, or whichever half is ready, with
-	 * Western digits in every locale (#96). The %/h carries one decimal, unlike the 10-minute drain rate's whole number: screen-off drain mostly sits
-	 * between 0.3 and 2 %/h, where whole numbers would read 0 or 1, and the hours-long horizon is what earns the extra digit.
+	 * Formats one state's drain for the details table and the notification's pull-down: {@code "−392 mA · 10.4%/h · ~8h 10m"}, or whichever figures are
+	 * ready, with Western digits in every locale (#96). The time is how long the level would last if the phone stayed in that state (#354), so the two
+	 * states bracket the time remaining. The %/h carries one decimal, unlike the 10-minute drain rate's whole number: screen-off drain mostly sits between
+	 * 0.3 and 2 %/h, where whole numbers would read 0 or 1, and the hours-long horizon is what earns the extra digit.
+	 * <p>
+	 * All three seldom fit one line of a phone's details table, so nothing inside a figure can break: the value wraps between figures, never between "~7h"
+	 * and "48m".
 	 *
 	 * @param context Application context
 	 * @param drain   one state's drain
+	 * @param level   the battery level in percent, which the time projects from
 	 *
 	 * @return the value, or null while neither figure is ready
 	 */
-	public static String formatValue(Context context, ScreenDrain drain) {
-		final String current = drain.hasCurrent() ? BatteryRateTracker.formatCurrentValue(context, drain.avgCurrentMilliAmps()) : null;
-		final String rate = drain.hasRate() ? formatTenthsRate(context, drain.tenthsPercentPerHour()) : null;
-		if (nonNull(current) && nonNull(rate)) {
-			return current + OngoingStatusContent.DETAIL_SEPARATOR + rate;
+	public static String formatValue(Context context, ScreenDrain drain, int level) {
+		final List<String> figures = new ArrayList<>(3);
+		if (drain.hasCurrent()) {
+			figures.add(unbroken(BatteryRateTracker.formatCurrentValue(context, drain.avgCurrentMilliAmps())));
 		}
-		return nonNull(current) ? current : rate;
+		if (drain.hasRate()) {
+			figures.add(unbroken(formatTenthsRate(context, drain.tenthsPercentPerHour())));
+			final int minutes = BatteryRateTracker.estimateMinutesToEmptyFromTenths(level, drain.tenthsPercentPerHour());
+			if (minutes > 0) {
+				figures.add(unbroken(BatteryRateTracker.formatDuration(context, minutes)));
+			}
+		}
+		return figures.isEmpty() ? null : String.join(OngoingStatusContent.DETAIL_SEPARATOR, figures);
 	}
 
 	/**
@@ -230,7 +249,10 @@ public final class ScreenDrainTracker {
 		if (!session.active()) {
 			return ScreenSplit.NONE;
 		}
-		return new ScreenSplit(session.onTally().toDrain(ScreenState.ON.warmUpMillis), session.offTally().toDrain(ScreenState.OFF.warmUpMillis));
+		return new ScreenSplit(
+				session.onTally().toDrain(ScreenState.ON.warmUpMillis),
+				session.offTally().toDrain(ScreenState.OFF.warmUpMillis),
+				session.onTally().plus(session.offTally()).toDrain(OVERALL_WARM_UP_MS));
 	}
 
 	static Session loadSession(SharedPreferences prefs) {
@@ -288,6 +310,11 @@ public final class ScreenDrainTracker {
 			return session;
 		}
 		return session.withTally(moment.screen(), session.tally(moment.screen()).plusCurrent(currentMicroAmps)).readingAt(moment.millis());
+	}
+
+	/** The figure with nowhere for a line to break inside it: its spaces become no-break spaces, and a word joiner holds the "h" of "%/h" to its slash. */
+	private static String unbroken(String figure) {
+		return figure.replace(' ', '\u00A0').replace("/", "/\u2060");
 	}
 
 	private static String formatTenthsRate(Context context, int tenths) {
@@ -377,6 +404,15 @@ public final class ScreenDrainTracker {
 			return new Tally(millis, levelDrop, currentSumMicroAmps + microAmps, currentSamples + 1);
 		}
 
+		/** Two tallies as one, for the overall drain. */
+		Tally plus(Tally other) {
+			return new Tally(
+					millis + other.millis,
+					levelDrop + other.levelDrop,
+					currentSumMicroAmps + other.currentSumMicroAmps,
+					currentSamples + other.currentSamples);
+		}
+
 		/** What the tally shows once past the state's warm-up; the window's display floor hides deep-sleep noise and misreads (#152). */
 		ScreenDrain toDrain(long warmUpMillis) {
 			if (millis < warmUpMillis) {
@@ -447,12 +483,13 @@ public final class ScreenDrainTracker {
 	}
 
 	/**
-	 * The screen-on and screen-off drain, side by side.
+	 * The screen-on and screen-off drain, side by side, and the overall drain over both.
 	 *
-	 * @param on  the screen-on drain
-	 * @param off the screen-off drain
+	 * @param on      the screen-on drain
+	 * @param off     the screen-off drain
+	 * @param overall the drain in both states together, after its own warm-up ({@link #OVERALL_WARM_UP_MS}); the time remaining projects from its %/h
 	 */
-	public record ScreenSplit(ScreenDrain on, ScreenDrain off) {
-		public static final ScreenSplit NONE = new ScreenSplit(ScreenDrain.NONE, ScreenDrain.NONE);
+	public record ScreenSplit(ScreenDrain on, ScreenDrain off, ScreenDrain overall) {
+		public static final ScreenSplit NONE = new ScreenSplit(ScreenDrain.NONE, ScreenDrain.NONE, ScreenDrain.NONE);
 	}
 }

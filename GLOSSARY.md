@@ -17,8 +17,12 @@ rate.
 _Avoid_: charging speed.
 
 **Screen-on drain** / **Screen-off drain**:
-The drain since the battery was last unplugged, split by whether the screen was on or off at the time, each shown as an average current and a %/h to one decimal. Unlike the drain rate, which covers the last ten minutes, it accumulates over the whole time off the charger, so it tells usage apart from idle drain. A lit lockscreen counts as on and an always-on display as off; plugging in starts both over.
+The drain since the battery was last unplugged, split by whether the screen was on or off at the time, each shown as an average current, a %/h to one decimal, and how long the battery would last in that state. Unlike the drain rate, which covers the last ten minutes, it accumulates over the whole time off the charger, so it tells usage apart from idle drain. A lit lockscreen counts as on and an always-on display as off; plugging in starts both over.
 _Avoid_: active/idle drain, foreground/background drain.
+
+**Time remaining**:
+The estimated time until the battery is empty, projected from the drain since it was last unplugged with the screen on and off together, so it covers the whole charge rather than the last ten minutes. Once the screen-on and screen-off drain are both in, it falls between the times they give.
+_Avoid_: battery life, runtime.
 
 **Instantaneous current**:
 The live current flowing in or out of the battery right now, in milliamps (mA), read from
