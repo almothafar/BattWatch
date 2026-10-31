@@ -64,11 +64,12 @@
     <string name="battery_value_pending">—</string>
     <string name="battery_value_calculating">جارٍ الحساب</string>
     <string name="battery_value_tap_to_set">انقر للتحديد</string>
-    <string name="battery_value_info_cd">مزيد من المعلومات</string>
+    <string name="battery_value_with_info_cd">%1$s، مزيد من المعلومات</string>
     <string name="battery_rate_pending_dialog_title">جارٍ حساب المعدل</string>
     <string name="battery_rate_pending_dialog_message">يُحسب معدل الشحن/الاستهلاك كمتوسط لقراءات الدقائق القليلة الماضية، لذا يحتاج إلى دقيقة أو دقيقتين بعد توصيل الشاحن أو فصله أو فتح التطبيق قبل أن يعرض قيمة موثوقة.</string>
     <string name="battery_time_pending_dialog_title">التقدير غير جاهز</string>
-    <string name="battery_time_pending_dialog_message">يُشتق هذا التقدير الزمني من معدل الشحن/الاستهلاك، لذا يظهر بعد استقرار ذلك المعدل. كما يُخفى قرب اكتمال الشحن حيث يكون التقدير بلا معنى.</string>
+    <string name="battery_time_remaining_pending_dialog_message">يُحسب الوقت المتبقي من الاستهلاك منذ آخر فصل للشاحن، والشاشة مضاءة ومطفأة معًا، لذا يغطي ما تبقّى من هذا الشحن. وفي الساعة الأولى يُستخدم بدلًا منه معدل الاستهلاك في الدقائق القليلة الماضية. ويُظهر صفّا الاستهلاك والشاشة مضاءة ومطفأة المدة التي تدومها البطارية في كل حالة، ويقع الوقت الفعلي المتبقي بينهما.</string>
+    <string name="battery_time_to_full_pending_dialog_message">يُشتق هذا التقدير الزمني من معدل الشحن، لذا يظهر بعد استقرار ذلك المعدل. كما يُخفى قرب اكتمال الشحن حيث يكون التقدير بلا معنى.</string>
     <string name="battery_current_pending_dialog_title">التيار المباشر غير متوفر</string>
     <string name="battery_current_pending_dialog_message">قد يستغرق التيار اللحظي وقتًا حتى يستقر، وبعض الأجهزة لا تُبلغ عنه إطلاقًا. عند توفره يظهر هنا بالملّي أمبير (mA).</string>
     <!-- #193: يُفتح من صفّي «الاستهلاك والشاشة مضاءة» و«الاستهلاك والشاشة مطفأة» ما دام أحدهما يجمع الوقت -->

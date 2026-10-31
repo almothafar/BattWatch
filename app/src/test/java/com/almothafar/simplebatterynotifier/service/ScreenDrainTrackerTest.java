@@ -87,6 +87,26 @@ public class ScreenDrainTrackerTest {
 	}
 
 	@Test
+	public void theOverallDrain_blendsBothStates_overTheWholeTimeOffTheCharger() {
+		observe(T0, unplugged(80), ON);
+		observe(T0 + 20 * MINUTE, unplugged(77), OFF);
+		final ScreenDrainTracker.ScreenSplit split = observe(T0 + 80 * MINUTE, unplugged(76), ON);
+
+		assertEquals("4% in the 80 minutes off the charger is 3.0 %/h", 30, split.overall().tenthsPercentPerHour());
+	}
+
+	@Test
+	public void theOverallDrain_waitsForAnHourOffTheCharger_evenWithAStateAlreadyIn() {
+		observe(T0, unplugged(80), ON);
+		final ScreenDrainTracker.ScreenSplit early = observe(T0 + 59 * MINUTE, unplugged(72), ON);
+		final ScreenDrainTracker.ScreenSplit hour = observe(T0 + 60 * MINUTE, unplugged(72), ON);
+
+		assertTrue("the screen-on drain is in after a quarter of an hour", early.on().hasRate());
+		assertFalse("59 minutes is not yet enough for the overall drain", early.overall().hasRate());
+		assertEquals("an hour is: 8% in 60 minutes is 8.0 %/h", 80, hour.overall().tenthsPercentPerHour());
+	}
+
+	@Test
 	public void eachState_warmsUpOnItsOwn() {
 		observe(T0, unplugged(80), ON);
 		final ScreenDrainTracker.ScreenSplit split = observe(T0 + 15 * MINUTE, unplugged(78), OFF);
@@ -283,7 +303,7 @@ public class ScreenDrainTrackerTest {
 		// Premise: this locale really does pick Eastern Arabic digits for a plain %d, so a locale-following format would fail here (#96, #273).
 		assertEquals("٤٠", String.format(Locale.getDefault(), "%d", 40));
 
-		final String value = ScreenDrainTracker.formatValue(context, new ScreenDrainTracker.ScreenDrain(true, -392, true, 104));
-		assertTrue(value, value.contains("392") && value.contains("10.4"));
+		final String value = ScreenDrainTracker.formatValue(context, new ScreenDrainTracker.ScreenDrain(true, -392, true, 104), 85);
+		assertTrue(value, value.contains("392") && value.contains("10.4") && value.contains("~8h") && value.contains("10m"));
 	}
 }
