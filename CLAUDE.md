@@ -42,7 +42,7 @@ Read on demand, when the work touches them:
 - `GLOSSARY.md` — glossary of domain terms (drain rate, charge rate, design capacity, …). Use these exact terms in UI and code.
 - `CODE_REVIEW_GUIDELINES.md` — the human-facing edition of the same standards, plus the reviewer checklist.
 
-Every user-facing string needs an Arabic translation — the build fails on `MissingTranslation`.
+Every user-facing string needs an Arabic and a Turkish translation — the build fails on `MissingTranslation`.
 
 ## Agent skills
 
