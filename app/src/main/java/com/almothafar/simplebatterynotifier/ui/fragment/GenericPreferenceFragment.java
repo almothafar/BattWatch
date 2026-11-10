@@ -194,7 +194,7 @@ public class GenericPreferenceFragment extends CardPreferenceFragment
 	}
 
 	/**
-	 * Wire up the app-language picker (System / Arabic / English).
+	 * Wire up the app-language picker (System / Arabic / English / Turkish).
 	 * <p>
 	 * The choice is applied and persisted by AndroidX per-app locales
 	 * ({@link AppCompatDelegate#setApplicationLocales}, stored via the {@code AppLocalesMetadataHolderService}

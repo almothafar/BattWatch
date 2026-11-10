@@ -482,7 +482,7 @@ executor.execute(() -> doBackgroundWork());
 
 ## 🌍 Localization
 
-**The app ships an Arabic translation (`res/values-ar/`), so every user-facing string must be localizable.**
+**The app ships Arabic and Turkish translations (`res/values-ar/`, `res/values-tr/`), so every user-facing string must be localizable.**
 
 ### 1. No Hardcoded User-Facing Strings
 
@@ -497,15 +497,16 @@ healthStatusText.setText(R.string.health_grade_excellent);
 
 Keep the mapping from a value/enum to its string resource in a UI/service layer (mirroring `SystemService.getHealthString`), not as inline literals.
 
-### 2. Keep `values-ar/` in Parity
+### 2. Keep `values-ar/` and `values-tr/` in Parity
 
-- Every new user-facing string in `values/strings.xml` needs a matching entry in `values-ar/strings.xml`.
-- Quick check: diff the `<string name=…>` lists of the two files.
+- Every new user-facing string in `values/strings.xml` needs a matching entry in `values-ar/strings.xml` and in `values-tr/strings.xml`.
+- Quick check: diff the `<string name=…>` lists of the files.
 - Consider enabling the `MissingTranslation` lint check as a build gate.
+- Turkish: a placeholder takes no suffix (no `%1$s'de`), because the right form (`-de`/`-da`, `-in`/`-ın`) depends on the value it receives. Word the sentence around it.
 
 ### 3. Don't Translate Internal Keys
 
-Identifiers are **not** copy — leave them out of `values-ar/`:
+Identifiers are **not** copy — leave them out of `values-ar/` and `values-tr/`:
 
 - `_pref_key_*`, `_pref_value_*`, `pref_category_*`, `extra_category`, URIs, and URLs.
 
@@ -774,7 +775,7 @@ When reviewing code, check:
 - [ ] Methods ≤ 50 lines
 - [ ] All null checks in place
 - [ ] No silent/broad `catch`; expected failures validated, not caught
-- [ ] No hardcoded user-facing strings; `values-ar/` kept in parity
+- [ ] No hardcoded user-facing strings; `values-ar/` and `values-tr/` kept in parity
 - [ ] Every number a user sees is Western digits — `Locale.ROOT` everywhere, `%1$s` not `%1$d` in resources, `translatable="false"` included
 - [ ] Locale tests use a region tag (`ar-rEG`), never bare `ar`
 - [ ] Log messages use `+` concatenation, not `String.format`

@@ -1,0 +1,337 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Turkish (#399). A placeholder such as %1$s takes no suffix (-de/-da, -in/-ın), because the right form depends on the value it receives, so
+         sentences are worded around placeholders instead of attaching one. -->
+    <string name="app_name">BattWatch</string>
+    <string name="action_settings">Ayarlar</string>
+    <string name="title_activity_settings">Ayarlar</string>
+    <string name="charging">Şarj oluyor</string>
+    <string name="discharging">Deşarj oluyor</string>
+    <string name="not_charging">Şarj olmuyor</string>
+    <string name="unknown">Bilinmiyor</string>
+    <string name="charged">Dolu</string>
+
+    <string name="temperature">Sıcaklık</string>
+    <string name="technology">Teknoloji</string>
+    <string name="chipset">Yonga seti</string>
+    <string name="voltage">Voltaj</string>
+    <string name="battery_condition">Durum</string>
+    <string name="capacity">Kapasite</string>
+    <string name="battery_health_good">İyi</string>
+    <string name="battery_health_dead">Ölü</string>
+    <string name="battery_health_cold">Soğuk</string>
+    <string name="battery_health_overheat">Aşırı ısınma</string>
+    <string name="battery_health_over_voltage">Aşırı voltaj</string>
+    <string name="battery_health_unspecified_failure">Arıza</string>
+    <string name="celsius">Santigrat (°C)</string>
+    <string name="celsius_short">°C</string>
+    <string name="fahrenheit">Fahrenhayt (°F)</string>
+    <string name="fahrenheit_short">°F</string>
+    <string name="power_source">Güç kaynağı</string>
+
+    <string name="drain_rate">Boşalma hızı</string>
+    <string name="charge_rate">Şarj hızı</string>
+    <string name="battery_current">Akım</string>
+    <string name="time_to_full">Dolmasına kalan süre</string>
+    <string name="time_remaining">Kalan süre</string>
+    <string name="screen_on_drain">Ekran açıkken boşalma</string>
+    <string name="screen_off_drain">Ekran kapalıyken boşalma</string>
+
+    <string name="gauge_info_title">Canlı yüzde hakkında</string>
+    <string name="gauge_info_message">Bu yüzde iki ondalık basamakla gösterilir ve her saniye akıcı biçimde değişir.\n\nTelefonunuz pilin gerçek şarjını yalnızca birkaç saniyede bir ölçer; aradaki değer o anki şarj ya da boşalma hızından tahmin edilir ve bir sonraki gerçek ölçüm geldiğinde düzeltilir. Durum çubuğunuzdaki yüzdeden biraz farklı olabilir.\n\nAyrıntılı şarj verisi bildirmeyen telefonlarda bunun yerine düz bir tam sayı gösterilir.</string>
+    <string name="gauge_info_content_description">Canlı yüzde hakkında</string>
+
+    <string name="gauge_theme_switch_to_dark">Açık tema. Koyu temaya geç.</string>
+    <string name="gauge_theme_switch_to_light">Koyu tema. Açık temaya geç.</string>
+    <string name="theme_staying_light">Bu uygulama açık temada kalacak</string>
+    <string name="theme_staying_dark">Bu uygulama koyu temada kalacak</string>
+    <string name="theme_match_phone_action">Telefona uy</string>
+
+    <string name="battery_value_pending">—</string>
+    <string name="battery_value_calculating">hesaplanıyor</string>
+    <string name="battery_value_tap_to_set">ayarlamak için dokunun</string>
+    <string name="battery_value_with_info_cd">%1$s, daha fazla bilgi</string>
+    <string name="battery_rate_pending_dialog_title">Hız henüz netleşmedi</string>
+    <string name="battery_rate_pending_dialog_message">Şarj/boşalma hızı son birkaç dakikadaki ölçümlerin ortalamasıdır; bu yüzden güvenilir bir değer gösterebilmesi için şarj cihazını taktıktan, çıkardıktan ya da uygulamayı açtıktan sonra bir iki dakika geçmesi gerekir.</string>
+    <string name="battery_time_pending_dialog_title">Tahmin henüz hazır değil</string>
+    <string name="battery_time_remaining_pending_dialog_message">Kalan süre, şarj cihazını son çıkardığınızdan beri ekran açıkken ve kapalıyken birlikte yaşanan boşalmaya göre hesaplanır; bu yüzden bu şarjın geri kalanını kapsar. İlk bir saatte bunun yerine son birkaç dakikanın boşalma hızını kullanır. Ekran açıkken ve ekran kapalıyken boşalma satırları, pilin her iki durumda ne kadar dayanacağını gösterir; gerçek kalan süre bu ikisinin arasındadır.</string>
+    <string name="battery_time_to_full_pending_dialog_message">Bu süre tahmini şarj hızından hesaplanır; bu yüzden hız netleşince görünür. Tam şarja çok yaklaşıldığında da gizlenir, çünkü orada tahmin anlamsız olur.</string>
+    <string name="battery_current_pending_dialog_title">Canlı akım bilgisi yok</string>
+    <string name="battery_current_pending_dialog_message">Anlık akımın netleşmesi biraz zaman alabilir ve bazı cihazlar bu değeri hiç bildirmez. Mevcut olduğunda burada miliamper (mA) cinsinden gösterilir.</string>
+    <string name="battery_screen_drain_pending_dialog_title">Hâlâ veri toplanıyor</string>
+    <string name="battery_screen_drain_pending_dialog_message">Bu iki satır, şarj cihazını son çıkardığınızdan beri olan boşalmayı ekranın açık ya da kapalı olmasına göre ayırır. Her biri, pil o durumda seviyesinin düşmesine yetecek kadar zaman geçirdiğinde görünür: ekran açıkken yaklaşık çeyrek saat, kapalıyken yaklaşık bir saat. Şarja takmak ikisini de sıfırlar.</string>
+    <string name="battery_design_capacity_unset_dialog_title">Tasarım kapasitesi ayarlanmadı</string>
+    <string name="battery_design_capacity_unset_dialog_message">Bu, pilinizin üretici tarafından belirtilen orijinal kapasitesidir (mAh). Ölçüme dayalı bir pil sağlığı değeri için bunu Pil analizi ekranında ayarlayın — o zamana kadar sağlık, şarj döngülerinden tahmin edilir.</string>
+
+    <string name="battery">Pil</string>
+    <string name="charger_ac">AC şarj cihazı</string>
+    <string name="charger_usb">USB bağlantı noktası</string>
+    <string name="charger_wireless">Kablosuz şarj cihazı</string>
+    <string name="charger_other">Güce bağlı</string>
+
+    <string name="pref_header_general">Genel</string>
+    <string name="pref_header_status_notification">Durum bildirimi</string>
+    <string name="pref_header_alerts">Uyarılar</string>
+    <string name="pref_header_behaviour">Bildirim davranışı</string>
+    <string name="pref_header_summary_general">Uygulama dili, tema ve sıcaklık birimi</string>
+    <string name="pref_header_summary_status_notification">Sürekli bildirimin gösterdikleri — ayrıntılar ve sıraları</string>
+    <string name="pref_header_summary_alerts">Neler için bildirim alacağınız — pil seviyeleri, tam şarj, sıcaklık, hızlı boşalma, şarj</string>
+    <string name="pref_header_summary_behaviour">Uyarıların sesi, görünümü ve ne zaman gelebileceği — uyarı sesleri, sessiz mod, titreşim, sessiz saatler</string>
+
+    <string name="pref_ringtone_silent">Sessiz</string>
+    <string name="pref_title_vibrate">Titreşim</string>
+
+    <string name="battery_range_caption_critical">Kritik %1$s</string>
+    <string name="battery_range_caption_warning">Uyarı %1$s</string>
+    <string name="temperature_unit">Sıcaklık birimi</string>
+    <string name="off">KAPALI</string>
+    <string name="on">AÇIK</string>
+    <string name="notification_is_sticky">Uyarı bildirimleri kaydırılarak kapatılamaz</string>
+    <string name="notification_is_not_sticky">Uyarı bildirimleri normal şekilde kapatılabilir</string>
+    <string name="sticky_notification">Kalıcı bildirimler</string>
+    <string name="mute_alerts_in_silent_mode_summary_off">Telefon sessiz modda ya da Rahatsız Etmeyin modundayken bile uyarı sesleri çalar</string>
+    <string name="mute_alerts_in_silent_mode_summary_on">Telefon sessiz modda ya da Rahatsız Etmeyin modundayken uyarılar sessiz kalır</string>
+    <string name="mute_alerts_in_silent_mode">Sessiz modda uyarıları sustur</string>
+    <string name="notifications_time_range_summary_off">Uyarılar günün her saatinde ses çıkarabilir</string>
+    <string name="notifications_time_range_summary_on">Uyarılar yalnızca aşağıdaki saatler arasında ses çıkarır, bu saatlerin dışında sessiz kalır</string>
+    <string name="notifications_time_range">Sessiz saatler</string>
+    <string name="notifications_time_range_start">Uyarılar şu saatten itibaren</string>
+    <string name="notifications_time_range_end">Uyarılar şu saate kadar</string>
+    <string name="notifications_vibrate_summary_off">Bildirim titreşimi kapalı</string>
+    <string name="notifications_vibrate_summary_on">Bildirim titreşimi açık</string>
+    <string name="notifications_alert_sound_ringtone">Kritik seviye sesi</string>
+    <string name="notifications_warning_sound_ringtone">Uyarı seviyesi sesi</string>
+    <string name="notifications_default_sound_ringtone">Varsayılan ses</string>
+    <string name="notifications_critical_sound_bucket">Kritik pil, yüksek sıcaklık</string>
+    <string name="notifications_warning_sound_bucket">Düşük pil, hızlı boşalma, yavaş şarj</string>
+    <string name="notifications_default_sound_bucket">Tam şarj ve kendine ait sesi olmayan uyarılar</string>
+    <string name="pref_ringtone_summary_with_bucket">%1$s · %2$s</string>
+    <string name="notify_for_warning_level">Uyarı seviyesinde bildir</string>
+    <string name="notify_for_warning_level_summary_on">Uyarı sesi açık</string>
+    <string name="notify_for_warning_level_summary_off">Uyarı sesi kapalı</string>
+    <string name="notify_for_full_level">Tam şarjda bildir</string>
+    <string name="notify_for_full_level_summary_on">Tam şarj sesi açık</string>
+    <string name="notify_for_full_level_summary_off">Tam şarj sesi kapalı</string>
+    <string name="notify_when_almost_full">Neredeyse dolunca bildir</string>
+    <string name="notify_when_almost_full_summary_on">Neredeyse dolu uyarısı açık</string>
+    <string name="notify_when_almost_full_summary_off">Neredeyse dolu uyarısı kapalı</string>
+    <string name="charge_target">Şarj hedefi</string>
+    <string name="charge_target_summary">%1$s seviyesinde uyar — neredeyse dolu, pil ömrü için daha iyi</string>
+    <string name="charge_target_summary_full">%1$s seviyesinde uyar — tam şarj</string>
+    <string name="notify_unplug_reminder">Şarj cihazını çıkarana kadar hatırlat</string>
+    <string name="notify_unplug_reminder_summary_on">Şarj cihazı takılı kaldıkça uyarı tekrarlanır</string>
+    <string name="notify_unplug_reminder_summary_off">Uyarı her şarjda bir kez gelir</string>
+    <string name="unplug_reminder_minutes">Hatırlatma aralığı (dakika)</string>
+    <string name="notify_every_tick">Kritik seviyede her %1\'de bildir</string>
+    <string name="notify_every_tick_summary_on">Kritik seviyede her %1\'lik düşüşte bildirim açık</string>
+    <string name="notify_every_tick_summary_off">Kritik seviyede her %1\'lik düşüşte bildirim kapalı</string>
+    <string name="critical_ignore_quiet_hours">Kritik uyarılar sessiz saatleri yok sayar</string>
+    <string name="critical_ignore_quiet_hours_summary_on">Pil kritik derecede azaldığında sessiz saatlerde de uyarı verilir</string>
+    <string name="critical_ignore_quiet_hours_summary_off">Kritik uyarılar sessiz saatlerde sessiz kalır</string>
+
+    <string name="notification_critical_ticker">Pil kritik derecede düşük — %1$s seviyesinin altında</string>
+    <string name="notification_critical_title">Pil kritik derecede düşük</string>
+    <string name="notification_critical_content">Pil neredeyse bitti (%1$s)</string>
+    <string name="notification_critical_content_big">Piliniz kritik seviyenin altında (%1$s) — şarja takma zamanı.</string>
+    <string name="notification_warning_ticker">Pil %1$s seviyesinin altında</string>
+    <string name="notification_warning_title">Pil azalıyor</string>
+    <string name="notification_warning_content">Pil seviyesi %1$s — kullanımınıza dikkat edin</string>
+    <string name="notification_warning_content_big">Pil seviyesi %1$s. Henüz şarj etmeye gerek yok — ama uygun olduğunda, pil çok azalmadan şarja takmak pil için en iyisidir.</string>
+    <string name="notification_full_level_ticker">Pil tamamen doldu — şarj cihazını artık çıkarabilirsiniz</string>
+    <string name="notification_full_level_title">Pil tamamen doldu</string>
+    <string name="notification_full_level_content">Şarj cihazını artık çıkarabilirsiniz</string>
+    <string name="notification_full_level_content_big" formatted="false">Şarj tamamlandı — şarj cihazını artık çıkarabilirsiniz. Piller %100\'de tutulduğunda en hızlı yıpranır; bu yüzden kısa süre içinde çıkarmak (ve günlük kullanımda kabaca %20 ile %80 arasında kalmak) pilin daha uzun ömürlü olmasına yardımcı olur.</string>
+    <string name="notification_almost_full_ticker">Pil neredeyse dolu — %1$s seviyesine ulaşıldı, şarj cihazını artık çıkarabilirsiniz</string>
+    <string name="notification_almost_full_title">Pil neredeyse dolu</string>
+    <string name="notification_almost_full_content">%1$s şarj hedefinize ulaşıldı — şarj cihazını artık çıkarabilirsiniz</string>
+    <string name="notification_almost_full_content_big">%1$s şarj hedefinize ulaşıldı — şarj cihazını artık çıkarabilirsiniz. Piller %%100\'de tutulduğunda en hızlı yıpranır; bu yüzden tam şarja varmadan durmak (ve günlük kullanımda kabaca %%20 ile %%80 arasında kalmak) pilin daha uzun ömürlü olmasına yardımcı olur.</string>
+
+    <string name="notification_critical_channel_name">Kritik pil uyarıları</string>
+    <string name="notification_critical_channel_description">Kritik pil seviyesi uyarıları</string>
+    <string name="notification_warning_channel_name">Düşük pil uyarıları</string>
+    <string name="notification_warning_channel_description">Düşük pil seviyesi bildirimleri</string>
+    <string name="notification_full_channel_name">Pil dolu</string>
+    <string name="notification_full_channel_description">Pilin tamamen dolduğunu bildiren bildirimler</string>
+
+    <string name="notification_charge_started_title">Şarj başladı</string>
+
+    <string name="charge_source_wired">Kablolu</string>
+    <string name="charge_source_wireless">Kablosuz</string>
+    <string name="charge_tier_trickle">Yavaş şarj</string>
+    <string name="charge_tier_normal">Normal şarj</string>
+    <string name="charge_tier_fast">Hızlı şarj</string>
+    <string name="charge_tier_super_fast">Süper hızlı şarj</string>
+    <string name="charge_tier_super_fast_plus">Süper hızlı şarj+</string>
+    <string name="charge_connected_power">%1$s · %2$s · ~%3$s W</string>
+    <string name="charge_connected_tier">%1$s · %2$s</string>
+    <string name="charge_connected_plain">%1$s şarj</string>
+    <string name="charge_notification_style_title">Şarj bildirimi biçimi</string>
+    <string name="charge_notification_style_toast">Açılır mesaj</string>
+    <string name="charge_notification_style_notification">Bildirim</string>
+    <string name="charge_notification_style_none">Hiçbiri</string>
+
+    <string name="notification_status_channel_name">Pil durumu</string>
+    <string name="notification_status_channel_description">İzleme etkinken sürekli gösterilen pil durumu</string>
+    <string name="notification_quiet_channel_name">Sessiz uyarılar</string>
+    <string name="notification_quiet_channel_description">Sessiz saatlerinizde sessizce gösterilen pil uyarıları</string>
+    <string name="notification_status_title">%1$s · %2$s</string>
+    <string name="notification_status_watts">~%1$s W</string>
+    <string name="notification_status_time_remaining">%1$s kaldı</string>
+    <string name="notification_status_time_to_full">Dolmasına %1$s</string>
+    <string name="notification_status_current_using">Tüketim %1$s</string>
+    <string name="notification_status_current_charging">Şarj %1$s</string>
+    <string name="notification_status_source_battery">Pil gücünde</string>
+    <string name="notification_status_source_usb">USB</string>
+    <string name="notification_status_source_ac">Şarj cihazı</string>
+    <string name="notification_status_source_wireless">Kablosuz</string>
+    <string name="notification_status_source_other">Güce bağlı</string>
+    <string name="notification_status_calculating">Hesaplanıyor…</string>
+    <string name="notification_status_unavailable">Mevcut değil</string>
+    <string name="notification_detail_line">%1$s: %2$s</string>
+    <string name="notification_label_now">Canlı</string>
+    <string name="notification_label_average">Ortalama</string>
+    <string name="notification_details_header">En fazla %1$s seçin · %2$s seçili</string>
+    <string name="notification_details_header_empty">Hiçbir şey seçilmedi — bildirim yalnızca başlığı gösterir</string>
+    <string name="detail_family_speed">Hız</string>
+    <string name="detail_family_time">Süre</string>
+    <string name="notification_details_move_up">Yukarı taşı</string>
+    <string name="notification_details_move_down">Aşağı taşı</string>
+    <string name="notification_details_place">İşaretli, sıra %1$s, toplam %2$s</string>
+    <string name="notification_details_reset">Sıfırla</string>
+    <string name="notification_details_reset_description">Varsayılana sıfırla</string>
+    <string name="notification_details_preview">Bildirim önizlemesi</string>
+
+    <string name="notify_high_temperature">Yüksek sıcaklık uyarısı</string>
+    <string name="notify_high_temperature_summary_on">Pil çok ısındığında sizi uyarır (yoğun kullanım, şarj, sıcak ortam)</string>
+    <string name="notify_high_temperature_summary_off">Yüksek sıcaklık uyarıları kapalı</string>
+    <string name="high_temperature_threshold">Şu sıcaklığın üstünde uyar</string>
+    <string name="notification_temperature_channel_name">Pil sıcaklığı</string>
+    <string name="notification_temperature_channel_description">Pil sıcaklığı güvenli olmayan bir seviyeye çıktığında uyarır</string>
+    <string name="notification_temperature_ticker">Pil ısındı</string>
+    <string name="notification_temperature_title">Pil sıcaklığı yüksek</string>
+    <string name="notification_temperature_content">Pil sıcaklığı %1$s. Kullanımı azaltın ve soğumasını bekleyin.</string>
+    <string name="notification_temperature_content_big">Pilinizin sıcaklığı %1$s; bu, güvenli aralığın üzerinde. Yüksek sıcaklık pilin yıpranmasını hızlandırır ve tehlikeli olabilir. Şarjı ya da yoğun kullanımı (oyun, navigasyon, kamera) bırakın ve telefonun soğumasını bekleyin.</string>
+
+    <string name="battery_rate_value">%1$s%%/sa</string>
+    <string name="battery_current_value">%1$s mA</string>
+    <string name="battery_current_avg_line">ort. %1$s</string>
+    <string name="time_to_full_value_hm">~%1$s\u00A0sa %2$s\u00A0dk</string>
+    <string name="time_to_full_value_m">~%1$s\u00A0dk</string>
+    <string name="pref_cat_title_drain">Pil boşalması</string>
+    <string name="drain_limit">Yüksek boşalma sınırı</string>
+    <string name="drain_limit_summary">Boşalma hızı bu sınıra yaklaşınca turuncuya, sınıra ulaşınca ya da onu aşınca kırmızıya döner; orada kalırsa hızlı boşalma uyarısı verilir. Saatte yüzde puan olarak ölçülür.</string>
+
+    <string name="notify_fast_drain">Hızlı boşalma uyarısı</string>
+    <string name="notify_fast_drain_summary_on">Pil, belirlediğiniz sınırdan daha hızlı boşalmaya devam ettiğinde sizi uyarır — en çok telefon cebinizdeyken işe yarar</string>
+    <string name="notify_fast_drain_summary_off">Hızlı boşalma uyarıları kapalı</string>
+    <string name="fast_drain_sustained_minutes">Uyarı gecikmesi (dakika)</string>
+    <string name="fast_drain_reminder_minutes">Kilitliyken hatırlatma aralığı (dakika)</string>
+    <string name="notification_fast_drain_channel_name">Hızlı pil boşalması</string>
+    <string name="notification_fast_drain_channel_description">Pil anormal derecede hızlı boşaldığında uyarır</string>
+    <string name="notification_fast_drain_ticker">Pil hızlı boşalıyor</string>
+    <string name="notification_fast_drain_title">Pil hızlı boşalıyor</string>
+    <string name="notification_fast_drain_content">Son %2$s dakikadır saatte ~%1$s kaybediliyor (sınırınız: %3$s). Bir şey çok fazla güç kullanıyor olabilir.</string>
+
+    <string name="notify_slow_charge">Yavaş şarj uyarısı</string>
+    <string name="notify_slow_charge_summary_on">Şarj gücü anormal derecede düşük kaldığında sizi uyarır — muhtemelen yıpranmış bir kablo, kirli bir şarj girişi ya da arızalı bir şarj cihazı</string>
+    <string name="notify_slow_charge_summary_off">Yavaş şarj uyarıları kapalı</string>
+    <string name="notification_slow_charge_channel_name">Yavaş şarj</string>
+    <string name="notification_slow_charge_channel_description">Şarj gücü anormal derecede düşük kaldığında uyarır</string>
+    <string name="notification_slow_charge_ticker">Yavaş şarj oluyor</string>
+    <string name="notification_slow_charge_title">Yavaş şarj oluyor</string>
+    <string name="notification_slow_charge_content">Yavaş şarj oluyor (~%1$s W) — başka bir kablo deneyin, şarj girişini temizleyin ya da farklı bir şarj cihazı kullanın.</string>
+    <string name="notification_slow_charge_content_big">Şarj gücü ~%1$s W civarında kaldı; bu, sağlam bir şarj cihazının verdiğinin çok altında. Farklı bir kablo deneyin, şarj girişini temizleyin ya da başka bir şarj cihazına veya prize takın.</string>
+
+    <string name="battery_insights_title">Pil analizi</string>
+    <string name="view_battery_insights">Pil analizini görüntüle</string>
+    <string name="battery_health">Pil sağlığı</string>
+    <string name="charge_cycles">Şarj döngüleri</string>
+    <string name="days_in_use">Kullanım süresi (gün)</string>
+    <string name="about_battery_health">Piliniz hakkında</string>
+    <string name="battery_health_description_placeholder">Pil sağlığı bilgileriniz burada görünecek.</string>
+    <string name="design_capacity">Tasarım kapasitesi</string>
+    <string name="design_capacity_value">%1$s mAh</string>
+    <string name="measured_capacity">Ölçülen kapasite</string>
+    <string name="range_min_label">min</string>
+    <string name="range_max_label">maks</string>
+    <string name="temperature_range">Sıcaklık aralığı</string>
+    <string name="temperature_range_basis">Pilin şarjı en son tamamlandığından beri</string>
+    <string name="health_measured_info_cd">Pil sağlığı nasıl ölçülür</string>
+    <string name="health_measured_info_dialog_title">Bu nasıl ölçülür</string>
+    <string name="health_measured_info_dialog_message">Bu sağlık değeri, pilinizin ölçülen kapasitesini girdiğiniz tasarım kapasitesiyle karşılaştırır. Ölçülen kapasite, zaman içinde alınan çok sayıda ölçümün ortalamasıdır; bu yüzden her yenilemede sıçramak yerine sabit kalır. Min ve maks değerleri bu ölçümlerin dağılımını gösterir.</string>
+    <string name="set_design_capacity_action">Doğru sağlık değeri için nominal kapasiteyi girin</string>
+    <string name="design_capacity_dialog_title">Pil tasarım kapasitesi</string>
+    <string name="design_capacity_dialog_message">Pilinizin üretici özelliklerinde yazan nominal kapasitesini mAh cinsinden girin. Ölçüme dayalı bir tahmini önceden doldurduk — doğru bir sağlık değeri için onaylayın ya da düzeltin.</string>
+    <string name="design_capacity_hint">Kapasite (mAh)</string>
+    <string name="capacity_unit_mah">mAh</string>
+    <string name="look_up_my_model">Modelimi ara</string>
+    <string name="no_browser_found">Aramayı açacak bir tarayıcı bulunamadı</string>
+    <string name="save">Kaydet</string>
+    <string name="error_design_capacity_range">%1$s ile %2$s arasında bir kapasite girin</string>
+    <string name="health_basis_measured">Ölçülen ortalama kapasitenin tasarım kapasitesine oranı</string>
+    <string name="health_basis_estimated_os">Şarj döngülerinden tahmin edildi (Android\'in bildirdiği)</string>
+    <string name="health_basis_estimated_tracked">Kurulumdan beri sayılan döngülerden tahmin edildi — gerçek yıpranma daha fazla olabilir</string>
+
+    <string name="battery_reading_unreliable_cd">Bu pil ölçümü neden güvenilir olmayabilir</string>
+    <string name="battery_reading_unreliable_dialog_title">Pil ölçümü güvenilir olmayabilir</string>
+    <string name="battery_reading_unreliable_dialog_message" formatted="false">Bu cihaz, girdiğiniz nominal kapasiteyle uyuşmayan bir tam şarj kapasitesi bildiriyor; bu yüzden ölçülen kapasiteye — ve ona dayanan sağlık değerine — burada güvenilemez.\n\nBu genellikle telefonun pil donanımına özgü bir tuhaflıktır (bazı yonga setleri şarj sayacını yanlış bildirir); pilinizle ilgili bir sorun değildir.\n\nAncak pilin gerçekten yıprandığı anlamına da gelebilir. Şu belirtilere dikkat edin:\n\n• Telefon hâlâ şarjı varmış gibi görünürken yoğun kullanımda kapanıyor ya da yeniden başlıyor\n• Seviye sona doğru birden düşüyor (ör. %20, %2 gibi davranıyor)\n• Eskisinden çok daha hızlı boşalıyor\n\nBunları fark ederseniz pili değiştirmeyi düşünün.</string>
+
+    <string name="battery_health_grade_excellent">Mükemmel</string>
+    <string name="battery_health_grade_good">İyi</string>
+    <string name="battery_health_grade_fair">Orta</string>
+    <string name="battery_health_grade_poor">Zayıf</string>
+    <string name="battery_health_desc_excellent">Piliniz mükemmel durumda. Normal kullanımınıza devam edin.</string>
+    <string name="battery_health_desc_good">Piliniz iyi durumda, yıpranma çok az. Normal şekilde kullanmaya devam edebilirsiniz.</string>
+    <string name="battery_health_desc_fair">Pilinizde orta düzeyde yıpranma var. Pil ömrünün biraz kısaldığını fark edebilirsiniz.</string>
+    <string name="battery_health_desc_poor">Piliniz ciddi ölçüde yıpranmış. Performans düşükse pili değiştirmeyi düşünün.</string>
+    <string name="how_it_works">Nasıl çalışır</string>
+    <string name="how_battery_health_works" formatted="false" tools:ignore="TypographyDashes">Pil sağlığı, mevcut en iyi dayanağa göre gösterilir:\n\n• Ölçülen — pilinizin nominal kapasitesini girdiğinizde sağlık, ölçülen tam kapasitenin nominal kapasiteye bölümüdür. En doğru dayanak budur.\n• Şarj döngüleri (Android\'in bildirdiği) — bazı cihazlar pilin ömrü boyunca yaptığı döngü sayısını bildirir; sağlık bu durumda tipik bir lityum iyon yıpranma eğrisinden tahmin edilir.\n• Şarj döngüleri (bu uygulamanın saydığı) — aksi hâlde döngüler, uygulama kurulduğundan beri verilen şarjdan sayılır (100 yüzde puan = 1 döngü); bu yüzden uygulamadan eski bir telefonda gerçek yıpranmayı olduğundan az gösterir.\n\nDöngüye dayalı tahminler genel bir eğri kullanır — gerçek döngü ömrü, etikette Li-ion ya da Li-Po yazmasından bağımsız olarak üreticiye ve hücreye göre değişir:\n• 0–300 döngü: Mükemmel (%95–100)\n• 300–500 döngü: İyi (%85–95)\n• 500–800 döngü: Orta (%70–85)\n• 800+ döngü: Zayıf (%70\'in altında)\n\nİpucu: Lityum piller kabaca %20 ile %80 arasında ve sıcaktan uzak tutulduğunda en uzun ömürlü olur — pili alışkanlık olarak %100\'e kadar şarj etmek de derin deşarjlar da yıpranmayı artırır.</string>
+    <string name="developed_by">Geliştiren</string>
+    <string name="developer_name">Al-Mothafar Al-Hasan</string>
+
+    <string name="notifications_enabled_toast">Teşekkürler! Bildirimler artık açık.</string>
+
+    <string name="notifications_permission_rationale">Bu uygulamanın düzgün çalışması için bildirimler önemlidir</string>
+    <string name="open_settings">Ayarları aç</string>
+
+    <string name="monitoring_stopped_rationale">Sistem arka plandaki izlemeyi durdurdu. Pil optimizasyonunu kapatmak genellikle bunu önler.</string>
+    <string name="no_battery_settings">Bu cihazda pil optimizasyonu ayarları yok</string>
+
+    <string name="action_send_feedback">Geri bildirim gönder</string>
+    <string name="feedback_dialog_title">Geri bildirim gönder</string>
+    <string name="feedback_option_github">GitHub\'da bildir</string>
+    <string name="feedback_option_email">Geliştiriciye e-posta gönder</string>
+    <string name="feedback_email_subject">BattWatch geri bildirimi (v%1$s)</string>
+    <string name="no_email_app">E-posta uygulaması bulunamadı</string>
+
+    <string name="action_about">Uygulama hakkında</string>
+    <string name="about_version">Sürüm %1$s</string>
+    <string name="about_description">Pilinizle ilgili sizi bilgilendiren hafif bir uygulama — düşük ve kritik pil seviyelerinde uyarılar, tam şarj ve yüksek sıcaklık bildirimleri, şarj hızı ve pil sağlığı analizi. Gereksiz yük yok, “güç tasarrufu” numaraları yok — yalnızca basit pil bildirimleri.</string>
+    <string name="about_developer">Geliştiren: %1$s</string>
+    <string name="about_open_source">GNU Genel Kamu Lisansı v3.0 kapsamında lisanslanan özgür ve açık kaynaklı yazılım.</string>
+    <string name="about_disclaimer">Pil ölçümleri, sağlık ve şarj değerleri cihazınızdan gelir ve tahminidir — bunları kesin ölçümler olarak değil, yol gösterici olarak değerlendirin. Bu uygulama “olduğu gibi”, hiçbir garanti olmaksızın sunulur.</string>
+    <string name="about_view_github">GitHub\'da görüntüle</string>
+    <string name="about_footer_hint">Uygulama hakkında daha fazlası için dokunun</string>
+
+    <string name="pref_title_language">Uygulama dili</string>
+    <string name="system_default">Sistem varsayılanı</string>
+
+    <string name="pref_title_theme">Tema</string>
+    <string name="theme_light">Açık</string>
+    <string name="theme_dark">Koyu</string>
+
+    <string name="pref_cat_title_display_language">Görünüm ve dil</string>
+    <string name="pref_cat_title_thresholds">Pil seviyeleri</string>
+    <string name="pref_cat_title_full_battery">Tam şarj</string>
+    <string name="pref_cat_title_warning">Düşük pil uyarısı</string>
+    <string name="pref_cat_title_temperature">Yüksek sıcaklık</string>
+    <string name="pref_cat_title_critical">Kritik pil uyarısı</string>
+    <string name="pref_cat_title_charging">Şarj</string>
+    <string name="pref_cat_title_sound_vibration">Ses ve titreşim</string>
+    <string name="pref_cat_title_alert_sounds">Uyarı sesleri</string>
+    <string name="pref_cat_title_quiet_hours">Sessiz saatler</string>
+    <string name="pref_cat_title_appearance">Bildirim görünümü</string>
+
+    <string name="battery_progress_description">Pil yüzde %1$s</string>
+    <string name="battery_details_separator">:</string>
+</resources>
