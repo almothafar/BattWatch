@@ -83,14 +83,15 @@ This file carries the rules that apply to any edit. The rest live alongside it a
 - **All user-facing text must be in string resources — never a hardcoded Java literal** (no `setText("Excellent")`, no `Toast` string literals). Map values/enums to a `@StringRes` in a UI/service layer.
 - Use positional format args for dynamic content: `<string name="notification_status_title">%1$s · %2$s</string>`. Always `%s`, never `%d` — see "Numbers Are Always Western Digits" below.
 
-### Arabic (`values-ar/`) Parity
-- The app ships an Arabic translation. Every new user-facing string in `values/strings.xml` needs a matching entry in `values-ar/strings.xml`.
-- Quick check: diff the `<string name=…>` lists of the two files.
+### Translation Parity (`values-ar/`, `values-tr/`)
+- The app ships Arabic and Turkish translations. Every new user-facing string in `values/strings.xml` needs a matching entry in `values-ar/strings.xml` and in `values-tr/strings.xml`.
+- Quick check: diff the `<string name=…>` lists of the files.
 - Consider the `MissingTranslation` lint check as a build gate.
-- Arabic wording is drafted by the AI agent and reviewed by the maintainer (native speaker) before merge.
+- Arabic wording is drafted by the AI agent and reviewed by the maintainer (native speaker) before merge. Turkish is drafted the same way, but nobody on the project speaks it.
+- Turkish: a placeholder takes no suffix (no `%1$s'de`), because the right form (`-de`/`-da`, `-in`/`-ın`) depends on the value it receives. Word the sentence around it.
 
 ### Resource Naming
-- Prefix internal keys with underscore: `_pref_key_*`. Internal identifiers (`_pref_key_*`, `_pref_value_*`, `pref_category_*`, `extra_category`, URIs) are **not** translated — leave them out of `values-ar/`.
+- Prefix internal keys with underscore: `_pref_key_*`. Internal identifiers (`_pref_key_*`, `_pref_value_*`, `pref_category_*`, `extra_category`, URIs) are **not** translated — leave them out of `values-ar/` and `values-tr/`.
 - Use descriptive names: `battery_health_good`, not `bh_g`
 
 ### Numbers Are Always Western Digits

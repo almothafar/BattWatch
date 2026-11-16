@@ -448,6 +448,7 @@
     <!-- Language autonyms: shown in the language's own script regardless of UI locale -->
     <string name="language_arabic" translatable="false">العربية</string>
     <string name="language_english" translatable="false">English</string>
+    <string name="language_turkish" translatable="false">Türkçe</string>
 
     <!-- App theme picker (#332); its "System default" entry is the shared string above -->
     <string name="pref_title_theme">Theme</string>

@@ -8,11 +8,13 @@
         <item>@string/system_default</item>
         <item>@string/language_arabic</item>
         <item>@string/language_english</item>
+        <item>@string/language_turkish</item>
     </string-array>
     <string-array name="language_values" tools:ignore="MissingTranslation">
         <item></item>
         <item>ar</item>
         <item>en</item>
+        <item>tr</item>
     </string-array>
 
     <!-- App theme picker (#332). Entry labels are localized string references; the values are stable
