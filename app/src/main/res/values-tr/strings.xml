@@ -18,7 +18,7 @@
     <string name="battery_condition">Durum</string>
     <string name="capacity">Kapasite</string>
     <string name="battery_health_good">İyi</string>
-    <string name="battery_health_dead">Ölü</string>
+    <string name="battery_health_dead">Ömrünü tamamlamış</string>
     <string name="battery_health_cold">Soğuk</string>
     <string name="battery_health_overheat">Aşırı ısınma</string>
     <string name="battery_health_over_voltage">Aşırı voltaj</string>
@@ -45,7 +45,7 @@
     <string name="gauge_theme_switch_to_light">Koyu tema. Açık temaya geç.</string>
     <string name="theme_staying_light">Bu uygulama açık temada kalacak</string>
     <string name="theme_staying_dark">Bu uygulama koyu temada kalacak</string>
-    <string name="theme_match_phone_action">Telefona uy</string>
+    <string name="theme_match_phone_action">Sistem temasını kullan</string>
 
     <string name="battery_value_pending">—</string>
     <string name="battery_value_calculating">hesaplanıyor</string>
